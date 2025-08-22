@@ -1,5 +1,5 @@
 import React from "react";
-import hero from "../assets/hower.png";
+import hero from "../assets/hero.png";
 import avatar1 from "../assets/avatar1.png";
 import avatar2 from "../assets/avatar2.png";
 import avatar3 from "../assets/avatar3.png";
@@ -11,7 +11,7 @@ const Hero = () => {
       style={{ backgroundImage: `url(${hero})` }}
     >
       {/* Overlay for better text readability */}
-      <div className="absolute inset-0 bg-black/40"></div>
+      {/* <div className="absolute inset-0 bg-black/40"></div> */}
 
       {/* Content Container */}
       <div className="relative z-10 max-w-[1200px] mx-auto w-full px-4 sm:px-6 md:px-8 py-12 md:py-16">

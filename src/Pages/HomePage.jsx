@@ -8,6 +8,9 @@ import PromoSection from "../Components/PromoSection";
 import Trust from "../Components/Trust";
 import Gift from "../Components/Gift";
 import Choose from "../Components/Choose";
+import NumberComponent from "../Components/NumberComponent";
+import Experince from "../Components/Experince";
+import Discount from "../Components/Discount";
 
 const HomePage = () => {
   return (
@@ -21,6 +24,9 @@ const HomePage = () => {
       <Trust />
       <Gift />
       <Choose />
+      <NumberComponent />
+      <Experince />
+      <Discount />
     </div>
   );
 };

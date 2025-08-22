@@ -1,8 +1,8 @@
 import React from "react";
 import { HandHeart, Leaf, Truck, Headphones } from "lucide-react";
 
-const brandText = "text-[#5F1327]"; // heading color (burgundy)
-const brandIconBg = "bg-[#C67A84]"; // icon tile color (rose)
+const brandText = "text-[#5F1327]";
+const brandIconBg = "bg-[#C67A84]";
 
 const Choose = () => {
   const leftCol = [
