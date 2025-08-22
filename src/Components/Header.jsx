@@ -1,0 +1,235 @@
+import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+import { Search, User, ShoppingCart, ChevronDown, Menu, X } from "lucide-react";
+import logo from "../assets/logo.png";
+
+const Header = () => {
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const timeoutRef = useRef(null);
+
+  // Handle dropdown delay for desktop
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setCategoryOpen(true), 200);
+  };
+
+  const handleMouseLeave = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setCategoryOpen(false), 200);
+  };
+
+  // Close mobile menu when clicking outside
+  const mobileMenuRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target)
+      ) {
+        setMobileMenu(false);
+        setCategoryOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <header className="bg-white sticky top-0 z-50 ">
+      <div className="max-w-[1200px] mx-auto sm:px-6 md:px-8 px-4 flex items-center justify-between  py-3  md:py-4">
+        {/* Logo */}
+        <Link to="/" className="text-2xl font-bold text-primary">
+          <img src={logo} alt="Sablle Logo" className="w-[120px] h-[25px]" />
+        </Link>
+
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex font-medium items-center gap-6 lg:gap-8">
+          <Link
+            to="/"
+            className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+          >
+            Home
+          </Link>
+
+          {/* Categories Dropdown */}
+          <div
+            className="relative group"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            <button className="flex items-center gap-1 text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200">
+              Categories{" "}
+              <ChevronDown
+                size={18}
+                className={`transition-transform duration-200 ${
+                  categoryOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {categoryOpen && (
+              <div className="absolute left-0 top-full mt-2 w-56 bg-white shadow-lg rounded-lg py-2 border border-gray-100 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out transform scale-95 group-hover:scale-100">
+                <Link
+                  to="/categories/electronics"
+                  className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                >
+                  Electronics
+                </Link>
+                <Link
+                  to="/categories/fashion"
+                  className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                >
+                  Fashion
+                </Link>
+                <Link
+                  to="/categories/books"
+                  className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                >
+                  Books
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <Link
+            to="/about"
+            className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+          >
+            About Us
+          </Link>
+          <Link
+            to="/contact"
+            className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+          >
+            Contact Us
+          </Link>
+        </nav>
+
+        {/* Right Section */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          <button
+            className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200"
+            aria-label="Search"
+          >
+            <Search size={22} />
+          </button>
+          <button
+            className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200"
+            aria-label="User Profile"
+          >
+            <User size={22} />
+          </button>
+          <button
+            className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200 relative"
+            aria-label="Shopping Cart"
+          >
+            <ShoppingCart size={22} />
+            <span className="absolute -top-2 -right-2 bg-[#CB5B6A] text-white text-xs px-1.5 py-0.5 rounded-full">
+              2
+            </span>
+          </button>
+
+          {/* CTA Button */}
+          <Link
+            to="/customize"
+            className="hidden md:inline-block ml-6 bg-[#CB5B6A] text-white px-4 py-2 rounded-full shadow hover:bg-[#b34f5c] transition-colors duration-200"
+          >
+            Customize Item
+          </Link>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+            onClick={() => setMobileMenu(!mobileMenu)}
+            aria-label={mobileMenu ? "Close Menu" : "Open Menu"}
+          >
+            {mobileMenu ? <X size={26} /> : <Menu size={26} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Nav */}
+      {mobileMenu && (
+        <div
+          ref={mobileMenuRef}
+          className="md:hidden bg-white shadow-md border-t px-4 py-2 transform transition-all duration-300 ease-in-out"
+        >
+          <Link
+            to="/"
+            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+            onClick={() => setMobileMenu(false)}
+          >
+            Home
+          </Link>
+
+          {/* Mobile Dropdown */}
+          <div>
+            <button
+              className="w-full flex items-center justify-between px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+              onClick={() => setCategoryOpen(!categoryOpen)}
+            >
+              Categories{" "}
+              <ChevronDown
+                size={18}
+                className={`transition-transform duration-200 ${
+                  categoryOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            {categoryOpen && (
+              <div className="pl-6 bg-gray-50 rounded-lg">
+                <Link
+                  to="/categories/electronics"
+                  className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                  onClick={() => setMobileMenu(false)}
+                >
+                  Electronics
+                </Link>
+                <Link
+                  to="/categories/fashion"
+                  className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                  onClick={() => setMobileMenu(false)}
+                >
+                  Fashion
+                </Link>
+                <Link
+                  to="/categories/books"
+                  className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                  onClick={() => setMobileMenu(false)}
+                >
+                  Books
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <Link
+            to="/about"
+            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+            onClick={() => setMobileMenu(false)}
+          >
+            About Us
+          </Link>
+          <Link
+            to="/contact"
+            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+            onClick={() => setMobileMenu(false)}
+          >
+            Contact Us
+          </Link>
+
+          <Link
+            to="/customize"
+            className="block bg-[#CB5B6A] text-white text-center mx-3 my-2 py-2 rounded-lg hover:bg-[#b34f5c] transition-colors duration-200"
+            onClick={() => setMobileMenu(false)}
+          >
+            Customize Item
+          </Link>
+        </div>
+      )}
+    </header>
+  );
+};
+
+export default Header;
