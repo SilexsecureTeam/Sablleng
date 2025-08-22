@@ -11,6 +11,7 @@ import Choose from "../Components/Choose";
 import NumberComponent from "../Components/NumberComponent";
 import Experince from "../Components/Experince";
 import Discount from "../Components/Discount";
+import Footer from "../Components/Footer";
 
 const HomePage = () => {
   return (
@@ -27,6 +28,7 @@ const HomePage = () => {
       <NumberComponent />
       <Experince />
       <Discount />
+      <Footer />
     </div>
   );
 };
