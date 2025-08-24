@@ -12,15 +12,15 @@ const Gift = () => {
             Corporate Solutions
           </span>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-12 lg:gap-20 items-center">
           {/* Left Content */}
           <div className="space-y-6 sm:space-y-8">
             {/* Main Heading */}
             <div className="space-y-2">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-[#1E1E1E] leading-tight">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-normal text-[#1E1E1E] leading-tight">
                 Elevate Your
               </h1>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal leading-tight">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-normal leading-tight">
                 <span className="text-[#CB5B6A]">Corporate</span>{" "}
                 <span className="text-[#1E1E1E]">Relationships</span>
               </h1>

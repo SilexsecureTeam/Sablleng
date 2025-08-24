@@ -15,13 +15,13 @@ const PromoSection = () => {
             <img
               src={promo}
               alt="Promotional item"
-              className="w-full h-64 sm:h-80 md:h-96 object-cover "
+              className="w-full h-fit sm:h-96 md:h-100 object-top "
             />
           </div>
 
           {/* Content - Right */}
-          <div className="w-full md:w-1/2 px-4 text-white flex flex-col items-start text-left h-50 sm:h-80 md:h-96 justify-center bg-[#5F1327]">
-            <div className="mx-auto w-fit">
+          <div className="w-full md:w-1/2 px-4 md:px-20 text-white flex flex-col items-center text-left  h-fit sm:h-96 md:h-100  justify-center  bg-[#5F1327]">
+            <div className="mx-auto w-fit md:w-full">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium  mb-4">
                 HUNDREDS of <br />
                 New lower prices!

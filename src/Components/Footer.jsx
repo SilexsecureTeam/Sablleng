@@ -5,8 +5,11 @@ import logo from "../assets/footer.png";
 
 const Footer = () => {
   return (
-    <footer className="bg-[#353535] text-white py-12 px-6">
-      <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-5 gap-12">
+    <footer
+      className="bg-[#353535] text-white py-12 md:py-16
+    "
+    >
+      <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 pb-6 mx-auto grid grid-cols-1 md:grid-cols-5 gap-12">
         {/* Brand Section */}
         <div>
           <img src={logo} alt="img" className="mb-4" />
@@ -142,8 +145,8 @@ const Footer = () => {
       </div>
 
       {/* Bottom Social Links */}
-      <div className="flex justify-between items-end max-w-[1200px] mx-auto">
-        <div className="space-y-2 text-sm">
+      <div className="flex justify-between items-end max-w-[1200px] px-4 sm:px-6 md:px-8  mx-auto">
+        <div className="space-y-2 text-sm ">
           <p className="font-semibold text-white">+2348187230200</p>
           <p>info@sablle.ng</p>
           <p>Victoria Island, Lagos, Nigeria</p>

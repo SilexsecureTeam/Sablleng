@@ -37,14 +37,14 @@ const Header = () => {
 
   return (
     <header className="bg-white sticky top-0 z-50 ">
-      <div className="max-w-[1200px] mx-auto sm:px-6 md:px-8 px-4 flex items-center justify-between  py-3  md:py-4">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 flex items-center justify-between  py-3  md:py-4">
         {/* Logo */}
         <Link to="/" className="text-2xl font-bold text-primary">
           <img src={logo} alt="Sablle Logo" className="w-[120px] h-[25px]" />
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex font-medium items-center gap-6 lg:gap-8">
+        <nav className="hidden md:flex font-medium items-center gap-6">
           <Link
             to="/"
             className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
@@ -74,19 +74,19 @@ const Header = () => {
                   to="/categories/electronics"
                   className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
                 >
-                  Electronics
+                  Bag & Travel
                 </Link>
                 <Link
                   to="/categories/fashion"
                   className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
                 >
-                  Fashion
+                  Corporate Gift
                 </Link>
                 <Link
                   to="/categories/books"
                   className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
                 >
-                  Books
+                 Home and Indoor
                 </Link>
               </div>
             )}
@@ -97,6 +97,12 @@ const Header = () => {
             className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
           >
             About Us
+          </Link>
+          <Link
+            to="/product"
+            className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+          >
+            Product
           </Link>
           <Link
             to="/contact"
@@ -184,21 +190,21 @@ const Header = () => {
                   className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
                   onClick={() => setMobileMenu(false)}
                 >
-                  Electronics
+                  Bag & Travel
                 </Link>
                 <Link
                   to="/categories/fashion"
                   className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
                   onClick={() => setMobileMenu(false)}
                 >
-                  Fashion
+                  Corporate Gift
                 </Link>
                 <Link
                   to="/categories/books"
                   className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
                   onClick={() => setMobileMenu(false)}
                 >
-                  Books
+                  Home & Indoor
                 </Link>
               </div>
             )}
@@ -210,6 +216,13 @@ const Header = () => {
             onClick={() => setMobileMenu(false)}
           >
             About Us
+          </Link>
+          <Link
+            to="/product"
+            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+            onClick={() => setMobileMenu(false)}
+          >
+            Product
           </Link>
           <Link
             to="/contact"

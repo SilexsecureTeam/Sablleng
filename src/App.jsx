@@ -1,18 +1,17 @@
 import React, { Suspense, lazy } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
 import logo from "./assets/logo.png";
 
-// Lazy imports for optimization
 const HomePage = lazy(() => import("./Pages/HomePage"));
 const AboutPage = lazy(() => import("./Pages/AboutPage"));
 const NotFound = lazy(() => import("./Components/NotFound"));
+const ProductPage = lazy(() => import("./Pages/ProductPage"));
 
 const App = () => {
   return (
     <BrowserRouter>
       <div className="min-h-screen">
-        {/* Suspense fallback with logo loading animation */}
         <Suspense
           fallback={
             <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -27,7 +26,9 @@ const App = () => {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
-            <Route path="*" element={<NotFound />} /> {/* 404 Route */}
+            <Route path="/product" element={<ProductPage />} />
+            <Route path="/product/:id" element={<ProductPage />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </div>

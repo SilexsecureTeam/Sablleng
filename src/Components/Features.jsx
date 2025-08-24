@@ -37,7 +37,7 @@ const Features = () => {
           {featuresData.map((feature, index) => (
             <div
               key={index}
-              className={`flex flex-col items-start text-start p-6 ${feature.bgColor} cursor-pointer hover:scale-105 duration-200 rounded-xl`}
+              className={`flex flex-col items-start text-start p-6 ${feature.bgColor} cursor-pointer hover:scale-105 duration-200 `}
             >
               {feature.icon}
               <h3 className="text-xl font-semibold text-white mb-2">
