@@ -1,5 +1,5 @@
    /* App.css */
-.animate-spin-slow {
+/* .animate-spin-slow {
   animation: spin 1.5s linear infinite;
 }
 
@@ -10,6 +10,33 @@
   to {
     transform: rotate(360deg);
   }
-}
+} */
 
 /* Ensure the rest of your App.css styles are preserved */
+/* Add these animation delay classes to your App.css */
+
+.animation-delay-150 {
+  animation-delay: 0.15s;
+}
+
+.animation-delay-300 {
+  animation-delay: 0.3s;
+}
+
+.animation-delay-450 {
+  animation-delay: 0.45s;
+}
+
+/* Optional: Custom animation for slower spin */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
