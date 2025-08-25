@@ -202,7 +202,7 @@ const ProductDetail = ({ id }) => {
                   </button>
                 </div>
               </div>
-              <div className="space-x-3">
+              <div className="space-x-3 space-y-3 ">
                 <button
                   className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
                   onClick={handleAddToCart}
