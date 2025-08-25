@@ -20,7 +20,7 @@ const PromoSection = () => {
           </div>
 
           {/* Content - Right */}
-          <div className="w-full md:w-1/2 px-4 md:px-20 text-white flex flex-col items-center text-left  h-fit sm:h-96 md:h-100  justify-center  bg-[#5F1327]">
+          <div className="w-full md:w-1/2 px-4 md:px-20 py-10 text-white flex flex-col items-center text-left  h-fit sm:h-96 md:h-100  justify-center  bg-[#5F1327]">
             <div className="mx-auto w-fit md:w-full">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-medium  mb-4">
                 HUNDREDS of <br />

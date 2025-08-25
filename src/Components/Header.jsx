@@ -1,12 +1,17 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
 import { Search, User, ShoppingCart, ChevronDown, Menu, X } from "lucide-react";
+import { CartContext } from "../context/CartContextObject";
 import logo from "../assets/logo.png";
 
 const Header = () => {
+  const { items } = useContext(CartContext);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const timeoutRef = useRef(null);
+
+  // Calculate total items in cart
+  const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   // Handle dropdown delay for desktop
   const handleMouseEnter = () => {
@@ -36,8 +41,8 @@ const Header = () => {
   }, []);
 
   return (
-    <header className="bg-white sticky top-0 z-50 ">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 flex items-center justify-between  py-3  md:py-4">
+    <header className="bg-white sticky top-0 z-50">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 flex items-center justify-between py-3 md:py-4">
         {/* Logo */}
         <Link to="/" className="text-2xl font-bold text-primary">
           <img src={logo} alt="Sablle Logo" className="w-[120px] h-[25px]" />
@@ -51,8 +56,6 @@ const Header = () => {
           >
             Home
           </Link>
-
-          {/* Categories Dropdown */}
           <div
             className="relative group"
             onMouseEnter={handleMouseEnter}
@@ -67,7 +70,6 @@ const Header = () => {
                 }`}
               />
             </button>
-
             {categoryOpen && (
               <div className="absolute left-0 top-full mt-2 w-56 bg-white shadow-lg rounded-lg py-2 border border-gray-100 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out transform scale-95 group-hover:scale-100">
                 <Link
@@ -86,12 +88,11 @@ const Header = () => {
                   to="/categories/books"
                   className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
                 >
-                 Home and Indoor
+                  Home and Indoor
                 </Link>
               </div>
             )}
           </div>
-
           <Link
             to="/about"
             className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
@@ -126,15 +127,18 @@ const Header = () => {
           >
             <User size={22} />
           </button>
-          <button
+          <Link
+            to="/cart"
             className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200 relative"
             aria-label="Shopping Cart"
           >
             <ShoppingCart size={22} />
-            <span className="absolute -top-2 -right-2 bg-[#CB5B6A] text-white text-xs px-1.5 py-0.5 rounded-full">
-              2
-            </span>
-          </button>
+            {cartItemCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-[#CB5B6A] text-white text-xs px-1.5 py-0.5 rounded-full">
+                {cartItemCount}
+              </span>
+            )}
+          </Link>
 
           {/* CTA Button */}
           <Link
@@ -168,8 +172,6 @@ const Header = () => {
           >
             Home
           </Link>
-
-          {/* Mobile Dropdown */}
           <div>
             <button
               className="w-full flex items-center justify-between px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
@@ -209,7 +211,6 @@ const Header = () => {
               </div>
             )}
           </div>
-
           <Link
             to="/about"
             className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
@@ -231,7 +232,13 @@ const Header = () => {
           >
             Contact Us
           </Link>
-
+          <Link
+            to="/cart"
+            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+            onClick={() => setMobileMenu(false)}
+          >
+            Cart
+          </Link>
           <Link
             to="/customize"
             className="block bg-[#CB5B6A] text-white text-center mx-3 my-2 py-2 rounded-lg hover:bg-[#b34f5c] transition-colors duration-200"

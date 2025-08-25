@@ -4,8 +4,10 @@ import Noti from "../Components/Noti";
 import Header from "../Components/Header";
 import Phero from "../Components/Phero";
 import Product from "../Components/Product";
-import ProductDetail from "../Components/ProductDetail"; // New component
+import ProductDetail from "../Components/ProductDetail";
 import Footer from "../Components/Footer";
+import Experince from "../Components/Experince";
+import Discount from "../Components/Discount";
 
 const ProductPage = () => {
   const { id } = useParams(); // Get product ID from URL
@@ -14,11 +16,19 @@ const ProductPage = () => {
     <div>
       <Noti />
       <Header />
-      {id ? <ProductDetail id={id} /> :
-      <div>
-        <Phero />
-      <Product />
-      </div>}
+      {id ? (
+        <div>
+          {" "}
+          <ProductDetail id={id} />
+          <Experince />
+          <Discount />
+        </div>
+      ) : (
+        <div>
+          <Phero />
+          <Product />
+        </div>
+      )}
       <Footer />
     </div>
   );

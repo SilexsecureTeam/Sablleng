@@ -1,10 +1,12 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
+import { CartContext } from "../context/CartContextObject";
 import products from "../data/products";
 
 const ProductDetail = ({ id }) => {
+  const { addItem } = useContext(CartContext);
   const [selectedColor, setSelectedColor] = useState("white");
-  const sliderRef = useRef(null); // Ref to control the slider container
+  const sliderRef = useRef(null);
 
   const colors = [
     { name: "black", color: "bg-black" },
@@ -35,17 +37,27 @@ const ProductDetail = ({ id }) => {
     (p) => p.category === product.category && p.id !== product.id
   );
 
-  // Functions to handle slider navigation
   const scrollLeft = () => {
     if (sliderRef.current) {
-      sliderRef.current.scrollBy({ left: -300, behavior: "smooth" }); // Scroll left by 300px
+      sliderRef.current.scrollBy({ left: -300, behavior: "smooth" });
     }
   };
 
   const scrollRight = () => {
     if (sliderRef.current) {
-      sliderRef.current.scrollBy({ left: 300, behavior: "smooth" }); // Scroll right by 300px
+      sliderRef.current.scrollBy({ left: 300, behavior: "smooth" });
     }
+  };
+
+  const handleAddToCart = () => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      sku: product.model,
+      price: parseFloat(product.price.replace("₦", "")) * 1000, // Convert to consistent unit (e.g., ₦29.99 to 29990)
+      image: product.image,
+      quantity: 1,
+    });
   };
 
   return (
@@ -83,12 +95,12 @@ const ProductDetail = ({ id }) => {
               </h1>
               <p className="text-gray-600 leading-relaxed">
                 {product.badge
-                  ? `Customizable product: ${product.name}. Perfect for ${product.category.toLowerCase()}. Model: ${
+                  ? `Customizable product: ${
+                      product.name
+                    }. Perfect for ${product.category.toLowerCase()}. Model: ${
                       product.model
                     }.`
-                  : `Explore the ${product.name}, a premium product in the ${
-                      product.category
-                    } category. Model: ${product.model}.`}
+                  : `Explore the ${product.name}, a premium product in the ${product.category} category. Model: ${product.model}.`}
               </p>
               <div className="space-y-3">
                 <div className="flex">
@@ -113,13 +125,17 @@ const ProductDetail = ({ id }) => {
                 </div>
               </div>
               <div className="space-x-3 flex">
-                <label className="text-gray-900 font-medium">Select color:</label>
+                <label className="text-gray-900 font-medium">
+                  Select color:
+                </label>
                 <div className="flex space-x-3">
                   {colors.map((color) => (
                     <button
                       key={color.name}
                       onClick={() => setSelectedColor(color.name)}
-                      className={`w-6 h-6 rounded-full border-2 ${color.color} ${
+                      className={`w-6 h-6 rounded-full border-2 ${
+                        color.color
+                      } ${
                         selectedColor === color.name
                           ? "border-gray-800"
                           : "border-gray-300"
@@ -128,9 +144,17 @@ const ProductDetail = ({ id }) => {
                   ))}
                 </div>
               </div>
-              <button className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors">
-                Order Now
-              </button>
+              <div className="space-x-3">
+                <button
+                  className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
+                  onClick={handleAddToCart}
+                >
+                  Add to Cart
+                </button>
+                <button className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors">
+                  Order Now
+                </button>
+              </div>
             </div>
           </div>
         </div>
