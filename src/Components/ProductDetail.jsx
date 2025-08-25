@@ -6,6 +6,7 @@ import products from "../data/products";
 const ProductDetail = ({ id }) => {
   const { addItem } = useContext(CartContext);
   const [selectedColor, setSelectedColor] = useState("white");
+  const [quantity, setQuantity] = useState(1); // State for quantity selector
   const sliderRef = useRef(null);
 
   const colors = [
@@ -53,11 +54,18 @@ const ProductDetail = ({ id }) => {
     addItem({
       id: product.id,
       name: product.name,
-      sku: product.model,
-      price: parseFloat(product.price.replace("₦", "")) * 1000, // Convert to consistent unit (e.g., ₦29.99 to 29990)
-      image: product.image,
-      quantity: 1,
+      model: product.model,
+      price: parseFloat(product.price.replace("₦", "")) * 1000, // Convert ₦29.99 to 29990
+      image: product.image, // Use image from products.js
+      quantity: quantity, // Use selected quantity
     });
+    setQuantity(1); // Reset quantity after adding to cart
+  };
+
+  const handleQuantityChange = (newQuantity) => {
+    if (newQuantity >= 1) {
+      setQuantity(newQuantity);
+    }
   };
 
   return (
@@ -124,7 +132,7 @@ const ProductDetail = ({ id }) => {
                   <span className="text-gray-900">{product.price}</span>
                 </div>
               </div>
-              <div className="space-x-3 flex">
+              <div className="space-x-3 flex items-center">
                 <label className="text-gray-900 font-medium">
                   Select color:
                 </label>
@@ -142,6 +150,56 @@ const ProductDetail = ({ id }) => {
                       }`}
                     />
                   ))}
+                </div>
+              </div>
+              <div className="space-x-3 flex items-center">
+                <label className="text-gray-900 font-medium">Quantity:</label>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleQuantityChange(quantity - 1)}
+                    className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  >
+                    <svg
+                      className="w-4 h-4 text-gray-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M18 12H6"
+                      />
+                    </svg>
+                  </button>
+                  <input
+                    type="number"
+                    value={quantity}
+                    onChange={(e) =>
+                      handleQuantityChange(parseInt(e.target.value) || 1)
+                    }
+                    className="w-16 text-center border border-gray-300 rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                    min="1"
+                  />
+                  <button
+                    onClick={() => handleQuantityChange(quantity + 1)}
+                    className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  >
+                    <svg
+                      className="w-4 h-4 text-gray-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
               <div className="space-x-3">

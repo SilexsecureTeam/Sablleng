@@ -20,9 +20,9 @@ export const CartProvider = ({ children }) => {
   const addItem = (product) => {
     const existingItem = items.find((item) => item.id === product.id);
     if (existingItem) {
-      updateQuantity(product.id, existingItem.quantity + 1);
+      updateQuantity(product.id, existingItem.quantity + product.quantity);
     } else {
-      setItems([...items, { ...product, quantity: 1 }]);
+      setItems([...items, { ...product }]);
     }
   };
 
