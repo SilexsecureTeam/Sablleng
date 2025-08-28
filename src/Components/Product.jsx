@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import  products  from "../data/products";
+import products from "../data/products";
 
 const Product = () => {
   return (
@@ -25,7 +25,7 @@ const Product = () => {
                   className="max-h-full max-w-full object-contain"
                 />
               </div>
-              <div className="py-4">
+              <div className="p-4 ">
                 <h3 className="font-medium text-gray-900 text-sm">
                   {product.name}
                 </h3>
@@ -33,7 +33,7 @@ const Product = () => {
                   {product.price}
                 </span>
                 <div className="flex items-center justify-between">
-                  <span className="text-base text-[#CB5B6A] py-1 rounded">
+                  <span className="text-base font-bold text-[#CB5B6A] py-1 rounded">
                     {product.category}
                   </span>
                 </div>

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import hero from "../assets/hero.png";
-import hero1 from "../assets/hower.png";
+import hero1 from "../assets/ahero.png";
+import hero2 from "../assets/phero.png";
 import avatar1 from "../assets/avatar1.png";
 import avatar2 from "../assets/avatar2.png";
 import avatar3 from "../assets/avatar3.png";
 
 const Hero = () => {
-  const images = [hero, hero1];
+  const images = [hero, hero1, hero2];
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {

@@ -9,6 +9,9 @@ const AboutPage = lazy(() => import("./Pages/AboutPage"));
 const NotFound = lazy(() => import("./Components/NotFound"));
 const ProductPage = lazy(() => import("./Pages/ProductPage"));
 const CartPage = lazy(() => import("./Pages/CartPage")); // New CartPage
+const SignIn = lazy(() => import("./Auth/SignIn"));
+const SignUp = lazy(() => import("./Auth/SignUp"));
+const OtpPage = lazy(() => import("./Auth/OTP"));
 
 const LoadingSpinner = () => {
   return (
@@ -71,6 +74,9 @@ const App = () => {
               <Route path="/product" element={<ProductPage />} />
               <Route path="/product/:id" element={<ProductPage />} />
               <Route path="/cart" element={<CartPage />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/otp" element={<OtpPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
