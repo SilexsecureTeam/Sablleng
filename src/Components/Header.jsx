@@ -121,12 +121,15 @@ const Header = () => {
           >
             <Search size={22} />
           </button>
-          <button
-            className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200"
-            aria-label="User Profile"
-          >
-            <User size={22} />
-          </button>
+          <Link to="signup">
+            <button
+              className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200"
+              aria-label="User Profile"
+            >
+              <User size={22} />
+            </button>
+          </Link>
+
           <Link
             to="/cart"
             className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200 relative"

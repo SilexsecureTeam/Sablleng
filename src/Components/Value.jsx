@@ -16,6 +16,7 @@ const Value = () => {
       title: "Passion for Excellence",
       text: "We pour our hearts into every gift, ensuring each one tells a unique story and creates lasting memories.",
       bgColor: "bg-[#5F1327]",
+      hoverColor: "hover:bg-[#322D2F]",
     },
     {
       icon: (
@@ -24,6 +25,7 @@ const Value = () => {
       title: "Uncompromising Quality",
       text: "From sourcing to delivery, we maintain the highest standards to exceed expectations every time.",
       bgColor: "bg-[#322D2F]",
+      hoverColor: "hover:bg-[#5F1327]",
     },
     {
       icon: (
@@ -32,12 +34,14 @@ const Value = () => {
       title: "Personal Touch",
       text: "Every client receives personalized attention from our dedicated concierge team.",
       bgColor: "bg-[#322D2F]",
+      hoverColor: "hover:bg-[#5F1327]",
     },
     {
       icon: <Truck className="w-10 h-10 text-white bg-[#BF9797] p-2 mb-4" />,
       title: "Reliable Service",
       text: "Same-day delivery across Lagos with real-time tracking and signature confirmation.",
       bgColor: "bg-[#322D2F]",
+      hoverColor: "hover:bg-[#5F1327]",
     },
     {
       icon: (
@@ -46,6 +50,7 @@ const Value = () => {
       title: "Trust & Integrity",
       text: "Building lasting relationships through transparency, reliability, and exceptional service.",
       bgColor: "bg-[#322D2F]",
+      hoverColor: "hover:bg-[#5F1327]",
     },
     {
       icon: (
@@ -54,6 +59,7 @@ const Value = () => {
       title: "Innovation",
       text: "From sourcing to delivery, we maintain the highest standards to exceed expectations every time.",
       bgColor: "bg-[#322D2F]",
+      hoverColor: "hover:bg-[#5F1327]",
     },
   ];
 
@@ -71,8 +77,9 @@ const Value = () => {
           {featuresData.map((feature, index) => (
             <div
               key={index}
-              className={`flex flex-col items-start text-start p-6 md:p-10 ${feature.bgColor} cursor-pointer hover:scale-105 duration-200 `}
+              className={`flex flex-col items-start text-start p-6 md:p-10 ${feature.bgColor} ${feature.hoverColor} cursor-pointer hover:scale-105 duration-200`}
             >
+              {" "}
               {feature.icon}
               <h3 className="text-xl font-semibold text-white mb-2">
                 {feature.title}
