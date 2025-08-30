@@ -145,7 +145,7 @@ const Header = () => {
 
           {/* CTA Button */}
           <Link
-            to="/customize"
+            to="/product"
             className="hidden md:inline-block ml-6 bg-[#CB5B6A] text-white px-4 py-2 rounded-full shadow hover:bg-[#b34f5c] transition-colors duration-200"
           >
             Customize Item

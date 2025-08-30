@@ -1,17 +1,17 @@
 import React from "react";
 import Noti from "../Components/Noti";
 import Header from "../Components/Header";
-import ShoppingCart from "../Components/ShoppingCart";
+import DeliveryDetails from "../Components/DeliveryDetails";
 import Footer from "../Components/Footer";
 import Experince from "../Components/Experince";
 import Discount from "../Components/Discount";
 
-const CartPage = () => {
+const DeliveryPage = () => {
   return (
     <div>
       <Noti />
       <Header />
-      <ShoppingCart />
+      <DeliveryDetails />
       <Experince />
       <Discount />
       <Footer />
@@ -19,4 +19,4 @@ const CartPage = () => {
   );
 };
 
-export default CartPage;
+export default DeliveryPage;

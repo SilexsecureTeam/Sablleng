@@ -62,13 +62,13 @@ const Hero = () => {
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row gap-8 mb-8">
             <a
-              href="/shop"
+              href="/product"
               className="bg-[#CB5B6A] text-white px-6 py-3 rounded-full font-light text-sm text-center hover:bg-[#b34f5c] transition-colors duration-200"
             >
               Customize a Gift
             </a>
             <a
-              href="/customize"
+              href="/"
               className="border border-[#CB5B6A] text-white px-6 py-3 rounded-full font-light text-sm text-center hover:bg-white hover:text-[#CB5B6A] transition-colors duration-200"
             >
               Browse Collections
