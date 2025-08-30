@@ -2,11 +2,13 @@ import React, { useState, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
 import { CartContext } from "../context/CartContextObject";
 import products from "../data/products";
+import ImageUploadComponent from "./ImageUploadComponent"; // Import the component
 
 const ProductDetail = ({ id }) => {
   const { addItem } = useContext(CartContext);
   const [selectedColor, setSelectedColor] = useState("white");
-  const [quantity, setQuantity] = useState(1); // State for quantity selector
+  const [quantity, setQuantity] = useState(1);
+  const [isCustomizing, setIsCustomizing] = useState(false); // New state for toggling customization
   const sliderRef = useRef(null);
 
   const colors = [
@@ -55,11 +57,11 @@ const ProductDetail = ({ id }) => {
       id: product.id,
       name: product.name,
       model: product.model,
-      price: parseFloat(product.price.replace("₦", "")) * 1000, // Convert ₦29.99 to 29990
-      image: product.image, // Use image from products.js
-      quantity: quantity, // Use selected quantity
+      price: parseFloat(product.price.replace("₦", "")) * 1000,
+      image: product.image,
+      quantity: quantity,
     });
-    setQuantity(1); // Reset quantity after adding to cart
+    setQuantity(1);
   };
 
   const handleQuantityChange = (newQuantity) => {
@@ -68,153 +70,181 @@ const ProductDetail = ({ id }) => {
     }
   };
 
+  const handleOrderNow = () => {
+    console.log("Order Now clicked for", product.name);
+    // Add actual order processing logic here if needed
+  };
+
+  const handleCustomize = () => {
+    setIsCustomizing(true); // Switch to customization mode
+  };
+
   return (
     <div className="bg-white py-8 md:py-10">
-      {/* Product Section */}
+      {/* Product or Customization Section */}
       <div className="max-w-[1200px] mx-auto">
         <div className="bg-white p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div className="space-y-6">
-              <div className="bg-gray-50 rounded-lg p-8 flex items-center justify-center">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="max-h-64 md:h-80 max-w-full object-contain"
-                />
-              </div>
-              <div className="flex space-x-4">
-                {[1, 2, 3, 4].map((index) => (
-                  <div
-                    key={index}
-                    className="w-20 h-20 bg-gray-100 rounded border flex items-center justify-center"
-                  >
-                    <img
-                      src={product.image}
-                      alt={`${product.name} thumbnail ${index}`}
-                      className="max-h-16 max-w-full object-contain"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-6">
-              <h1 className="text-2xl font-semibold text-gray-900">
-                {product.name}
-              </h1>
-              <p className="text-gray-600 leading-relaxed">
-                {product.badge
-                  ? `Customizable product: ${
-                      product.name
-                    }. Perfect for ${product.category.toLowerCase()}. Model: ${
-                      product.model
-                    }.`
-                  : `Explore the ${product.name}, a premium product in the ${product.category} category. Model: ${product.model}.`}
-              </p>
-              <div className="space-y-3">
-                <div className="flex">
-                  <span className="text-gray-500 w-24">Color:</span>
-                  <span className="text-gray-900">{selectedColor}</span>
+          {isCustomizing ? (
+            <ImageUploadComponent
+              productId={id}
+              onBack={() => setIsCustomizing(false)} // Pass a callback to return to product section
+            />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div className="space-y-6">
+                <div className="bg-gray-50 rounded-lg p-8 flex items-center justify-center">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="max-h-64 md:h-80 max-w-full object-contain"
+                  />
                 </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-24">Brand:</span>
-                  <span className="text-gray-900">ACMELL</span>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-24">Material:</span>
-                  <span className="text-gray-900">Premium</span>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-24">Category:</span>
-                  <span className="text-gray-900">{product.category}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-gray-500 w-24">Price:</span>
-                  <span className="text-gray-900">{product.price}</span>
-                </div>
-              </div>
-              <div className="space-x-3 flex items-center">
-                <label className="text-gray-900 font-medium">
-                  Select color:
-                </label>
-                <div className="flex space-x-3">
-                  {colors.map((color) => (
-                    <button
-                      key={color.name}
-                      onClick={() => setSelectedColor(color.name)}
-                      className={`w-6 h-6 rounded-full border-2 ${
-                        color.color
-                      } ${
-                        selectedColor === color.name
-                          ? "border-gray-800"
-                          : "border-gray-300"
-                      }`}
-                    />
+                <div className="flex space-x-4">
+                  {[1, 2, 3, 4].map((index) => (
+                    <div
+                      key={index}
+                      className="w-20 h-20 bg-gray-100 rounded border flex items-center justify-center"
+                    >
+                      <img
+                        src={product.image}
+                        alt={`${product.name} thumbnail ${index}`}
+                        className="max-h-16 max-w-full object-contain"
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
-              <div className="space-x-3 flex items-center">
-                <label className="text-gray-900 font-medium">Quantity:</label>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => handleQuantityChange(quantity - 1)}
-                    className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                  >
-                    <svg
-                      className="w-4 h-4 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M18 12H6"
+              <div className="space-y-6">
+                <h1 className="text-2xl font-semibold text-gray-900">
+                  {product.name}
+                </h1>
+                <p className="text-gray-600 leading-relaxed">
+                  {product.badge
+                    ? `Customizable product: ${
+                        product.name
+                      }. Perfect for ${product.category.toLowerCase()}. Model: ${
+                        product.model
+                      }.`
+                    : `Explore the ${product.name}, a premium product in the ${product.category} category. Model: ${product.model}.`}
+                </p>
+                <div className="space-y-3">
+                  <div className="flex">
+                    <span className="text-gray-500 w-24">Color:</span>
+                    <span className="text-gray-900">{selectedColor}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-24">Brand:</span>
+                    <span className="text-gray-900">ACMELL</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-24">Material:</span>
+                    <span className="text-gray-900">Premium</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-24">Category:</span>
+                    <span className="text-gray-900">{product.category}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-24">Price:</span>
+                    <span className="text-gray-900">{product.price}</span>
+                  </div>
+                </div>
+                <div className="space-x-3 flex items-center">
+                  <label className="text-gray-900 font-medium">
+                    Select color:
+                  </label>
+                  <div className="flex space-x-3">
+                    {colors.map((color) => (
+                      <button
+                        key={color.name}
+                        onClick={() => setSelectedColor(color.name)}
+                        className={`w-6 h-6 rounded-full border-2 ${
+                          color.color
+                        } ${
+                          selectedColor === color.name
+                            ? "border-gray-800"
+                            : "border-gray-300"
+                        }`}
                       />
-                    </svg>
-                  </button>
-                  <input
-                    type="number"
-                    value={quantity}
-                    onChange={(e) =>
-                      handleQuantityChange(parseInt(e.target.value) || 1)
-                    }
-                    className="w-16 text-center border border-gray-300 rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
-                    min="1"
-                  />
-                  <button
-                    onClick={() => handleQuantityChange(quantity + 1)}
-                    className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                  >
-                    <svg
-                      className="w-4 h-4 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    ))}
+                  </div>
+                </div>
+                <div className="space-x-3 flex items-center">
+                  <label className="text-gray-900 font-medium">Quantity:</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleQuantityChange(quantity - 1)}
+                      className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
-                    </svg>
+                      <svg
+                        className="w-4 h-4 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M18 12H6"
+                        />
+                      </svg>
+                    </button>
+                    <input
+                      type="number"
+                      value={quantity}
+                      onChange={(e) =>
+                        handleQuantityChange(parseInt(e.target.value) || 1)
+                      }
+                      className="w-16 text-center border border-gray-300 rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                      min="1"
+                    />
+                    <button
+                      onClick={() => handleQuantityChange(quantity + 1)}
+                      className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="space-x-3 space-y-3">
+                  <button
+                    className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
+                    onClick={handleAddToCart}
+                  >
+                    Add to Cart
                   </button>
+                  {product.badge === "Customizable" ? (
+                    <button
+                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
+                      onClick={handleCustomize}
+                    >
+                      Customize
+                    </button>
+                  ) : (
+                    <button
+                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
+                      onClick={handleOrderNow}
+                    >
+                      Order Now
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="space-x-3 space-y-3 ">
-                <button
-                  className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
-                  onClick={handleAddToCart}
-                >
-                  Add to Cart
-                </button>
-                <button className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors">
-                  Order Now
-                </button>
-              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

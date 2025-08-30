@@ -9,7 +9,7 @@ const AboutPage = lazy(() => import("./Pages/AboutPage"));
 const NotFound = lazy(() => import("./Components/NotFound"));
 const ProductPage = lazy(() => import("./Pages/ProductPage"));
 const ContactPage = lazy(() => import("./Pages/ContactPage"));
-const CartPage = lazy(() => import("./Pages/CartPage")); // New CartPage
+const CartPage = lazy(() => import("./Pages/CartPage"));
 const SignIn = lazy(() => import("./Auth/SignIn"));
 const SignUp = lazy(() => import("./Auth/SignUp"));
 const OtpPage = lazy(() => import("./Auth/OTP"));
@@ -51,7 +51,6 @@ const LoadingSpinner = () => {
   );
 };
 
-// ScrollToTop component to handle scrolling on route change
 const ScrollToTop = () => {
   const { pathname } = useLocation();
 
