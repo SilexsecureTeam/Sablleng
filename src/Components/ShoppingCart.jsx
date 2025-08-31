@@ -59,7 +59,8 @@ export default function ShoppingCart() {
                   <div className="flex items-center gap-2 sm:gap-3 mt-2 md:mt-0">
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                      disabled={item.quantity === 1}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-50"
                     >
                       <Minus size={14} className="text-gray-600" />
                     </button>

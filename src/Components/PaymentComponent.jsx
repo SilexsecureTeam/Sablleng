@@ -1,24 +1,28 @@
 import React, { useState, useContext } from "react";
 import { CartContext } from "../context/CartContextObject";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
+import PaymentForm from "../Components/PaymentForm";
 
 const PaymentComponent = () => {
-  const { items } = useContext(CartContext);
+  const { items, selectedAddress } = useContext(CartContext);
   const [selectedPayment, setSelectedPayment] = useState("paystack");
+  const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const selectedDelivery = location.state?.selectedDelivery || { value: 6000 }; // Default to Express delivery
 
   const paymentMethods = [
     {
       id: "paystack",
-      icon: i1, // Use i1.png for Paystack
+      icon: i1,
       title: "Paystack",
       description: "Pay securely with card or bank transfer",
     },
     {
       id: "cod",
-      icon: i2, // Use i2.png for Cash on Delivery
+      icon: i2,
       title: "Cash on Delivery",
       description: "Pay when your order arrives",
     },
@@ -30,11 +34,11 @@ const PaymentComponent = () => {
     0
   );
   const vat = subtotal * 0.075; // 7.5% VAT
-  const delivery = 6000; // Example: Use selected delivery from DeliveryDetails (hardcoded for now)
+  const delivery = selectedDelivery.value;
   const total = subtotal + vat + delivery;
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-NG", {
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat("en-NG", {
       style: "currency",
       currency: "NGN",
       minimumFractionDigits: 0,
@@ -42,18 +46,29 @@ const PaymentComponent = () => {
     })
       .format(amount)
       .replace("NGN", "₦");
-  };
 
   const handlePayment = () => {
     if (selectedPayment === "paystack") {
-      alert("Redirecting to Paystack payment gateway...");
-      // Add Paystack integration here
+      setShowModal(true); // Show PaymentForm modal
     } else {
-      alert("Order placed! You will pay cash on delivery.");
-      // Reset cart or navigate to order confirmation
-      navigate("/");
+      navigate("/order-success", {
+        state: {
+          orderId: `SABIL-${new Date()
+            .toISOString()
+            .split("T")[0]
+            .replace(/-/g, "")}-${Math.floor(Math.random() * 10000)}`,
+          items,
+          subtotal,
+          vat,
+          delivery,
+          total,
+          address: selectedAddress,
+        },
+      });
     }
   };
+
+  const closeModal = () => setShowModal(false);
 
   return (
     <div className="max-w-[1200px] mx-auto p-4 lg:p-6">
@@ -86,52 +101,31 @@ const PaymentComponent = () => {
                   onChange={(e) => setSelectedPayment(e.target.value)}
                   className="text-[#CB5B6A] focus:ring-[#CB5B6A]"
                 />
-                {method.id === "paystack" ? (
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`p-2 rounded-lg ${
-                        selectedPayment === method.id
-                          ? "bg-[#CB5B6A]/20"
-                          : "bg-gray-100"
-                      }`}
-                    >
-                      <img
-                        src={method.icon}
-                        alt={method.title}
-                        className="w-5 h-5 object-contain"
-                      />
-                    </div>
-                    <span className="font-semibold text-gray-900">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`p-2 rounded-lg ${
+                      selectedPayment === method.id
+                        ? "bg-[#CB5B6A]/20"
+                        : "bg-gray-100"
+                    }`}
+                  >
+                    <img
+                      src={method.icon}
+                      alt={method.title}
+                      className="w-5 h-5 object-contain"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
                       {method.title}
-                    </span>
+                    </h4>
+                    {method.description && (
+                      <p className="text-sm text-gray-500">
+                        {method.description}
+                      </p>
+                    )}
                   </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`p-2 rounded-lg ${
-                        selectedPayment === method.id
-                          ? "bg-[#CB5B6A]/20"
-                          : "bg-gray-100"
-                      }`}
-                    >
-                      <img
-                        src={method.icon}
-                        alt={method.title}
-                        className="w-5 h-5 object-contain"
-                      />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">
-                        {method.title}
-                      </h4>
-                      {method.description && (
-                        <p className="text-sm text-gray-500">
-                          {method.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
+                </div>
               </label>
             ))}
           </div>
@@ -139,7 +133,7 @@ const PaymentComponent = () => {
 
         {/* Order Summary Section */}
         <div className="space-y-6 border border-gray-200 rounded-lg p-8">
-          <div className=" space-y-4">
+          <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">Summary</h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
@@ -183,6 +177,54 @@ const PaymentComponent = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal for PaymentForm */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="relative bg-white rounded-lg max-w-2xl w-full">
+            <button
+              onClick={closeModal}
+              className="absolute top-2 h-4 right-2 text-gray-600 hover:text-gray-800"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <PaymentForm
+              total={total}
+              items={items}
+              address={selectedAddress}
+              onSuccess={() =>
+                navigate("/order-success", {
+                  state: {
+                    orderId: `SABIL-${new Date()
+                      .toISOString()
+                      .split("T")[0]
+                      .replace(/-/g, "")}-${Math.floor(Math.random() * 10000)}`,
+                    items,
+                    subtotal,
+                    vat,
+                    delivery,
+                    total,
+                    address: selectedAddress,
+                  },
+                })
+              }
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

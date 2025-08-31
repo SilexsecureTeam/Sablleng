@@ -3,6 +3,7 @@ import { CartContext } from "./CartContextObject";
 
 export const CartProvider = ({ children }) => {
   const [items, setItems] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
 
   const updateQuantity = (id, newQuantity) => {
     if (newQuantity < 1) return;
@@ -26,9 +27,21 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  const clearCart = () => {
+    setItems([]);
+  };
+
   return (
     <CartContext.Provider
-      value={{ items, updateQuantity, removeItem, addItem }}
+      value={{
+        items,
+        updateQuantity,
+        removeItem,
+        addItem,
+        clearCart,
+        selectedAddress,
+        setSelectedAddress,
+      }}
     >
       {children}
     </CartContext.Provider>

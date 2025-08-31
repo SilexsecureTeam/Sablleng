@@ -1,21 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Edit, Plus, Truck, Clock, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { CartContext } from "../context/CartContextObject";
 
 const DeliveryDetails = () => {
+  const { setSelectedAddress } = useContext(CartContext);
   const [addresses, setAddresses] = useState([
     {
       id: 1,
-      name: "32 Oyegipwua Oshodi Ikojipu | Lagos - OSHODI-MAFOLUKU | +234 7063673967",
+      name: "John O. - +2348037358599",
+      address: "17 Adesola Odeku St, Victoria Island, Lagos",
     },
     {
       id: 2,
-      name: "32 Oyegipwua Oshodi Ikojipu | Lagos - OSHODI-MAFOLUKU | +234 7063673967",
+      name: "John O. - +2347063673967",
+      address: "32 Oyegipwua Oshodi Ikojipu, Lagos - OSHODI-MAFOLUKU",
     },
   ]);
   const [selectedDelivery, setSelectedDelivery] = useState("standard");
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [newAddress, setNewAddress] = useState("");
+  const [selectedAddressId, setSelectedAddressId] = useState(
+    addresses[0]?.id || null
+  );
   const navigate = useNavigate();
 
   const deliveryOptions = [
@@ -25,7 +32,7 @@ const DeliveryDetails = () => {
       title: "Standard",
       subtitle: "3 - 5 days",
       price: "Free",
-      value: 0, // For calculation
+      value: 0,
     },
     {
       id: "express",
@@ -47,16 +54,48 @@ const DeliveryDetails = () => {
 
   const addNewAddress = () => {
     if (newAddress.trim()) {
-      setAddresses([
-        ...addresses,
-        {
-          id: addresses.length + 1,
-          name: newAddress.trim(),
-        },
-      ]);
+      const newId = addresses.length + 1;
+      const newAddr = {
+        id: newId,
+        name: "User", // Ideally, get user name from auth context
+        address: newAddress.trim(),
+      };
+      setAddresses([...addresses, newAddr]);
+      setSelectedAddressId(newId);
+      setSelectedAddress(newAddr);
       setNewAddress("");
       setShowAddressForm(false);
     }
+  };
+
+  const handleContinue = () => {
+    const selectedAddr = addresses.find(
+      (addr) => addr.id === selectedAddressId
+    );
+    setSelectedAddress(selectedAddr);
+    const selectedDeliveryOption = deliveryOptions.find(
+      (opt) => opt.id === selectedDelivery
+    );
+    // Explicitly create a serializable delivery object
+    const serializableDelivery = {
+      id: selectedDeliveryOption.id,
+      title: selectedDeliveryOption.title,
+      subtitle: selectedDeliveryOption.subtitle,
+      price: selectedDeliveryOption.price,
+      value: selectedDeliveryOption.value,
+    };
+    // Ensure selectedAddr is serializable
+    const serializableAddress = {
+      id: selectedAddr.id,
+      name: selectedAddr.name,
+      address: selectedAddr.address,
+    };
+    navigate("/payment", {
+      state: {
+        selectedDelivery: serializableDelivery,
+        selectedAddress: serializableAddress, // Include address if needed in PaymentComponent
+      },
+    });
   };
 
   return (
@@ -71,9 +110,15 @@ const DeliveryDetails = () => {
             {addresses.map((address) => (
               <div
                 key={address.id}
-                className="bg-gray-100 rounded-lg p-4 relative group"
+                className={`bg-gray-100 rounded-lg p-4 relative group cursor-pointer ${
+                  selectedAddressId === address.id
+                    ? "border-2 border-[#CB5B6A]"
+                    : ""
+                }`}
+                onClick={() => setSelectedAddressId(address.id)}
               >
                 <p className="text-sm text-gray-700 pr-8">{address.name}</p>
+                <p className="text-sm text-gray-700">{address.address}</p>
                 <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
                   <Edit size={16} />
                 </button>
@@ -111,7 +156,7 @@ const DeliveryDetails = () => {
           ) : (
             <button
               onClick={() => setShowAddressForm(true)}
-              className="w-full border-2 border border-gray-300 rounded-lg p-4 flex items-center justify-center gap-2 text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors group"
+              className="w-full border-2 border-gray-300 rounded-lg p-4 flex items-center justify-center gap-2 text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors group"
             >
               <Plus
                 size={20}
@@ -124,7 +169,7 @@ const DeliveryDetails = () => {
 
         {/* Delivery Options Section */}
         <div className="space-y-6 border border-gray-200 rounded-lg p-8">
-          <div className="">
+          <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Delivery
             </h3>
@@ -188,7 +233,7 @@ const DeliveryDetails = () => {
             })}
           </div>
           <button
-            onClick={() => navigate("/payment")}
+            onClick={handleContinue}
             className="w-full bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
           >
             Continue to Payment
