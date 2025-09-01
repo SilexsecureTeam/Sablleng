@@ -8,6 +8,7 @@ const HomePage = lazy(() => import("./Pages/HomePage"));
 const AboutPage = lazy(() => import("./Pages/AboutPage"));
 const NotFound = lazy(() => import("./Components/NotFound"));
 const ProductPage = lazy(() => import("./Pages/ProductPage"));
+const CategoryPage = lazy(() => import("./Pages/CategoryPage"));
 const ContactPage = lazy(() => import("./Pages/ContactPage"));
 const CartPage = lazy(() => import("./Pages/CartPage"));
 const DeliveryPage = lazy(() => import("./Pages/DeliveryPage"));
@@ -17,6 +18,8 @@ const OrderTracking = lazy(() => import("./Components/OrderTracking"));
 const SignIn = lazy(() => import("./Auth/SignIn"));
 const SignUp = lazy(() => import("./Auth/SignUp"));
 const OtpPage = lazy(() => import("./Auth/OTP"));
+// const CustomizablePage = lazy(() => import("./Pages/CustomizablePage"));
+const CustomizablePage = lazy(() => import("./Pages/Customizable"));
 
 const LoadingSpinner = () => {
   return (
@@ -25,14 +28,11 @@ const LoadingSpinner = () => {
       aria-label="Loading content"
     >
       <div className="relative">
-        {/* Outer Spinner */}
         <div className="absolute inset-0 w-32 h-32 border-4 border-transparent border-t-[#CB5B6A] border-r-[#E07B8A] rounded-full animate-spin"></div>
-        {/* Inner Spinner */}
         <div
           className="absolute inset-2 w-28 h-28 border-4 border-transparent border-t-[#A84957] border-l-[#CB5B6A] rounded-full animate-spin"
           style={{ animationDirection: "reverse", animationDuration: "1.5s" }}
         ></div>
-        {/* Logo Container */}
         <div className="relative w-32 h-32 flex items-center justify-center">
           <div className="absolute inset-4 bg-white rounded-full shadow-2xl animate-pulse"></div>
           <img
@@ -42,13 +42,11 @@ const LoadingSpinner = () => {
             style={{ animationDuration: "2s" }}
           />
         </div>
-        {/* Ping Dots */}
         <div className="absolute top-0 left-1/2 w-2 h-2 bg-[#CB5B6A] rounded-full animate-ping transform -translate-x-1/2 -translate-y-2"></div>
         <div className="absolute bottom-0 left-1/2 w-2 h-2 bg-[#E07B8A] rounded-full animate-ping transform -translate-x-1/2 translate-y-2 animation-delay-300"></div>
         <div className="absolute left-0 top-1/2 w-2 h-2 bg-[#A84957] rounded-full animate-ping transform -translate-x-2 -translate-y-1/2 animation-delay-150"></div>
         <div className="absolute right-0 top-1/2 w-2 h-2 bg-[#CB5B6A] rounded-full animate-ping transform translate-x-2 -translate-y-1/2 animation-delay-450"></div>
       </div>
-      {/* Loading Text */}
       <div className="absolute mt-48">
         <div className="flex items-center space-x-2">
           <span className="text-lg font-semibold text-[#CB5B6A]">Loading</span>
@@ -85,6 +83,10 @@ const App = () => {
               <Route path="/about" element={<AboutPage />} />
               <Route path="/product" element={<ProductPage />} />
               <Route path="/product/:id" element={<ProductPage />} />
+              <Route
+                path="/categories/:categorySlug"
+                element={<CategoryPage />}
+              />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/delivery" element={<DeliveryPage />} />
               <Route path="/payment" element={<PaymentPage />} />
@@ -94,6 +96,8 @@ const App = () => {
               <Route path="/signup" element={<SignUp />} />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/otp" element={<OtpPage />} />
+              <Route path="/customize" element={<CustomizablePage />} />
+              {/* Add this route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

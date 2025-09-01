@@ -2,13 +2,18 @@ import React, { useState, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
 import { CartContext } from "../context/CartContextObject";
 import products from "../data/products";
-import ImageUploadComponent from "./ImageUploadComponent"; // Import the component
+import ImageUploadComponent from "./ImageUploadComponent";
 
 const ProductDetail = ({ id }) => {
   const { addItem } = useContext(CartContext);
   const [selectedColor, setSelectedColor] = useState("white");
   const [quantity, setQuantity] = useState(1);
-  const [isCustomizing, setIsCustomizing] = useState(false); // New state for toggling customization
+  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [selectedThumbnail, setSelectedThumbnail] = useState({
+    index: 0,
+    bgColor: "bg-gray-50",
+    image: null,
+  });
   const sliderRef = useRef(null);
 
   const colors = [
@@ -19,6 +24,16 @@ const ProductDetail = ({ id }) => {
   ];
 
   const product = products.find((p) => p.id === parseInt(id));
+
+  // Define thumbnails after product is initialized
+  const thumbnails = product
+    ? [
+        { bgColor: "bg-blue-100", image: product.image },
+        { bgColor: "bg-green-100", image: product.image },
+        { bgColor: "bg-red-100", image: product.image },
+        { bgColor: "bg-yellow-100", image: product.image },
+      ]
+    : [];
 
   if (!product) {
     return (
@@ -34,6 +49,15 @@ const ProductDetail = ({ id }) => {
         </Link>
       </div>
     );
+  }
+
+  // Set initial thumbnail image and background
+  if (!selectedThumbnail.image) {
+    setSelectedThumbnail({
+      index: 0,
+      bgColor: thumbnails[0].bgColor,
+      image: product.image,
+    });
   }
 
   const relatedProducts = products.filter(
@@ -58,7 +82,7 @@ const ProductDetail = ({ id }) => {
       name: product.name,
       model: product.model,
       price: parseFloat(product.price.replace("₦", "")) * 1000,
-      image: product.image,
+      image: selectedThumbnail.image,
       quantity: quantity,
     });
     setQuantity(1);
@@ -72,11 +96,18 @@ const ProductDetail = ({ id }) => {
 
   const handleOrderNow = () => {
     console.log("Order Now clicked for", product.name);
-    // Add actual order processing logic here if needed
   };
 
   const handleCustomize = () => {
-    setIsCustomizing(true); // Switch to customization mode
+    setIsCustomizing(true);
+  };
+
+  const handleThumbnailClick = (index, thumbnail) => {
+    setSelectedThumbnail({
+      index,
+      bgColor: thumbnail.bgColor,
+      image: thumbnail.image,
+    });
   };
 
   return (
@@ -87,27 +118,36 @@ const ProductDetail = ({ id }) => {
           {isCustomizing ? (
             <ImageUploadComponent
               productId={id}
-              onBack={() => setIsCustomizing(false)} // Pass a callback to return to product section
+              onBack={() => setIsCustomizing(false)}
             />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <div className="space-y-6">
-                <div className="bg-gray-50 rounded-lg p-8 flex items-center justify-center">
+                <div
+                  className={`rounded-lg p-8 flex items-center justify-center ${selectedThumbnail.bgColor}`}
+                >
                   <img
-                    src={product.image}
+                    src={selectedThumbnail.image || product.image}
                     alt={product.name}
                     className="max-h-64 md:h-80 max-w-full object-contain"
                   />
                 </div>
                 <div className="flex space-x-4">
-                  {[1, 2, 3, 4].map((index) => (
+                  {thumbnails.map((thumbnail, index) => (
                     <div
                       key={index}
-                      className="w-20 h-20 bg-gray-100 rounded border flex items-center justify-center"
+                      className={`w-20 h-20 ${
+                        thumbnail.bgColor
+                      } rounded border flex items-center justify-center cursor-pointer ${
+                        selectedThumbnail.index === index
+                          ? "border-gray-800 border-2"
+                          : "border-gray-300"
+                      }`}
+                      onClick={() => handleThumbnailClick(index, thumbnail)}
                     >
                       <img
-                        src={product.image}
-                        alt={`${product.name} thumbnail ${index}`}
+                        src={thumbnail.image}
+                        alt={`${product.name} thumbnail ${index + 1}`}
                         className="max-h-16 max-w-full object-contain"
                       />
                     </div>

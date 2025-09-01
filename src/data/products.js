@@ -10,6 +10,7 @@ const products = [
     price: "₦29.99",
     image: prod,
     category: "Start Customizing",
+    type: "Tech Gadgets",
     badge: "Customizable",
     reviews: {
       averageRating: 4.8,
@@ -38,6 +39,7 @@ const products = [
     price: "₦35.99",
     image: prod1,
     category: "Start Customizing",
+    type: "Tech Gadgets",
     badge: "Customizable",
     reviews: {
       averageRating: 4.6,
@@ -66,6 +68,7 @@ const products = [
     price: "₦52.99",
     image: prod2,
     category: "Product Overview",
+    type: "Tech Gadgets",
     badge: null,
     reviews: {
       averageRating: 4.7,
@@ -94,6 +97,7 @@ const products = [
     price: "₦38.99",
     image: prod,
     category: "Product Overview",
+    type: "Tech Gadgets",
     badge: null,
     reviews: {
       averageRating: 4.6,
@@ -122,6 +126,7 @@ const products = [
     price: "₦42.99",
     image: prod1,
     category: "Start Customizing",
+    type: "Audio",
     badge: "Customizable",
     reviews: {
       averageRating: 4.5,
@@ -150,6 +155,7 @@ const products = [
     price: "₦27.99",
     image: prod2,
     category: "Product Overview",
+    type: "Office and writing tools",
     badge: null,
     reviews: {
       averageRating: 4.4,
@@ -178,6 +184,7 @@ const products = [
     price: "₦31.99",
     image: prod,
     category: "Start Customizing",
+    type: "Audio",
     badge: "Customizable",
     reviews: {
       averageRating: 4.7,
@@ -206,6 +213,7 @@ const products = [
     price: "₦55.99",
     image: prod1,
     category: "Product Overview",
+    type: "Tech Gadgets",
     badge: null,
     reviews: {
       averageRating: 4.5,
@@ -234,6 +242,7 @@ const products = [
     price: "₦47.99",
     image: prod2,
     category: "Start Customizing",
+    type: "Audio",
     badge: "Customizable",
     reviews: {
       averageRating: 4.8,
@@ -262,6 +271,7 @@ const products = [
     price: "₦25.99",
     image: prod,
     category: "Product Overview",
+    type: "Tech Gadgets",
     badge: null,
     reviews: {
       averageRating: 4.3,
@@ -290,6 +300,7 @@ const products = [
     price: "₦33.99",
     image: prod1,
     category: "Start Customizing",
+    type: "Office and writing tools",
     badge: "Customizable",
     reviews: {
       averageRating: 4.6,
@@ -318,6 +329,7 @@ const products = [
     price: "₦62.99",
     image: prod2,
     category: "Product Overview",
+    type: "Audio",
     badge: null,
     reviews: {
       averageRating: 4.9,
@@ -346,6 +358,7 @@ const products = [
     price: "₦49.99",
     image: prod,
     category: "Start Customizing",
+    type: "Tech Gadgets",
     badge: "Customizable",
     reviews: {
       averageRating: 4.5,
@@ -374,6 +387,7 @@ const products = [
     price: "₦73.99",
     image: prod1,
     category: "Product Overview",
+    type: "Home and outdoor",
     badge: null,
     reviews: {
       averageRating: 4.7,
@@ -402,6 +416,7 @@ const products = [
     price: "₦78.99",
     image: prod2,
     category: "Product Overview",
+    type: "Tech Gadgets",
     badge: null,
     reviews: {
       averageRating: 4.6,
@@ -423,6 +438,181 @@ const products = [
       ],
     },
   },
+  {
+  id: 16,
+  name: "Smart Fitness Band",
+  model: "FitPulse X",
+  price: 69.99,
+  image: prod,
+  category: "Product Overview",
+  type: "Tech Gadgets",
+ badge: null,
+    reviews: {
+      averageRating: 4.6,
+      totalReviews: 85,
+      ratings: [
+        { label: "Excellent", value: 70, color: "bg-yellow-400" },
+        { label: "Good", value: 20, color: "bg-yellow-400" },
+        { label: "Average", value: 5, color: "bg-yellow-400" },
+        { label: "Below Average", value: 3, color: "bg-yellow-400" },
+        { label: "Poor", value: 2, color: "bg-yellow-400" },
+      ],
+      comments: [
+        {
+          author: "Alice Brown",
+          date: "5 April 2023",
+          rating: 4,
+          text: "Solid product, but could use more customization options.",
+        },
+      ],
+    },
+},
+{
+  id: 17,
+  name: "Wireless Speaker",
+  model: "BoomBox Mini",
+  price: 59.99,
+  image: prod1,
+  category: "Start Customizing",
+  type: "Audio",
+  badge: null,
+    reviews: {
+      averageRating: 4.6,
+      totalReviews: 85,
+      ratings: [
+        { label: "Excellent", value: 70, color: "bg-yellow-400" },
+        { label: "Good", value: 20, color: "bg-yellow-400" },
+        { label: "Average", value: 5, color: "bg-yellow-400" },
+        { label: "Below Average", value: 3, color: "bg-yellow-400" },
+        { label: "Poor", value: 2, color: "bg-yellow-400" },
+      ],
+      comments: [
+        {
+          author: "Alice Brown",
+          date: "5 April 2023",
+          rating: 4,
+          text: "Solid product, but could use more customization options.",
+        },
+      ],
+    },
+},
+{
+  id: 18,
+  name: "Executive Pen Set",
+  model: "InkPro Elite",
+  price: 24.99,
+  image: prod2,
+  category: "Product Overview",
+  type: "Office and Writing Tools",
+  badge: null,
+    reviews: {
+      averageRating: 4.6,
+      totalReviews: 85,
+      ratings: [
+        { label: "Excellent", value: 70, color: "bg-yellow-400" },
+        { label: "Good", value: 20, color: "bg-yellow-400" },
+        { label: "Average", value: 5, color: "bg-yellow-400" },
+        { label: "Below Average", value: 3, color: "bg-yellow-400" },
+        { label: "Poor", value: 2, color: "bg-yellow-400" },
+      ],
+      comments: [
+        {
+          author: "Alice Brown",
+          date: "5 April 2023",
+          rating: 4,
+          text: "Solid product, but could use more customization options.",
+        },
+      ],
+    },
+},
+{
+  id: 19,
+  name: "Travel Backpack",
+  model: "Voyager Max",
+  price: 89.99,
+  image: prod,
+  category: "Start Customizing",
+  type: "Bags and Travel",
+ badge: null,
+    reviews: {
+      averageRating: 4.6,
+      totalReviews: 85,
+      ratings: [
+        { label: "Excellent", value: 70, color: "bg-yellow-400" },
+        { label: "Good", value: 20, color: "bg-yellow-400" },
+        { label: "Average", value: 5, color: "bg-yellow-400" },
+        { label: "Below Average", value: 3, color: "bg-yellow-400" },
+        { label: "Poor", value: 2, color: "bg-yellow-400" },
+      ],
+      comments: [
+        {
+          author: "Alice Brown",
+          date: "5 April 2023",
+          rating: 4,
+          text: "Solid product, but could use more customization options.",
+        },
+      ],
+    },
+},
+{
+  id: 20,
+  name: "Insulated Water Bottle",
+  model: "HydroChill 1L",
+  price: 29.99,
+  image: prod1,
+  category: "Product Overview",
+  type: "Drink Ware",
+badge: null,
+    reviews: {
+      averageRating: 4.6,
+      totalReviews: 85,
+      ratings: [
+        { label: "Excellent", value: 70, color: "bg-yellow-400" },
+        { label: "Good", value: 20, color: "bg-yellow-400" },
+        { label: "Average", value: 5, color: "bg-yellow-400" },
+        { label: "Below Average", value: 3, color: "bg-yellow-400" },
+        { label: "Poor", value: 2, color: "bg-yellow-400" },
+      ],
+      comments: [
+        {
+          author: "Alice Brown",
+          date: "5 April 2023",
+          rating: 4,
+          text: "Solid product, but could use more customization options.",
+        },
+      ],
+    },
+},
+{
+  id: 21,
+  name: "Chocolate Gift Box",
+  model: "SweetBites Deluxe",
+  price: 39.99,
+  image: prod2,
+  category: "Start Customizing",
+  type: "Edibles",
+ badge: null,
+    reviews: {
+      averageRating: 4.6,
+      totalReviews: 85,
+      ratings: [
+        { label: "Excellent", value: 70, color: "bg-yellow-400" },
+        { label: "Good", value: 20, color: "bg-yellow-400" },
+        { label: "Average", value: 5, color: "bg-yellow-400" },
+        { label: "Below Average", value: 3, color: "bg-yellow-400" },
+        { label: "Poor", value: 2, color: "bg-yellow-400" },
+      ],
+      comments: [
+        {
+          author: "Alice Brown",
+          date: "5 April 2023",
+          rating: 4,
+          text: "Solid product, but could use more customization options.",
+        },
+      ],
+    },
+},
+
 ];
 
 export default products;

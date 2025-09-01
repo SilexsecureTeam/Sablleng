@@ -40,6 +40,17 @@ const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Define category types and their route-friendly slugs
+  const categories = [
+    { name: "Tech Gadgets", slug: "tech-gadgets" },
+    { name: "Audio", slug: "audio" },
+    { name: "Office and writing tools", slug: "office-and-writing-tools" },
+    { name: "Bags and Travel", slug: "bags-and-travel" },
+    { name: "Drink ware", slug: "drink-ware" },
+    { name: "Home and outdoor", slug: "home-and-outdoor" },
+    { name: "Edibles", slug: "edibles" },
+  ];
+
   return (
     <header className="bg-white sticky top-0 z-50">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 flex items-center justify-between py-3 md:py-4">
@@ -57,7 +68,7 @@ const Header = () => {
             Home
           </Link>
           <div
-            className="relative group hidden"
+            className="relative group"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
@@ -72,24 +83,15 @@ const Header = () => {
             </button>
             {categoryOpen && (
               <div className="absolute left-0 top-full mt-2 w-56 bg-white shadow-lg rounded-lg py-2 border border-gray-100 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out transform scale-95 group-hover:scale-100">
-                <Link
-                  to="/categories/electronics"
-                  className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
-                >
-                  Bag & Travel
-                </Link>
-                <Link
-                  to="/categories/fashion"
-                  className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
-                >
-                  Corporate Gift
-                </Link>
-                <Link
-                  to="/categories/books"
-                  className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
-                >
-                  Home and Indoor
-                </Link>
+                {categories.map((category) => (
+                  <Link
+                    key={category.slug}
+                    to={`/categories/${category.slug}`}
+                    className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                  >
+                    {category.name}
+                  </Link>
+                ))}
               </div>
             )}
           </div>
@@ -121,7 +123,7 @@ const Header = () => {
           >
             <Search size={22} />
           </button>
-          <Link to="signup">
+          <Link to="/signup">
             <button
               className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200"
               aria-label="User Profile"
@@ -129,7 +131,6 @@ const Header = () => {
               <User size={22} />
             </button>
           </Link>
-
           <Link
             to="/cart"
             className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200 relative"
@@ -142,16 +143,12 @@ const Header = () => {
               </span>
             )}
           </Link>
-
-          {/* CTA Button */}
           <Link
-            to="/product"
+            to="/customize"
             className="hidden md:inline-block ml-6 bg-[#CB5B6A] text-white px-4 py-2 rounded-full shadow hover:bg-[#b34f5c] transition-colors duration-200"
           >
             Customize Item
           </Link>
-
-          {/* Mobile Menu Button */}
           <button
             className="md:hidden text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
             onClick={() => setMobileMenu(!mobileMenu)}
@@ -175,9 +172,9 @@ const Header = () => {
           >
             Home
           </Link>
-          <div className="hidden">
+          <div>
             <button
-              className="w-full  flex items-center justify-between px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+              className="w-full flex items-center justify-between px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
               onClick={() => setCategoryOpen(!categoryOpen)}
             >
               Categories{" "}
@@ -190,27 +187,16 @@ const Header = () => {
             </button>
             {categoryOpen && (
               <div className="pl-6 bg-gray-50 rounded-lg">
-                <Link
-                  to="/categories/electronics"
-                  className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
-                  onClick={() => setMobileMenu(false)}
-                >
-                  Bag & Travel
-                </Link>
-                <Link
-                  to="/categories/fashion"
-                  className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
-                  onClick={() => setMobileMenu(false)}
-                >
-                  Corporate Gift
-                </Link>
-                <Link
-                  to="/categories/books"
-                  className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
-                  onClick={() => setMobileMenu(false)}
-                >
-                  Home & Indoor
-                </Link>
+                {categories.map((category) => (
+                  <Link
+                    key={category.slug}
+                    to={`/categories/${category.slug}`}
+                    className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                    onClick={() => setMobileMenu(false)}
+                  >
+                    {category.name}
+                  </Link>
+                ))}
               </div>
             )}
           </div>
