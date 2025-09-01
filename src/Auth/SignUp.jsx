@@ -57,19 +57,19 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row font-poppins">
+    <div className="min-h-screen lg:h-screen h-fit flex flex-col md:flex-row font-poppins items-stretch">
       {/* Left Side - Image */}
-      <div className="hidden md:flex md:w-1/2 bg-gray-100 items-center justify-center">
+      <div className="hidden md:flex md:w-1/2 bg-gray-100">
         <img
           src={auth}
           alt="Contact form background"
-          className="w-full h-full object-cover min-h-[500px] max-h-[680px]"
+          className="w-full h-full object-cover"
         />
       </div>
 
       {/* Right Side - Form */}
-      <div className="w-full md:w-1/2 bg-white flex flex-col items-center justify-center min-h-screen md:min-h-0 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md flex flex-col justify-center md:h-[600px]">
+      <div className="w-full md:w-1/2 bg-white flex flex-col items-center justify-start p-8">
+        <div className="w-full max-w-md">
           {/* Logo */}
           <img src={logo} alt="Logo" className="mb-6 w-32 h-auto mx-auto" />
 
@@ -77,7 +77,7 @@ const SignUp = () => {
           <h2 className="text-xl sm:text-2xl font-medium text-gray-800 mb-2 text-left">
             Sign Up
           </h2>
-          <p className="text-base text-[#141718] mb-6 text-left">
+          <p className="text-base text-[#141718] mb-4 text-left">
             Already have an account?{" "}
             <a href="/signin" className="text-[#CB5B6A] hover:underline">
               Sign in
@@ -85,7 +85,7 @@ const SignUp = () => {
           </p>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="w-full space-y-3">
+          <form onSubmit={handleSubmit} className="w-full space-y-2">
             <input
               type="text"
               name="name"
