@@ -15,6 +15,9 @@ const DeliveryPage = lazy(() => import("./Pages/DeliveryPage"));
 const PaymentPage = lazy(() => import("./Pages/PaymentPage"));
 const PrivacyPage = lazy(() => import("./Pages/PrivacyPage"));
 const TermsPage = lazy(() => import("./Pages/TermsPage"));
+const CookiesPage = lazy(() => import("./Pages/CookiesPage"));
+const CareerPage = lazy(() => import("./Pages/CareerPage"));
+const FaqPage = lazy(() => import("./Pages/FaqPage"));
 const OrderSuccess = lazy(() => import("./Components/OrderSuccess"));
 const OrderTracking = lazy(() => import("./Components/OrderTracking"));
 const SignIn = lazy(() => import("./Auth/SignIn"));
@@ -100,7 +103,10 @@ const App = () => {
               <Route path="/otp" element={<OtpPage />} />
               <Route path="/customize" element={<CustomizablePage />} />
               <Route path="/terms" element={<TermsPage />} />
+              <Route path="/cookie-policy" element={<CookiesPage />} />
               <Route path="/privacy-policy" element={<PrivacyPage />} />
+              <Route path="/careers" element={<CareerPage />} />
+              <Route path="/faqs" element={<FaqPage />} />
               {/* Add this route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
