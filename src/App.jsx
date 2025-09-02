@@ -13,6 +13,8 @@ const ContactPage = lazy(() => import("./Pages/ContactPage"));
 const CartPage = lazy(() => import("./Pages/CartPage"));
 const DeliveryPage = lazy(() => import("./Pages/DeliveryPage"));
 const PaymentPage = lazy(() => import("./Pages/PaymentPage"));
+const PrivacyPage = lazy(() => import("./Pages/PrivacyPage"));
+const TermsPage = lazy(() => import("./Pages/TermsPage"));
 const OrderSuccess = lazy(() => import("./Components/OrderSuccess"));
 const OrderTracking = lazy(() => import("./Components/OrderTracking"));
 const SignIn = lazy(() => import("./Auth/SignIn"));
@@ -97,6 +99,8 @@ const App = () => {
               <Route path="/signin" element={<SignIn />} />
               <Route path="/otp" element={<OtpPage />} />
               <Route path="/customize" element={<CustomizablePage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy-policy" element={<PrivacyPage />} />
               {/* Add this route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
