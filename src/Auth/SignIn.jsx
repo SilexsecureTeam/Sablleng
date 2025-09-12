@@ -1,6 +1,6 @@
 // src/components/SignIn.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import auth from "../assets/auth2.png";
 import logo from "../assets/logo.png";
@@ -60,7 +60,9 @@ const SignIn = () => {
       <div className="w-full md:w-1/2 bg-white flex flex-col items-center justify-center p-8">
         <div className="w-full max-w-md">
           {/* Logo */}
-          <img src={logo} alt="Logo" className="mb-6 w-32 h-auto mx-auto" />
+          <Link className="cursor-pointer" to="/">
+            <img src={logo} alt="Logo" className="mb-6 w-32 h-auto mx-auto" />
+          </Link>
 
           {/* Title */}
           <h2 className="text-xl sm:text-2xl font-medium text-gray-800 mb-2 ">

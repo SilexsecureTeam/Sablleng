@@ -13,10 +13,10 @@ const Contact = () => {
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8  py-6 md:py-12">
       <div className="flex flex-col md:flex-row space-x-8 space-y-8">
         {/* Left Column - Contact Methods */}
-        <div className="space-y-6 w-full md:w-1/3">
+        <div className="space-y-4 w-full md:w-1/3">
           {/* Visit our Office */}
           <div className="bg-[#F8F8F8] rounded-lg shadow-sm p-6">
-            <div className="flex flex flex-col space-y-2 items-start space-x-4">
+            <div className="flex flex-col space-y-2 items-start space-x-4">
               <div className="bg-red-400 p-3 rounded-lg">
                 <MapPin className="w-6 h-6 text-white" />
               </div>
@@ -25,7 +25,7 @@ const Contact = () => {
                   Visit our Office
                 </h3>
                 <p className="text-[#737272] text-sm">
-                  Victoria Island, Lagos, Nigeria
+                  2, Adebayo Doherty Road, Lekki Phase 1, Lagos, Nigeria
                 </p>
               </div>
             </div>
@@ -42,7 +42,7 @@ const Contact = () => {
                   Send Email
                 </h3>
                 <p className="text-[#737272] text-sm">
-                  Send your mail to: info@cable.ng
+                  Send your mail to: Info@Sablle.ng
                 </p>
               </div>
             </div>
@@ -58,7 +58,7 @@ const Contact = () => {
                 <h3 className="font-semibold text-xl text-[#737272] mb-1">
                   Call or send a whats app text
                 </h3>
-                <p className="text-[#737272] text-sm">+2348187390500</p>
+                <p className="text-[#737272] text-sm">+234 908 559 2888 </p>
               </div>
             </div>
           </div>
@@ -129,11 +129,11 @@ const Contact = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <div className="font-semibold text-gray-900">Mon - Fri</div>
-                <div className="text-gray-600">9:00am - 6:00pm</div>
+                <div className="text-gray-600">9:00am - 8:00PM</div>
               </div>
               <div>
                 <div className="font-semibold text-gray-900">Saturdays</div>
-                <div className="text-gray-600">10:00am - 2:00pm</div>
+                <div className="text-gray-600">1:00PM - 7:00PM </div>
               </div>
             </div>
           </div>

@@ -1,6 +1,5 @@
-// src/components/SignUp.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"; // Added Link for logo
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import auth from "../assets/auth1.png";
 import logo from "../assets/logo.png";
@@ -15,6 +14,7 @@ const SignUp = () => {
     password: "",
     confirmPassword: "",
     agree: false,
+    newsletter: false, // Added for newsletter enrollment
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -45,6 +45,7 @@ const SignUp = () => {
       newErrors.confirmPassword = "Passwords do not match";
     if (!formData.agree)
       newErrors.agree = "You must agree to the Privacy Policy and Terms of Use";
+    // Newsletter is optional, so no validation error
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -52,6 +53,8 @@ const SignUp = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
+      // Optionally, handle newsletter enrollment (e.g., log or send to backend)
+      console.log("Newsletter enrollment:", formData.newsletter);
       navigate("/otp");
     }
   };
@@ -63,15 +66,21 @@ const SignUp = () => {
         <img
           src={auth}
           alt="Contact form background"
-          className="w-full h-full object-cover"
+          className="w-full h-full min-h-screen object-cover"
         />
       </div>
 
       {/* Right Side - Form */}
       <div className="w-full md:w-1/2 bg-white flex flex-col items-center justify-start p-8">
         <div className="w-full max-w-md">
-          {/* Logo */}
-          <img src={logo} alt="Logo" className="mb-6 w-32 h-auto mx-auto" />
+          {/* Logo - Clickable to Home */}
+          <Link to="/">
+            <img
+              src={logo}
+              alt="Brand Logo"
+              className="mb-6 w-32 h-auto mx-auto cursor-pointer"
+            />
+          </Link>
 
           {/* Title */}
           <h2 className="text-xl sm:text-2xl font-medium text-gray-800 mb-2 text-left">
@@ -152,6 +161,7 @@ const SignUp = () => {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#CB5B6A] hover:text-[#CB5B6A]/80"
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? (
                   <EyeSlashIcon className="h-5 w-5" />
@@ -178,6 +188,11 @@ const SignUp = () => {
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#CB5B6A] hover:text-[#CB5B6A]/80"
+                aria-label={
+                  showConfirmPassword
+                    ? "Hide confirm password"
+                    : "Show confirm password"
+                }
               >
                 {showConfirmPassword ? (
                   <EyeSlashIcon className="h-5 w-5" />
@@ -190,7 +205,7 @@ const SignUp = () => {
               <p className="text-red-500 text-sm">{errors.confirmPassword}</p>
             )}
 
-            <div className="flex items-center space-x-2 py-3">
+            <div className="flex items-center space-x-2 py-3 mb-0">
               <input
                 type="checkbox"
                 name="agree"
@@ -219,6 +234,19 @@ const SignUp = () => {
             {errors.agree && (
               <p className="text-red-500 text-sm">{errors.agree}</p>
             )}
+
+            <div className="flex items-center mb-0 space-x-2 py-3">
+              <input
+                type="checkbox"
+                name="newsletter"
+                checked={formData.newsletter}
+                onChange={handleChange}
+                className="h-4 w-4 text-[#CB5B6A] focus:ring-[#CB5B6A]/80 border-gray-300 rounded"
+              />
+              <label className="text-sm text-[#6C7275]">
+                Subscribe to newsletters, exclusive offers, and promotions
+              </label>
+            </div>
 
             <button
               type="submit"
