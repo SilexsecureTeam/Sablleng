@@ -25,6 +25,7 @@ const SignUp = lazy(() => import("./Auth/SignUp"));
 const OtpPage = lazy(() => import("./Auth/OTP"));
 // const CustomizablePage = lazy(() => import("./Pages/CustomizablePage"));
 const CustomizablePage = lazy(() => import("./Pages/Customizable"));
+const DashboardLayout = lazy(() => import("./Pages/DashboardLayout"));
 
 const LoadingSpinner = () => {
   return (
@@ -107,6 +108,7 @@ const App = () => {
               <Route path="/privacy-policy" element={<PrivacyPage />} />
               <Route path="/careers" element={<CareerPage />} />
               <Route path="/faqs" element={<FaqPage />} />
+              <Route path="/dashboard/*" element={<DashboardLayout />} />
               {/* Add this route */}
               <Route path="*" element={<NotFound />} />
             </Routes>

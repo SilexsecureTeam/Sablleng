@@ -68,7 +68,7 @@ const Header = () => {
             Home
           </Link>
           <div
-            className="relative group"
+            className="relative group hidden"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
@@ -102,7 +102,8 @@ const Header = () => {
             About Us
           </Link>
           <Link
-            to="/product"
+            to="#"
+            onClick={(e) => e.preventDefault()}
             className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
           >
             Product
@@ -144,7 +145,8 @@ const Header = () => {
             )}
           </Link>
           <Link
-            to="/customize"
+            to="#"
+            onClick={(e) => e.preventDefault()}
             className="hidden md:inline-block ml-6 bg-[#CB5B6A] text-white px-4 py-2 rounded-full shadow hover:bg-[#b34f5c] transition-colors duration-200"
           >
             Customize Item
@@ -172,7 +174,7 @@ const Header = () => {
           >
             Home
           </Link>
-          <div>
+          <div className="hidden">
             <button
               className="w-full flex items-center justify-between px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
               onClick={() => setCategoryOpen(!categoryOpen)}
@@ -215,7 +217,7 @@ const Header = () => {
             Product
           </Link>
           <Link
-            to="/contact"
+            to="#"
             className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
             onClick={() => setMobileMenu(false)}
           >
@@ -229,7 +231,7 @@ const Header = () => {
             Cart
           </Link>
           <Link
-            to="/customize"
+            to="#"
             className="block bg-[#CB5B6A] text-white text-center mx-3 my-2 py-2 rounded-lg hover:bg-[#b34f5c] transition-colors duration-200"
             onClick={() => setMobileMenu(false)}
           >

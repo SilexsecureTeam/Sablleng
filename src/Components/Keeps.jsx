@@ -1,7 +1,7 @@
 // src/pages/OtpPage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import auth from "../assets/auth3.png";
+import auth from "../assets/auth1.png";
 import logo from "../assets/logo.png";
 
 const OtpPage = () => {
@@ -59,7 +59,7 @@ const OtpPage = () => {
         <img
           src={auth}
           alt="OTP verification background"
-          className="w-full h-full object-fill"
+          className="w-full h-full object-cover"
           loading="lazy"
         />
       </div>

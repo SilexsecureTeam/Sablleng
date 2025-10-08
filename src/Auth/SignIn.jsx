@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import auth from "../assets/auth2.png";
+import auth from "../assets/auth3.png";
 import logo from "../assets/logo.png";
 
 const SignIn = () => {
@@ -51,7 +51,7 @@ const SignIn = () => {
         <img
           src={auth}
           alt="Sign in background"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-fill"
           loading="lazy"
         />
       </div>

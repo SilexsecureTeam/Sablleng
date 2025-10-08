@@ -268,7 +268,7 @@ const ProductDetail = ({ id }) => {
                   </button>
                   {product.badge === "Customizable" ? (
                     <button
-                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
+                      className="bg-[#CB5B6A] hidden hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
                       onClick={handleCustomize}
                     >
                       Customize
