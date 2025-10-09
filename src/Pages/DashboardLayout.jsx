@@ -2,6 +2,7 @@
 import React, { useState, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import MainContent from "../Components/Dashboard/MainContent";
+import "../global.css";
 import { lazy } from "react";
 
 // Lazy-loaded components
@@ -49,7 +50,7 @@ const DashboardLayout = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
-        <main className="flex-1 p-6 md:ml-64">
+        <main className="flex-1 md:ml-64">
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               <Route
