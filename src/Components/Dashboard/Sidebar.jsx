@@ -11,12 +11,12 @@ import {
   CreditCard,
   Box,
   Plus,
-  Image,
   List,
   Star,
   Shield,
   Settings,
   UserCog,
+  Archive,
 } from "lucide-react";
 import logo from "../../assets/logo-d.png";
 
@@ -49,6 +49,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home, path: "/dashboard" },
     {
+      id: "product-list",
+      label: "Product List",
+      icon: List,
+      path: "/dashboard/product-list",
+    },
+    {
+      id: "categories",
+      label: "Categories",
+      icon: Grid,
+      path: "/dashboard/categories",
+    },
+    {
       id: "orders",
       label: "Order Management",
       icon: Package,
@@ -61,16 +73,16 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       path: "/dashboard/customers",
     },
     {
+      id: "Inventory",
+      label: "Inventory",
+      icon: Archive,
+      path: "/dashboard/inventories",
+    },
+    {
       id: "coupon-code",
       label: "Coupon Code",
       icon: Tag,
       path: "/dashboard/coupon-code",
-    },
-    {
-      id: "categories",
-      label: "Categories",
-      icon: Grid,
-      path: "/dashboard/categories",
     },
     {
       id: "transaction",
@@ -84,18 +96,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: "Add Products",
       icon: Plus,
       path: "/dashboard/add-products",
-    },
-    {
-      id: "product-media",
-      label: "Product Media",
-      icon: Image,
-      path: "/dashboard/product-media",
-    },
-    {
-      id: "product-list",
-      label: "Product List",
-      icon: List,
-      path: "/dashboard/product-list",
     },
     {
       id: "product-reviews",

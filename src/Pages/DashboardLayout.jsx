@@ -18,7 +18,7 @@ const Categories = lazy(() => import("../Components/Dashboard/Categories"));
 const Transaction = lazy(() => import("../Components/Dashboard/Transaction"));
 const Brand = lazy(() => import("../Components/Dashboard/Brand"));
 const AddProducts = lazy(() => import("../Components/Dashboard/AddProducts"));
-const ProductMedia = lazy(() => import("../Components/Dashboard/ProductMedia"));
+const Inventory = lazy(() => import("../Components/Dashboard/Inventory"));
 const ProductList = lazy(() => import("../Components/Dashboard/ProductList"));
 const ProductReviews = lazy(() =>
   import("../Components/Dashboard/ProductReviews")
@@ -118,10 +118,10 @@ const DashboardLayout = () => {
                 }
               />
               <Route
-                path="/product-media"
+                path="/inventories"
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
-                    <ProductMedia />
+                    <Inventory />
                   </MainContent>
                 }
               />
