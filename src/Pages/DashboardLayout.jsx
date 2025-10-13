@@ -1,4 +1,4 @@
-// src/Pages/DashboardLayout.jsx
+// src/Components/Dashboard/DashboardLayout.jsx
 import React, { useState, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import MainContent from "../Components/Dashboard/MainContent";
@@ -28,6 +28,7 @@ const ProductReviews = lazy(() =>
 const Report = lazy(() => import("../Components/Dashboard/Report"));
 const Settings = lazy(() => import("../Components/Dashboard/Settings"));
 const AdminRole = lazy(() => import("../Components/Dashboard/AdminRole"));
+const ProductView = lazy(() => import("../Components/Dashboard/ProductView"));
 const Sidebar = lazy(() => import("../Components/Dashboard/Sidebar"));
 
 const LoadingSpinner = () => (
@@ -44,14 +45,14 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="flex min-h-screen font-poppins bg-gray-100">
-      {/* Sidebar */}
-      <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+    <Suspense fallback={<LoadingSpinner />}>
+      <div className="flex min-h-screen font-poppins bg-gray-100">
+        {/* Sidebar */}
+        <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 md:ml-64">
-          <Suspense fallback={<LoadingSpinner />}>
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col">
+          <main className="flex-1 md:ml-64">
             <Routes>
               <Route
                 path="/"
@@ -134,6 +135,14 @@ const DashboardLayout = () => {
                 }
               />
               <Route
+                path="/product/:id"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <ProductView />
+                  </MainContent>
+                }
+              />
+              <Route
                 path="/product-reviews"
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
@@ -166,10 +175,10 @@ const DashboardLayout = () => {
                 }
               />
             </Routes>
-          </Suspense>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+    </Suspense>
   );
 };
 
