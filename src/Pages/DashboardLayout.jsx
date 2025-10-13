@@ -16,16 +16,16 @@ const Customers = lazy(() => import("../Components/Dashboard/Customers"));
 const CouponCode = lazy(() => import("../Components/Dashboard/CouponCode"));
 const Categories = lazy(() => import("../Components/Dashboard/Categories"));
 const Transaction = lazy(() => import("../Components/Dashboard/Transaction"));
-const Brand = lazy(() => import("../Components/Dashboard/Brand"));
+const Customization = lazy(() =>
+  import("../Components/Dashboard/Customization")
+);
 const AddProducts = lazy(() => import("../Components/Dashboard/AddProducts"));
 const Inventory = lazy(() => import("../Components/Dashboard/Inventory"));
 const ProductList = lazy(() => import("../Components/Dashboard/ProductList"));
 const ProductReviews = lazy(() =>
   import("../Components/Dashboard/ProductReviews")
 );
-const ControlAuthority = lazy(() =>
-  import("../Components/Dashboard/ControlAuthority")
-);
+const Report = lazy(() => import("../Components/Dashboard/Report"));
 const Settings = lazy(() => import("../Components/Dashboard/Settings"));
 const AdminRole = lazy(() => import("../Components/Dashboard/AdminRole"));
 const Sidebar = lazy(() => import("../Components/Dashboard/Sidebar"));
@@ -102,10 +102,10 @@ const DashboardLayout = () => {
                 }
               />
               <Route
-                path="/brand"
+                path="/customization"
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
-                    <Brand />
+                    <Customization />
                   </MainContent>
                 }
               />
@@ -142,10 +142,10 @@ const DashboardLayout = () => {
                 }
               />
               <Route
-                path="/control-authority"
+                path="/report"
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
-                    <ControlAuthority />
+                    <Report />
                   </MainContent>
                 }
               />

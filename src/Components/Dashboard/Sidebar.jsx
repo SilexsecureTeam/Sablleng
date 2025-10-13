@@ -1,6 +1,5 @@
-// src/Components/Dashboard/Sidebar.jsx
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useContext } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import {
   Home,
@@ -13,11 +12,14 @@ import {
   Plus,
   List,
   Star,
-  Shield,
+  FileText,
   Settings,
   UserCog,
   Archive,
+  LogOut, // Import LogOut from lucide-react
 } from "lucide-react";
+import { AuthContext } from "../../context/AuthContext";
+import SignOutModal from "./SignOutModal";
 import logo from "../../assets/logo-d.png";
 
 // Custom scrollbar styles
@@ -44,6 +46,9 @@ const scrollbarStyles = `
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
+  const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
   const activeItem = location.pathname.split("/").pop() || "dashboard";
 
   const menuItems = [
@@ -85,12 +90,23 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       path: "/dashboard/coupon-code",
     },
     {
+      id: "report",
+      label: "Report",
+      icon: FileText,
+      path: "/dashboard/report",
+    },
+    {
+      id: "customization",
+      label: "Customization",
+      icon: Box,
+      path: "/dashboard/customization",
+    },
+    {
       id: "transaction",
       label: "Transaction",
       icon: CreditCard,
       path: "/dashboard/transaction",
     },
-    { id: "brand", label: "Brand", icon: Box, path: "/dashboard/brand" },
     {
       id: "add-products",
       label: "Add Products",
@@ -102,12 +118,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: "Product Reviews",
       icon: Star,
       path: "/dashboard/product-reviews",
-    },
-    {
-      id: "control-authority",
-      label: "Control Authority",
-      icon: Shield,
-      path: "/dashboard/control-authority",
     },
   ];
 
@@ -124,11 +134,17 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: UserCog,
       path: "/dashboard/admin-role",
     },
+    {
+      id: "logout",
+      label: "Log Out",
+      icon: LogOut,
+      action: () => setIsSignOutModalOpen(true),
+    },
   ];
 
   const MenuItem = ({ item, isActive }) => {
     const Icon = item.icon;
-    return (
+    return item.path ? (
       <Link
         to={item.path}
         className={`w-full flex items-center gap-3 px-5 py-3 text-left transition-all duration-200 ${
@@ -140,7 +156,24 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         <Icon size={18} strokeWidth={2} />
         <span className="text-sm font-medium">{item.label}</span>
       </Link>
+    ) : (
+      <button
+        onClick={item.action}
+        className={`w-full flex items-center gap-3 px-5 py-3 text-left transition-all duration-200 ${
+          isActive
+            ? "bg-white/10 text-white"
+            : "text-white/90 hover:bg-white/5 hover:text-white"
+        }`}
+      >
+        <Icon size={18} strokeWidth={2} />
+        <span className="text-sm font-medium">{item.label}</span>
+      </button>
     );
+  };
+
+  const handleSignOutConfirm = () => {
+    logout();
+    navigate("/signin");
   };
 
   return (
@@ -187,6 +220,11 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </div>
         </nav>
       </aside>
+      <SignOutModal
+        isOpen={isSignOutModalOpen}
+        onClose={() => setIsSignOutModalOpen(false)}
+        onConfirm={handleSignOutConfirm}
+      />
     </>
   );
 };

@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom"; // Added Link for logo
+import { useNavigate, Link } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import auth from "../assets/auth1.png";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import auth from "../assets/auth3.png";
 import logo from "../assets/logo.png";
 
 const SignUp = () => {
@@ -14,11 +16,12 @@ const SignUp = () => {
     password: "",
     confirmPassword: "",
     agree: false,
-    newsletter: false, // Added for newsletter enrollment
+    newsletter: false,
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -45,28 +48,73 @@ const SignUp = () => {
       newErrors.confirmPassword = "Passwords do not match";
     if (!formData.agree)
       newErrors.agree = "You must agree to the Privacy Policy and Terms of Use";
-    // Newsletter is optional, so no validation error
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      // Optionally, handle newsletter enrollment (e.g., log or send to backend)
-      console.log("Newsletter enrollment:", formData.newsletter);
-      navigate("/otp");
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("https://api.sablle.ng/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          username: formData.username,
+          email: formData.email,
+          phone: formData.mobile,
+          password: formData.password,
+          password_confirmation: formData.confirmPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Registration successful! Redirecting to sign-in...");
+        // Optionally handle newsletter enrollment logic here
+        console.log("Newsletter enrollment:", formData.newsletter);
+        setTimeout(() => navigate("/otp"), 2000);
+      } else {
+        toast.error(data.message || "Registration failed. Please try again.");
+        setErrors({
+          ...errors,
+          api: data.message || "An error occurred during registration.",
+        });
+      }
+    } catch (error) {
+      toast.error("Network error. Please check your connection and try again.");
+      console.error(error);
+      setErrors({
+        ...errors,
+        api: "Network error. Please check your connection.",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen lg:h-screen h-fit flex flex-col md:flex-row font-poppins items-stretch">
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+      />
+
       {/* Left Side - Image */}
       <div className="hidden md:flex md:w-1/2 bg-gray-100">
         <img
           src={auth}
           alt="Contact form background"
-          className="w-full h-full min-h-screen object-cover"
+          className="w-full h-full min-h-screen object-fill"
         />
       </div>
 
@@ -93,6 +141,11 @@ const SignUp = () => {
             </a>
           </p>
 
+          {/* API Error */}
+          {errors.api && (
+            <p className="text-red-500 text-sm mb-4">{errors.api}</p>
+          )}
+
           {/* Form */}
           <form onSubmit={handleSubmit} className="w-full space-y-2">
             <input
@@ -103,6 +156,7 @@ const SignUp = () => {
               onChange={handleChange}
               className="w-full px-3 py-2 rounded-sm border-b focus:outline-none focus:ring-1 focus:ring-[#CB5B6A]"
               required
+              disabled={isLoading}
             />
             {errors.name && (
               <p className="text-red-500 text-sm">{errors.name}</p>
@@ -116,6 +170,7 @@ const SignUp = () => {
               onChange={handleChange}
               className="w-full px-3 py-2 rounded-sm border-b focus:outline-none focus:ring-1 focus:ring-[#CB5B6A]"
               required
+              disabled={isLoading}
             />
             {errors.username && (
               <p className="text-red-500 text-sm">{errors.username}</p>
@@ -129,6 +184,7 @@ const SignUp = () => {
               onChange={handleChange}
               className="w-full px-3 py-2 rounded-sm border-b focus:outline-none focus:ring-1 focus:ring-[#CB5B6A]"
               required
+              disabled={isLoading}
             />
             {errors.email && (
               <p className="text-red-500 text-sm">{errors.email}</p>
@@ -142,6 +198,7 @@ const SignUp = () => {
               onChange={handleChange}
               className="w-full px-3 py-2 rounded-sm border-b focus:outline-none focus:ring-1 focus:ring-[#CB5B6A]"
               required
+              disabled={isLoading}
             />
             {errors.mobile && (
               <p className="text-red-500 text-sm">{errors.mobile}</p>
@@ -156,12 +213,14 @@ const SignUp = () => {
                 onChange={handleChange}
                 className="w-full px-3 py-2 rounded-sm border-b focus:outline-none focus:ring-1 focus:ring-[#CB5B6A]"
                 required
+                disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#CB5B6A] hover:text-[#CB5B6A]/80"
                 aria-label={showPassword ? "Hide password" : "Show password"}
+                disabled={isLoading}
               >
                 {showPassword ? (
                   <EyeSlashIcon className="h-5 w-5" />
@@ -183,6 +242,7 @@ const SignUp = () => {
                 onChange={handleChange}
                 className="w-full px-3 py-2 rounded-sm border-b focus:outline-none focus:ring-1 focus:ring-[#CB5B6A]"
                 required
+                disabled={isLoading}
               />
               <button
                 type="button"
@@ -193,6 +253,7 @@ const SignUp = () => {
                     ? "Hide confirm password"
                     : "Show confirm password"
                 }
+                disabled={isLoading}
               >
                 {showConfirmPassword ? (
                   <EyeSlashIcon className="h-5 w-5" />
@@ -213,6 +274,7 @@ const SignUp = () => {
                 onChange={handleChange}
                 className="h-4 w-4 text-[#CB5B6A] focus:ring-[#CB5B6A]/80 border-gray-300 rounded"
                 required
+                disabled={isLoading}
               />
               <label className="text-sm text-[#6C7275]">
                 I agree with{" "}
@@ -242,6 +304,7 @@ const SignUp = () => {
                 checked={formData.newsletter}
                 onChange={handleChange}
                 className="h-4 w-4 text-[#CB5B6A] focus:ring-[#CB5B6A]/80 border-gray-300 rounded"
+                disabled={isLoading}
               />
               <label className="text-sm text-[#6C7275]">
                 Subscribe to newsletters, exclusive offers, and promotions
@@ -250,9 +313,10 @@ const SignUp = () => {
 
             <button
               type="submit"
-              className="w-full p-3 bg-[#141718] text-white rounded-md hover:bg-[#141718]/80 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]/60"
+              className="w-full p-3 bg-[#141718] text-white rounded-md hover:bg-[#141718]/80 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]/60 disabled:bg-[#141718]/50"
+              disabled={isLoading}
             >
-              Sign Up
+              {isLoading ? "Signing Up..." : "Sign Up"}
             </button>
           </form>
         </div>

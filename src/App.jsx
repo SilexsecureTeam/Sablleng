@@ -1,8 +1,12 @@
 import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
+import { AuthProvider } from "./context/AuthContext"; // Add AuthProvider
+import ProtectedRoute from "./components/ProtectedRoute"; // Add ProtectedRoute
 import "./App.css";
 import logo from "./assets/logo.png";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const HomePage = lazy(() => import("./Pages/HomePage"));
 const AboutPage = lazy(() => import("./Pages/AboutPage"));
@@ -23,7 +27,6 @@ const OrderTracking = lazy(() => import("./Components/OrderTracking"));
 const SignIn = lazy(() => import("./Auth/SignIn"));
 const SignUp = lazy(() => import("./Auth/SignUp"));
 const OtpPage = lazy(() => import("./Auth/OTP"));
-// const CustomizablePage = lazy(() => import("./Pages/CustomizablePage"));
 const CustomizablePage = lazy(() => import("./Pages/Customizable"));
 const DashboardLayout = lazy(() => import("./Pages/DashboardLayout"));
 
@@ -80,41 +83,52 @@ const ScrollToTop = () => {
 const App = () => {
   return (
     <CartProvider>
-      <BrowserRouter>
-        <div className="min-h-screen">
-          <ScrollToTop />
-          <Suspense fallback={<LoadingSpinner />}>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/product" element={<ProductPage />} />
-              <Route path="/product/:id" element={<ProductPage />} />
-              <Route
-                path="/categories/:categorySlug"
-                element={<CategoryPage />}
-              />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/delivery" element={<DeliveryPage />} />
-              <Route path="/payment" element={<PaymentPage />} />
-              <Route path="/order-success" element={<OrderSuccess />} />
-              <Route path="/order-tracking" element={<OrderTracking />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/signup" element={<SignUp />} />
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="/otp" element={<OtpPage />} />
-              <Route path="/customize" element={<CustomizablePage />} />
-              <Route path="/terms" element={<TermsPage />} />
-              <Route path="/cookie-policy" element={<CookiesPage />} />
-              <Route path="/privacy-policy" element={<PrivacyPage />} />
-              <Route path="/careers" element={<CareerPage />} />
-              <Route path="/faqs" element={<FaqPage />} />
-              <Route path="/dashboard/*" element={<DashboardLayout />} />
-              {/* Add this route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </div>
-      </BrowserRouter>
+      <AuthProvider>
+        {" "}
+        {/* Wrap with AuthProvider */}
+        <BrowserRouter>
+          <div className="min-h-screen">
+            <ToastContainer position="top-right" autoClose={3000} />
+            <ScrollToTop />
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/product" element={<ProductPage />} />
+                <Route path="/product/:id" element={<ProductPage />} />
+                <Route
+                  path="/categories/:categorySlug"
+                  element={<CategoryPage />}
+                />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/delivery" element={<DeliveryPage />} />
+                <Route path="/payment" element={<PaymentPage />} />
+                <Route path="/order-success" element={<OrderSuccess />} />
+                <Route path="/order-tracking" element={<OrderTracking />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/signin" element={<SignIn />} />
+                <Route path="/otp" element={<OtpPage />} />
+                <Route path="/customize" element={<CustomizablePage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/cookie-policy" element={<CookiesPage />} />
+                <Route path="/privacy-policy" element={<PrivacyPage />} />
+                <Route path="/careers" element={<CareerPage />} />
+                <Route path="/faqs" element={<FaqPage />} />
+                <Route
+                  path="/dashboard/*"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </div>
+        </BrowserRouter>
+      </AuthProvider>
     </CartProvider>
   );
 };
