@@ -1,16 +1,11 @@
 import React, { useState, useRef, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
+import { Link } from "react-router-dom";
 import { CartContext } from "../context/CartContextObject";
-import { AuthContext } from "../context/AuthContext"; // Added AuthContext
-import { toast, ToastContainer } from "react-toastify"; // Added ToastContainer
-import "react-toastify/dist/ReactToastify.css"; // Added toastify CSS
 import products from "../data/products";
 import ImageUploadComponent from "./ImageUploadComponent";
 
 const ProductDetail = ({ id }) => {
   const { addItem } = useContext(CartContext);
-  const { auth } = useContext(AuthContext); // Get auth state
-  const navigate = useNavigate(); // For navigation
   const [selectedColor, setSelectedColor] = useState("white");
   const [quantity, setQuantity] = useState(1);
   const [isCustomizing, setIsCustomizing] = useState(false);
@@ -81,73 +76,16 @@ const ProductDetail = ({ id }) => {
     }
   };
 
-  const handleAddToCart = async () => {
-    if (!auth.isAuthenticated) {
-      toast.error("Please sign in to add items to your cart.", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-      });
-      navigate("/signin");
-      return;
-    }
-
-    try {
-      const response = await fetch("https://api.sablle.ng/api/cart/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.token}`, // Include token for auth
-        },
-        body: JSON.stringify({
-          product_id: product.id,
-          quantity: quantity,
-          price: parseFloat(product.price.replace("₦", "")) * 1000,
-          color: selectedColor,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success("Item added to cart successfully!", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-        });
-        // Update local cart state
-        addItem({
-          id: product.id,
-          name: product.name,
-          model: product.model,
-          price: parseFloat(product.price.replace("₦", "")) * 1000,
-          image: selectedThumbnail.image,
-          quantity: quantity,
-          color: selectedColor, // Include color in cart item
-        });
-        setQuantity(1); // Reset quantity
-      } else {
-        console.error("Add to cart error:", data.message || "Unknown error");
-        toast.error(
-          data.message || "Failed to add item to cart. Please try again.",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-          }
-        );
-      }
-    } catch (error) {
-      console.error("Network error:", error.message);
-      toast.error(
-        "Network error. Please check your connection and try again.",
-        {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-        }
-      );
-    }
+  const handleAddToCart = () => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      model: product.model,
+      price: parseFloat(product.price.replace("₦", "")) * 1000,
+      image: selectedThumbnail.image,
+      quantity: quantity,
+    });
+    setQuantity(1);
   };
 
   const handleQuantityChange = (newQuantity) => {
@@ -174,11 +112,6 @@ const ProductDetail = ({ id }) => {
 
   return (
     <div className="bg-white py-8 md:py-10">
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-      />
       {/* Product or Customization Section */}
       <div className="max-w-[1200px] mx-auto">
         <div className="bg-white p-8">
@@ -335,14 +268,14 @@ const ProductDetail = ({ id }) => {
                   </button>
                   {product.badge === "Customizable" ? (
                     <button
-                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
+                      className="bg-[#CB5B6A] hidden hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
                       onClick={handleCustomize}
                     >
                       Customize
                     </button>
                   ) : (
                     <button
-                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
+                      className="bg-[#CB5B6A] hidden hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
                       onClick={handleOrderNow}
                     >
                       Order Now

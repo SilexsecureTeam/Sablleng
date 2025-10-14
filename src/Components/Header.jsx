@@ -102,8 +102,8 @@ const Header = () => {
             About Us
           </Link>
           <Link
-            to="#"
-            onClick={(e) => e.preventDefault()}
+            to="/product"
+            // onClick={(e) => e.preventDefault()}
             className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
           >
             Product
