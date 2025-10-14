@@ -3,13 +3,13 @@ import { useNavigate, Link } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { AuthContext } from "../context/AuthContext"; // Add AuthContext
+import { AuthContext } from "../context/AuthContext";
 import auth from "../assets/auth3.png";
 import logo from "../assets/logo.png";
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext); // Use AuthContext
+  const { login } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -56,15 +56,29 @@ const SignIn = () => {
       });
 
       const data = await response.json();
+      console.log("API response:", data); // Log the full API response
 
       if (response.ok) {
         toast.success("Login successful! Redirecting...");
-        // Assume the API returns a token and user data
+        const role = data.user?.role || "user"; // Use data.user.role, default to "user"
+        console.log("Role before navigation:", role); // Log the role
         login(
           data.token || "mock-token",
-          data.user || { email: formData.email }
+          data.user || { email: formData.email },
+          role
         );
-        setTimeout(() => navigate("/dashboard"), 2000);
+        // Navigate based on role
+        setTimeout(() => {
+          console.log(
+            "Navigating to:",
+            role.toLowerCase() === "admin" ? "/dashboard" : "/"
+          ); // Log navigation
+          if (role.toLowerCase() === "admin") {
+            navigate("/dashboard");
+          } else {
+            navigate("/");
+          }
+        }, 2000);
       } else {
         console.error("Login error:", data.message || "Unknown error");
         toast.error(

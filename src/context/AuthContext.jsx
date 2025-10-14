@@ -7,30 +7,38 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: false,
     token: null,
     user: null,
+    role: null,
   });
 
-  // Check for existing token in localStorage on mount
+  // Check for existing token and role in localStorage on mount
   useEffect(() => {
     const token = localStorage.getItem("authToken");
-    if (token) {
+    const storedUser = localStorage.getItem("user");
+    const role = localStorage.getItem("role");
+    console.log("AuthContext on mount:", { token, user: storedUser, role }); // Log on mount
+    if (token && storedUser) {
       setAuth({
         isAuthenticated: true,
         token,
-        user: JSON.parse(localStorage.getItem("user") || "{}"),
+        user: JSON.parse(storedUser || "{}"),
+        role,
       });
     }
   }, []);
 
-  const login = (token, user) => {
+  const login = (token, user, role) => {
     localStorage.setItem("authToken", token);
     localStorage.setItem("user", JSON.stringify(user));
-    setAuth({ isAuthenticated: true, token, user });
+    localStorage.setItem("role", role);
+    setAuth({ isAuthenticated: true, token, user, role });
+    // console.log("AuthContext after login:", { token, user, role });
   };
 
   const logout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
-    setAuth({ isAuthenticated: false, token: null, user: null });
+    localStorage.removeItem("role");
+    setAuth({ isAuthenticated: false, token: null, user: null, role: null });
   };
 
   return (

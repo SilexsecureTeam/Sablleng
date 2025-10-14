@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext"; // Add AuthProvider
-import ProtectedRoute from "./components/ProtectedRoute"; // Add ProtectedRoute
+import ProtectedRoute from "./Components/ProtectedRoute"; // Add ProtectedRoute
 import "./App.css";
 import logo from "./assets/logo.png";
 import { ToastContainer } from "react-toastify";
