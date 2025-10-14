@@ -68,7 +68,7 @@ const Header = () => {
             Home
           </Link>
           <div
-            className="relative group hidden"
+            className="relative group "
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
@@ -174,7 +174,7 @@ const Header = () => {
           >
             Home
           </Link>
-          <div className="hidden">
+          <div className="">
             <button
               className="w-full flex items-center justify-between px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
               onClick={() => setCategoryOpen(!categoryOpen)}
