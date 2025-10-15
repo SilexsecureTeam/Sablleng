@@ -1,15 +1,19 @@
+// src/Auth/SignIn.jsx
 import React, { useState, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/AuthContextObject";
+import { CartContext } from "../context/CartContextObject";
 import auth from "../assets/auth3.png";
 import logo from "../assets/logo.png";
 
 const SignIn = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
+  const { cart_session_id, setCartSessionId, setItems, setTotal } =
+    useContext(CartContext);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -56,31 +60,118 @@ const SignIn = () => {
       });
 
       const data = await response.json();
-      console.log("API response:", data); // Log the full API response
+      console.log(
+        "SignIn: POST /api/login response:",
+        JSON.stringify(data, null, 2)
+      );
 
       if (response.ok) {
         toast.success("Login successful! Redirecting...");
-        const role = data.user?.role || "user"; // Use data.user.role, default to "user"
-        console.log("Role before navigation:", role); // Log the role
-        login(
-          data.token || "mock-token",
-          data.user || { email: formData.email },
-          role
-        );
-        // Navigate based on role
+        const role = data.user?.role || "user";
+        login(data.token, data.user, role);
+
+        // Store cart in localStorage as fallback
+        if (cart_session_id) {
+          try {
+            const mergeResponse = await fetch(
+              "https://api.sablle.ng/api/cart/merge",
+              {
+                method: "POST",
+                headers: {
+                  "X-Cart-Session": cart_session_id,
+                  Authorization: `Bearer ${data.token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({}),
+              }
+            );
+            const mergeData = await mergeResponse.json();
+            console.log(
+              "SignIn: POST /api/cart/merge response:",
+              JSON.stringify(mergeData, null, 2)
+            );
+
+            if (mergeResponse.ok) {
+              toast.success("Guest cart merged successfully");
+              setCartSessionId(null);
+              localStorage.removeItem("cart_session_id");
+              // Store merged cart in localStorage
+              localStorage.setItem(
+                "cart_items",
+                JSON.stringify(mergeData.data?.items || [])
+              );
+              localStorage.setItem("cart_total", mergeData.data?.total || 0);
+            } else {
+              toast.error(mergeData.message || "Failed to merge cart");
+            }
+          } catch (error) {
+            console.error("SignIn: Merge cart error:", error.message);
+            toast.error("Network error while merging cart");
+          }
+        }
+
+        // Fetch updated cart
+        try {
+          const cartResponse = await fetch("https://api.sablle.ng/api/cart", {
+            method: "GET",
+            headers: { Authorization: `Bearer ${data.token}` },
+          });
+          const cartData = await cartResponse.json();
+          console.log(
+            "SignIn: GET /api/cart after login response:",
+            JSON.stringify(cartData, null, 2)
+          );
+          console.log("SignIn: Items to set:", cartData.data?.items || []);
+
+          if (cartResponse.ok) {
+            setItems(cartData.data?.items || []);
+            setTotal(cartData.data?.total || 0);
+            // Update localStorage with latest cart
+            localStorage.setItem(
+              "cart_items",
+              JSON.stringify(cartData.data?.items || [])
+            );
+            localStorage.setItem("cart_total", cartData.data?.total || 0);
+            console.log(
+              "SignIn: Updated items state:",
+              cartData.data?.items || []
+            );
+            toast.success("Cart updated successfully");
+          } else {
+            toast.error(cartData.message || "Failed to fetch cart");
+            // Fallback to localStorage cart
+            const cachedItems = JSON.parse(
+              localStorage.getItem("cart_items") || "[]"
+            );
+            const cachedTotal = parseFloat(
+              localStorage.getItem("cart_total") || "0"
+            );
+            setItems(cachedItems);
+            setTotal(cachedTotal);
+          }
+        } catch (error) {
+          console.error("SignIn: Fetch cart error:", error.message);
+          toast.error("Network error while fetching cart");
+          // Fallback to localStorage cart
+          const cachedItems = JSON.parse(
+            localStorage.getItem("cart_items") || "[]"
+          );
+          const cachedTotal = parseFloat(
+            localStorage.getItem("cart_total") || "0"
+          );
+          setItems(cachedItems);
+          setTotal(cachedTotal);
+        }
+
         setTimeout(() => {
           console.log(
-            "Navigating to:",
+            "SignIn: Navigating to:",
             role.toLowerCase() === "admin" ? "/dashboard" : "/"
-          ); // Log navigation
-          if (role.toLowerCase() === "admin") {
-            navigate("/dashboard");
-          } else {
-            navigate("/");
-          }
+          );
+          navigate(role.toLowerCase() === "admin" ? "/dashboard" : "/");
         }, 2000);
       } else {
-        console.error("Login error:", data.message || "Unknown error");
+        console.error("SignIn: Login error:", data.message);
         toast.error(
           data.message || "Login failed. Please check your credentials."
         );
@@ -90,7 +181,7 @@ const SignIn = () => {
         });
       }
     } catch (error) {
-      console.error("Network error:", error.message);
+      console.error("SignIn: Network error:", error.message);
       toast.error("Network error. Please check your connection and try again.");
       setErrors({
         ...errors,

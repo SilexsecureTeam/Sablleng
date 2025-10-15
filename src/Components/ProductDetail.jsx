@@ -1,11 +1,14 @@
 import React, { useState, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
 import { CartContext } from "../context/CartContextObject";
+import { AuthContext } from "../context/AuthContextObject";
 import products from "../data/products";
 import ImageUploadComponent from "./ImageUploadComponent";
+// import { toast } from "react-toastify";
 
 const ProductDetail = ({ id }) => {
   const { addItem } = useContext(CartContext);
+  // const { auth } = useContext(AuthContext);
   const [selectedColor, setSelectedColor] = useState("white");
   const [quantity, setQuantity] = useState(1);
   const [isCustomizing, setIsCustomizing] = useState(false);
@@ -25,7 +28,6 @@ const ProductDetail = ({ id }) => {
 
   const product = products.find((p) => p.id === parseInt(id));
 
-  // Define thumbnails after product is initialized
   const thumbnails = product
     ? [
         { bgColor: "bg-blue-100", image: product.image },
@@ -51,7 +53,6 @@ const ProductDetail = ({ id }) => {
     );
   }
 
-  // Set initial thumbnail image and background
   if (!selectedThumbnail.image) {
     setSelectedThumbnail({
       index: 0,
@@ -76,14 +77,16 @@ const ProductDetail = ({ id }) => {
     }
   };
 
-  const handleAddToCart = () => {
-    addItem({
+  const handleAddToCart = async () => {
+    const price = parseFloat(product.price.replace("₦", "")) * 1000;
+    await addItem({
       id: product.id,
       name: product.name,
       model: product.model,
-      price: parseFloat(product.price.replace("₦", "")) * 1000,
+      price: price,
       image: selectedThumbnail.image,
       quantity: quantity,
+      color: selectedColor,
     });
     setQuantity(1);
   };
