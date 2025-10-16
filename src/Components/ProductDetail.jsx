@@ -173,39 +173,6 @@ const ProductDetail = () => {
         color: selectedColor,
       });
 
-      toast.success(
-        <div className="flex items-center gap-3">
-          <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-            <svg
-              className="w-6 h-6 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <div>
-            <p className="font-semibold text-gray-900">Added to cart!</p>
-            <p className="text-sm text-gray-600">{product.name}</p>
-          </div>
-        </div>,
-        {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          className: "!bg-white !shadow-xl",
-        }
-      );
-
       setQuantity(1);
     } catch (error) {
       console.error("Error adding to cart:", error);

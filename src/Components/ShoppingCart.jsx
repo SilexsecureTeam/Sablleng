@@ -14,14 +14,12 @@ export default function ShoppingCart() {
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    // Items are now loaded from context, which is initialized from localStorage
     console.log("ShoppingCart: Items state:", JSON.stringify(items, null, 2));
-    const timer = setTimeout(() => setIsLoading(false), 500); // Reduced loading time
+    const timer = setTimeout(() => setIsLoading(false), 500);
     return () => clearTimeout(timer);
   }, [items]);
 
   const formatPrice = (price) => {
-    // Ensure price is a number before formatting
     const numericPrice = Number(price);
     if (isNaN(numericPrice)) {
       return "₦--";
@@ -32,12 +30,20 @@ export default function ShoppingCart() {
   const handleRemoveItem = (e, id) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("ShoppingCart: Attempting to remove item with ID:", id);
-    toast.info("Removing item...", {
-      autoClose: 1500,
-      toastId: `remove-${id}`,
-    });
-    removeItem(id);
+
+    try {
+      removeItem(id);
+      toast.success("Item removed from cart!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error("Error removing item:", error);
+      toast.error("Failed to remove item. Please try again.", {
+        position: "top-right",
+        autoClose: 4000,
+      });
+    }
   };
 
   const handleCheckout = () => {
@@ -79,16 +85,14 @@ export default function ShoppingCart() {
                   className="flex items-start sm:items-center space-x-4 sm:space-x-10 pb-4 sm:pb-6 border-b border-gray-100"
                 >
                   <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex-shrink-0 flex items-center justify-center bg-gray-50">
-                    {/* FIX: Access item.image directly */}
                     <img
                       src={item.image || "/placeholder.png"}
-                      alt={item.name || "Product"} // FIX: Access item.name directly
+                      alt={item.name || "Product"}
                       className="max-h-full max-w-full object-contain"
                     />
                   </div>
                   <div className="flex flex-grow flex-col md:flex-row md:items-center">
                     <div className="flex-grow">
-                      {/* FIX: Access item.name directly */}
                       <h3 className="font-medium text-gray-900 text-sm sm:text-base mb-1">
                         {item.name || "Unknown Product"}
                         {item.customization_id && (
@@ -123,7 +127,6 @@ export default function ShoppingCart() {
                         <Plus size={14} className="text-gray-600" />
                       </button>
                       <div className="text-right min-w-[80px] sm:min-w-[100px]">
-                        {/* FIX: Access item.price directly */}
                         <p className="font-medium text-gray-900 text-sm sm:text-base">
                           {formatPrice(item.price * item.quantity)}
                         </p>
