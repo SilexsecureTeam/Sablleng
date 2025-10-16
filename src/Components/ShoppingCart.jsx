@@ -1,12 +1,14 @@
 // src/Components/ShoppingCart.jsx
 import React, { useContext, useState } from "react";
 import { Minus, Plus, X } from "lucide-react";
+import { AuthContext } from "../context/AuthContextObject"; // Added import
 import { CartContext } from "../context/CartContextObject";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 export default function ShoppingCart() {
   const { items, total, updateQuantity, removeItem } = useContext(CartContext);
+  const { auth } = useContext(AuthContext); // Added to check authentication
   const [promoCode, setPromoCode] = useState("");
   const [bonusCard, setBonusCard] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +33,18 @@ export default function ShoppingCart() {
       toastId: `remove-${id}`,
     });
     removeItem(id);
+  };
+
+  const handleCheckout = () => {
+    if (!auth.isAuthenticated) {
+      toast.error("Please log in to continue with checkout", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      navigate("/signin");
+      return;
+    }
+    navigate("/delivery");
   };
 
   return (
@@ -157,7 +171,7 @@ export default function ShoppingCart() {
                 Delivery fees not included yet.
               </p>
               <button
-                onClick={() => navigate("/delivery")}
+                onClick={handleCheckout} // Updated to use new handler
                 className="w-full bg-[#CB5B6A] text-white py-2 sm:py-3 px-4 rounded-md font-medium text-sm sm:text-base hover:bg-[#CB5B6A]/70 transition-colors"
                 disabled={items.length === 0}
               >

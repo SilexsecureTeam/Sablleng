@@ -1,14 +1,17 @@
-import React, { useState, useRef, useContext } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useRef, useContext } from "react";
+import { Link, useParams } from "react-router-dom";
 import { CartContext } from "../context/CartContextObject";
-import { AuthContext } from "../context/AuthContextObject";
-import products from "../data/products";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import ImageUploadComponent from "./ImageUploadComponent";
-// import { toast } from "react-toastify";
 
-const ProductDetail = ({ id }) => {
+const ProductDetail = () => {
+  const { id } = useParams();
   const { addItem } = useContext(CartContext);
-  // const { auth } = useContext(AuthContext);
+  const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [selectedColor, setSelectedColor] = useState("white");
   const [quantity, setQuantity] = useState(1);
   const [isCustomizing, setIsCustomizing] = useState(false);
@@ -26,7 +29,73 @@ const ProductDetail = ({ id }) => {
     { name: "yellow", color: "bg-yellow-400" },
   ];
 
-  const product = products.find((p) => p.id === parseInt(id));
+  useEffect(() => {
+    const fetchProduct = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`https://api.sablle.ng/api/products`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch product: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const productsArray = Array.isArray(data.data) ? data.data : [];
+
+        const formattedProducts = productsArray.map((item) => ({
+          id: item.id,
+          name: item.name || "",
+          price: item.sale_price_inc_tax
+            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+            : "",
+          category: item.category?.name || "",
+          badge: item.is_variable_price ? "Customizable" : null,
+          image: item.images?.[0] || "/placeholder-image.jpg",
+          model: item.product_code || "N/A",
+        }));
+
+        const foundProduct = formattedProducts.find(
+          (p) => p.id === parseInt(id)
+        );
+        if (!foundProduct) {
+          throw new Error("Product not found");
+        }
+
+        setProduct(foundProduct);
+        setRelatedProducts(
+          formattedProducts.filter(
+            (p) =>
+              p.category === foundProduct.category && p.id !== foundProduct.id
+          )
+        );
+
+        setSelectedThumbnail({
+          index: 0,
+          bgColor: "bg-blue-100",
+          image: foundProduct.image,
+        });
+
+        toast.success("Product fetched successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError(err.message);
+        toast.error(`Error: ${err.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
 
   const thumbnails = product
     ? [
@@ -36,34 +105,6 @@ const ProductDetail = ({ id }) => {
         { bgColor: "bg-yellow-100", image: product.image },
       ]
     : [];
-
-  if (!product) {
-    return (
-      <div className="max-w-[1200px] mx-auto p-8 text-center">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          Product not found
-        </h2>
-        <Link
-          to="/product"
-          className="text-[#CB5B6A] underline mt-4 inline-block"
-        >
-          Back to Products
-        </Link>
-      </div>
-    );
-  }
-
-  if (!selectedThumbnail.image) {
-    setSelectedThumbnail({
-      index: 0,
-      bgColor: thumbnails[0].bgColor,
-      image: product.image,
-    });
-  }
-
-  const relatedProducts = products.filter(
-    (p) => p.category === product.category && p.id !== product.id
-  );
 
   const scrollLeft = () => {
     if (sliderRef.current) {
@@ -78,7 +119,9 @@ const ProductDetail = ({ id }) => {
   };
 
   const handleAddToCart = async () => {
-    const price = parseFloat(product.price.replace("₦", "")) * 1000;
+    if (!product) return;
+    const price = parseFloat(product.price.replace("₦", ""));
+    console.log("ProductDetail: Adding to cart with price:", price);
     await addItem({
       id: product.id,
       name: product.name,
@@ -89,8 +132,11 @@ const ProductDetail = ({ id }) => {
       color: selectedColor,
     });
     setQuantity(1);
+    toast.success("Added to cart!", {
+      position: "top-right",
+      autoClose: 3000,
+    });
   };
-
   const handleQuantityChange = (newQuantity) => {
     if (newQuantity >= 1) {
       setQuantity(newQuantity);
@@ -98,7 +144,7 @@ const ProductDetail = ({ id }) => {
   };
 
   const handleOrderNow = () => {
-    console.log("Order Now clicked for", product.name);
+    console.log("Order Now clicked for", product?.name);
   };
 
   const handleCustomize = () => {
@@ -113,9 +159,33 @@ const ProductDetail = ({ id }) => {
     });
   };
 
+  if (isLoading) {
+    return (
+      <div className="max-w-[1200px] mx-auto p-8 text-center">
+        <p className="text-gray-600">Loading product...</p>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="max-w-[1200px] mx-auto p-8 text-center">
+        <h2 className="text-2xl font-semibold text-gray-900">
+          {error || "Product not found"}
+        </h2>
+        <Link
+          to="/product"
+          className="text-[#CB5B6A] underline mt-4 inline-block"
+        >
+          Back to Products
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white py-8 md:py-10">
-      {/* Product or Customization Section */}
+      <ToastContainer />
       <div className="max-w-[1200px] mx-auto">
         <div className="bg-white p-8">
           {isCustomizing ? (
@@ -271,14 +341,14 @@ const ProductDetail = ({ id }) => {
                   </button>
                   {product.badge === "Customizable" ? (
                     <button
-                      className="bg-[#CB5B6A] hidden hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
+                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
                       onClick={handleCustomize}
                     >
                       Customize
                     </button>
                   ) : (
                     <button
-                      className="bg-[#CB5B6A] hidden hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
+                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
                       onClick={handleOrderNow}
                     >
                       Order Now
@@ -291,28 +361,20 @@ const ProductDetail = ({ id }) => {
         </div>
       </div>
 
-      {/* Reviews Section */}
+      {/* Reviews Section (Static for now, as API doesn't provide reviews) */}
       <div className="max-w-[1200px] mx-auto">
         <div className="bg-white p-8">
           <h2 className="text-2xl font-semibold text-gray-900 mb-8">Reviews</h2>
           <div className="grid gap-10">
             <div className="flex flex-col md:flex-row md:space-x-10 md:space-y-0 space-y-6">
               <div className="text-center bg-gray-100 p-4">
-                <div className="text-6xl font-bold text-gray-900 mb-2">
-                  {product.reviews?.averageRating || "N/A"}
-                </div>
-                <div className="text-gray-500 mb-3">
-                  of {product.reviews?.totalReviews || 0} reviews
-                </div>
+                <div className="text-6xl font-bold text-gray-900 mb-2">N/A</div>
+                <div className="text-gray-500 mb-3">of 0 reviews</div>
                 <div className="flex justify-center space-x-1 mb-6">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <svg
                       key={star}
-                      className={`w-5 h-5 ${
-                        star <= Math.round(product.reviews?.averageRating || 0)
-                          ? "text-yellow-400 fill-current"
-                          : "text-gray-300 fill-current"
-                      }`}
+                      className="w-5 h-5 text-gray-300 fill-current"
                       viewBox="0 0 20 20"
                     >
                       <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
@@ -321,71 +383,13 @@ const ProductDetail = ({ id }) => {
                 </div>
               </div>
               <div className="space-y-3 flex-1">
-                {(product.reviews?.ratings || []).map((rating) => (
-                  <div
-                    key={rating.label}
-                    className="flex items-center space-x-4"
-                  >
-                    <span className="text-gray-700 w-24 text-sm">
-                      {rating.label}
-                    </span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                      <div
-                        className={`${rating.color} h-2 rounded-full`}
-                        style={{ width: `${rating.value}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-gray-500 text-sm w-8 text-right">
-                      {rating.value}
-                    </span>
-                  </div>
-                ))}
+                <p className="text-gray-700 text-sm">No reviews available.</p>
               </div>
             </div>
             <div className="pt-6 text-center">
               <button className="text-gray-400 text-sm underline">
                 Leave Comment
               </button>
-            </div>
-            <div className="border-l border-gray-200 pl-8">
-              <div className="space-y-6">
-                {(product.reviews?.comments || []).map((comment) => (
-                  <div
-                    key={comment.author + comment.date}
-                    className="flex bg-[#FAFAFA] p-4 items-start space-x-4"
-                  >
-                    <div className="w-12 h-12 bg-gray-300 rounded-full flex-shrink-0"></div>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-900">
-                          {comment.author}
-                        </h4>
-                        <span className="text-gray-400 text-sm">
-                          {comment.date}
-                        </span>
-                      </div>
-                      <div className="flex space-x-1 mb-4">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <svg
-                            key={star}
-                            className={`w-4 h-4 ${
-                              star <= comment.rating
-                                ? "text-yellow-400 fill-current"
-                                : "text-gray-300 fill-current"
-                            }`}
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                          </svg>
-                        ))}
-                      </div>
-                      <p className="text-gray-700 text-sm leading-relaxed">
-                        {comment.text}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>
@@ -410,7 +414,6 @@ const ProductDetail = ({ id }) => {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
                   >
                     <path
                       strokeLinecap="round"
@@ -430,7 +433,6 @@ const ProductDetail = ({ id }) => {
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
                   >
                     <path
                       strokeLinecap="round"

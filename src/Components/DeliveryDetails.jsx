@@ -1,247 +1,238 @@
+// src/Components/DeliveryDetail.jsx (Unchanged from previous response)
 import React, { useState, useContext } from "react";
-import { Edit, Plus, Truck, Clock, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-const DeliveryDetails = () => {
-  const { setSelectedAddress } = useContext(CartContext);
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      name: "John O. - +2348037358599",
-      address: "17 Adesola Odeku St, Victoria Island, Lagos",
-    },
-    {
-      id: 2,
-      name: "John O. - +2347063673967",
-      address: "32 Oyegipwua Oshodi Ikojipu, Lagos - OSHODI-MAFOLUKU",
-    },
-  ]);
-  const [selectedDelivery, setSelectedDelivery] = useState("standard");
-  const [showAddressForm, setShowAddressForm] = useState(false);
-  const [newAddress, setNewAddress] = useState("");
-  const [selectedAddressId, setSelectedAddressId] = useState(
-    addresses[0]?.id || null
-  );
+const DeliveryDetail = () => {
+  const { auth } = useContext(AuthContext);
+  const { items, total } = useContext(CartContext);
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    shipping_address: "Abuja, Wuse 2",
+    delivery_fee: 200,
+    tax_rate: 7.5,
+  });
+  const [errors, setErrors] = useState({});
 
-  const deliveryOptions = [
-    {
-      id: "standard",
-      icon: Truck,
-      title: "Standard",
-      subtitle: "3 - 5 days",
-      price: "Free",
-      value: 0,
-    },
-    {
-      id: "express",
-      icon: Clock,
-      title: "Express",
-      subtitle: "24 - 48 hrs",
-      price: "₦6,000",
-      value: 6000,
-    },
-    {
-      id: "pickup",
-      icon: MapPin,
-      title: "Office Pickup",
-      subtitle: "Ready in 24 - 48 hrs",
-      price: "Free",
-      value: 0,
-    },
-  ];
-
-  const addNewAddress = () => {
-    if (newAddress.trim()) {
-      const newId = addresses.length + 1;
-      const newAddr = {
-        id: newId,
-        name: "User", // Ideally, get user name from auth context
-        address: newAddress.trim(),
-      };
-      setAddresses([...addresses, newAddr]);
-      setSelectedAddressId(newId);
-      setSelectedAddress(newAddr);
-      setNewAddress("");
-      setShowAddressForm(false);
-    }
-  };
-
-  const handleContinue = () => {
-    const selectedAddr = addresses.find(
-      (addr) => addr.id === selectedAddressId
-    );
-    setSelectedAddress(selectedAddr);
-    const selectedDeliveryOption = deliveryOptions.find(
-      (opt) => opt.id === selectedDelivery
-    );
-    // Explicitly create a serializable delivery object
-    const serializableDelivery = {
-      id: selectedDeliveryOption.id,
-      title: selectedDeliveryOption.title,
-      subtitle: selectedDeliveryOption.subtitle,
-      price: selectedDeliveryOption.price,
-      value: selectedDeliveryOption.value,
-    };
-    // Ensure selectedAddr is serializable
-    const serializableAddress = {
-      id: selectedAddr.id,
-      name: selectedAddr.name,
-      address: selectedAddr.address,
-    };
-    navigate("/payment", {
-      state: {
-        selectedDelivery: serializableDelivery,
-        selectedAddress: serializableAddress, // Include address if needed in PaymentComponent
-      },
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
     });
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.shipping_address.trim())
+      newErrors.shipping_address = "Shipping address is required";
+    if (!formData.delivery_fee || formData.delivery_fee <= 0)
+      newErrors.delivery_fee = "Delivery fee must be a positive number";
+    if (!formData.tax_rate || formData.tax_rate <= 0)
+      newErrors.tax_rate = "Tax rate must be a positive number";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    if (!auth.isAuthenticated || !auth.token) {
+      toast.error("You must be logged in to checkout");
+      navigate("/signin");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("https://api.sablle.ng/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`,
+        },
+        body: JSON.stringify({
+          shipping_address: formData.shipping_address,
+          delivery_fee: parseFloat(formData.delivery_fee),
+          tax_rate: parseFloat(formData.tax_rate),
+          items: items.map((item) => ({
+            product_id: item.id,
+            quantity: item.quantity,
+            price: item.price,
+            color: item.color || "default",
+          })),
+          total,
+        }),
+      });
+
+      const data = await response.json();
+      console.log(
+        "DeliveryDetail: POST /api/checkout response:",
+        JSON.stringify(data, null, 2)
+      );
+
+      if (response.ok) {
+        toast.success("Checkout submitted! Proceeding to payment.");
+        navigate("/payment", {
+          state: {
+            selectedDelivery: {
+              value: parseFloat(formData.delivery_fee),
+              shipping_address: formData.shipping_address,
+              tax_rate: parseFloat(formData.tax_rate),
+            },
+          },
+        });
+      } else {
+        console.error("DeliveryDetail: Checkout error:", data.message);
+        toast.error(data.message || "Failed to process checkout");
+        setErrors({
+          ...errors,
+          api: data.message || "An error occurred during checkout.",
+        });
+      }
+    } catch (error) {
+      console.error("DeliveryDetail: Network error:", error.message);
+      toast.error("Network error. Please check your connection and try again.");
+      setErrors({
+        ...errors,
+        api: "Network error. Please check your connection.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="max-w-[1200px] mx-auto p-4 lg:p-6">
-      <div className="grid md:grid-cols-2 gap-6 lg:gap-20">
-        {/* Delivery Details Section */}
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Delivery Details
-          </h2>
-          <div className="space-y-6">
-            {addresses.map((address) => (
-              <div
-                key={address.id}
-                className={`bg-gray-100 rounded-lg p-4 relative group cursor-pointer ${
-                  selectedAddressId === address.id
-                    ? "border-2 border-[#CB5B6A]"
-                    : ""
-                }`}
-                onClick={() => setSelectedAddressId(address.id)}
-              >
-                <p className="text-sm text-gray-700 pr-8">{address.name}</p>
-                <p className="text-sm text-gray-700">{address.address}</p>
-                <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
-                  <Edit size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
-          {showAddressForm ? (
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+    <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">
+      <ToastContainer position="top-right" autoClose={3000} />
+      <h1 className="text-xl sm:text-2xl font-semibold mb-6 sm:mb-8">
+        Delivery Details
+      </h1>
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-16 sm:gap-8">
+        <div className="flex-1">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {errors.api && (
+              <p className="text-red-500 text-sm mb-4">{errors.api}</p>
+            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-2">
+                Shipping Address
+              </label>
               <input
                 type="text"
-                value={newAddress}
-                onChange={(e) => setNewAddress(e.target.value)}
-                placeholder="Enter new delivery address"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent"
-                autoFocus
+                name="shipping_address"
+                value={formData.shipping_address}
+                onChange={handleChange}
+                placeholder="Enter your shipping address"
+                className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                required
+                disabled={isLoading}
               />
-              <div className="flex gap-2">
-                <button
-                  onClick={addNewAddress}
-                  className="px-4 py-2 bg-[#CB5B6A] text-white rounded-lg hover:bg-[#CB5B6A]/70 transition-colors text-sm"
-                >
-                  Add Address
-                </button>
-                <button
-                  onClick={() => {
-                    setShowAddressForm(false);
-                    setNewAddress("");
-                  }}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
+              {errors.shipping_address && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.shipping_address}
+                </p>
+              )}
             </div>
-          ) : (
-            <button
-              onClick={() => setShowAddressForm(true)}
-              className="w-full border-2 border-gray-300 rounded-lg p-4 flex items-center justify-center gap-2 text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors group"
-            >
-              <Plus
-                size={20}
-                className="group-hover:scale-110 transition-transform"
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-2">
+                Delivery Fee (₦)
+              </label>
+              <input
+                type="number"
+                name="delivery_fee"
+                value={formData.delivery_fee}
+                onChange={handleChange}
+                placeholder="Enter delivery fee"
+                className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                min="0"
+                step="0.01"
+                required
+                disabled={isLoading}
               />
-              <span className="font-medium">Add new delivery Address</span>
+              {errors.delivery_fee && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.delivery_fee}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-2">
+                Tax Rate (%)
+              </label>
+              <input
+                type="number"
+                name="tax_rate"
+                value={formData.tax_rate}
+                onChange={handleChange}
+                placeholder="Enter tax rate"
+                className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                min="0"
+                step="0.01"
+                required
+                disabled={isLoading}
+              />
+              {errors.tax_rate && (
+                <p className="text-red-500 text-sm mt-1">{errors.tax_rate}</p>
+              )}
+            </div>
+            <div className="flex justify-between items-center mt-6">
+              <span className="font-medium text-base">Total</span>
+              <span className="font-semibold text-lg">
+                ₦{(total / 1000).toFixed(2)}
+              </span>
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-[#CB5B6A] text-white py-3 px-4 rounded-md font-medium text-base hover:bg-[#CB5B6A]/70 transition-colors disabled:bg-[#CB5B6A]/50"
+              disabled={isLoading || items.length === 0}
+            >
+              {isLoading ? "Processing..." : "Proceed to Payment"}
             </button>
-          )}
+          </form>
         </div>
-
-        {/* Delivery Options Section */}
-        <div className="space-y-6 border border-gray-200 rounded-lg p-8">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Delivery
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">Choose method & ETA</p>
-          </div>
-          <div className="space-y-3">
-            {deliveryOptions.map((option) => {
-              const Icon = option.icon;
-              return (
-                <label
-                  key={option.id}
-                  className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedDelivery === option.id
-                      ? "border-[#CB5B6A] bg-[#CB5B6A]/10"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
+        <div className="lg:w-80 xl:w-96">
+          <div className="border-gray-200 border rounded-lg p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
+              Order Summary
+            </h2>
+            {items.length === 0 ? (
+              <p className="text-gray-600 text-sm">Your cart is empty.</p>
+            ) : (
+              items.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex justify-between items-center mb-2"
                 >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="delivery"
-                      value={option.id}
-                      checked={selectedDelivery === option.id}
-                      onChange={(e) => setSelectedDelivery(e.target.value)}
-                      className="text-[#CB5B6A] focus:ring-[#CB5B6A]"
-                    />
-                    <div
-                      className={`p-2 rounded-lg ${
-                        selectedDelivery === option.id
-                          ? "bg-[#CB5B6A]/20"
-                          : "bg-gray-100"
-                      }`}
-                    >
-                      <Icon
-                        size={20}
-                        className={
-                          selectedDelivery === option.id
-                            ? "text-[#CB5B6A]"
-                            : "text-gray-600"
-                        }
-                      />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">
-                        {option.title}
-                      </h4>
-                      <p className="text-sm text-gray-500">{option.subtitle}</p>
-                    </div>
-                  </div>
-                  <span
-                    className={`font-semibold ${
-                      selectedDelivery === option.id
-                        ? "text-[#CB5B6A]"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    {option.price}
+                  <span className="text-sm text-gray-600">
+                    {item.product?.name || "Unknown Product"} x {item.quantity}
                   </span>
-                </label>
-              );
-            })}
+                  <span className="text-sm font-medium">
+                    ₦{((item.price * item.quantity) / 1000).toFixed(2)}
+                  </span>
+                </div>
+              ))
+            )}
+            <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+              <span className="font-medium text-sm sm:text-base">Subtotal</span>
+              <span className="font-semibold text-base sm:text-lg">
+                ₦{(total / 1000).toFixed(2)}
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-gray-500 mt-2">
+              Delivery fees and taxes included in checkout.
+            </p>
           </div>
-          <button
-            onClick={handleContinue}
-            className="w-full bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-          >
-            Continue to Payment
-          </button>
         </div>
       </div>
     </div>
   );
 };
 
-export default DeliveryDetails;
+export default DeliveryDetail;

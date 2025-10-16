@@ -1,11 +1,62 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import products from "../data/products";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Product = () => {
   const [filter, setFilter] = useState("All");
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Filter products based on the selected filter
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("https://api.sablle.ng/api/products", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch products: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const productsArray = Array.isArray(data.data) ? data.data : [];
+
+        const formattedProducts = productsArray.map((item) => ({
+          id: item.id,
+          name: item.name || "",
+          price: item.sale_price_inc_tax
+            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+            : "",
+          category: item.category?.name || "",
+          badge: item.is_variable_price ? "Customizable" : null,
+          image: item.images?.[0] || "/placeholder-image.jpg",
+        }));
+
+        setProducts(formattedProducts);
+        toast.success("Products fetched successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError(err.message);
+        toast.error(`Error: ${err.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        setProducts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   const filteredProducts = products.filter((product) => {
     if (filter === "All") return true;
     if (filter === "Customizable") return product.badge === "Customizable";
@@ -15,8 +66,8 @@ const Product = () => {
 
   return (
     <div className="py-12 md:py-16">
+      <ToastContainer />
       <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 mx-auto">
-        {/* Filter Section */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Filter Products
@@ -39,10 +90,16 @@ const Product = () => {
             ))}
           </div>
         </div>
-
-        {/* Product Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.length > 0 ? (
+          {isLoading ? (
+            <div className="col-span-full text-center text-gray-600">
+              Loading products...
+            </div>
+          ) : error ? (
+            <div className="col-span-full text-center text-red-500">
+              {error}
+            </div>
+          ) : filteredProducts.length > 0 ? (
             filteredProducts.map((product) => (
               <Link
                 key={product.id}

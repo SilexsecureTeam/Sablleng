@@ -1,55 +1,128 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Noti from "../Components/Noti";
 import Header from "../Components/Header";
 import Phero from "../Components/Phero";
 import Footer from "../Components/Footer";
-import products from "../data/products";
 
 const CategoryPage = () => {
-  const { categorySlug } = useParams(); // Get category slug from URL
-
-  // Map slugs to category names
-  const categoryMap = {
-    "tech-gadgets": "Tech Gadgets",
-    audio: "Audio",
-    "office-and-writing-tools": "Office and writing tools",
-    "bags-and-travel": "Bags and Travel",
-    "drink-ware": "Drink ware",
-    "home-and-outdoor": "Home and outdoor",
-    edibles: "Edibles",
-  };
-
-  const categoryName = categoryMap[categorySlug] || "Unknown Category";
-
-  // Filter products by category type
-  const filteredProducts = products.filter(
-    (product) => product.type === categoryName
-  );
-
-  // State for additional filtering (e.g., Customizable, Non-Customizable)
+  const { categorySlug } = useParams();
   const [filter, setFilter] = useState("All");
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const displayedProducts = filteredProducts.filter((product) => {
-    if (filter === "All") return true;
-    if (filter === "Customizable") return product.badge === "Customizable";
-    if (filter === "Non-Customizable") return product.badge === null;
-    return true;
-  });
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch products
+        const productResponse = await fetch(
+          "https://api.sablle.ng/api/products",
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        if (!productResponse.ok) {
+          throw new Error(
+            `Failed to fetch products: ${productResponse.statusText}`
+          );
+        }
+
+        const productData = await productResponse.json();
+        const productsArray = Array.isArray(productData.data)
+          ? productData.data
+          : [];
+
+        const formattedProducts = productsArray.map((item) => ({
+          id: item.id,
+          name: item.name || "",
+          price: item.sale_price_inc_tax
+            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+            : "",
+          category: item.category?.name || "",
+          badge: item.is_variable_price ? "Customizable" : null,
+          image: item.images?.[0] || "/placeholder-image.jpg",
+        }));
+
+        setProducts(formattedProducts);
+
+        // Fetch categories
+        const categoryResponse = await fetch(
+          "https://api.sablle.ng/api/categories",
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        if (!categoryResponse.ok) {
+          throw new Error(
+            `Failed to fetch categories: ${categoryResponse.statusText}`
+          );
+        }
+
+        const categoryData = await categoryResponse.json();
+        const categoriesArray = Array.isArray(categoryData) ? categoryData : [];
+
+        setCategories(
+          categoriesArray.map((item) => ({
+            id: item.id,
+            name: item.name,
+            slug: item.name.toLowerCase().replace(/\s+/g, "-"),
+          }))
+        );
+
+        toast.success("Data fetched successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError(err.message);
+        toast.error(`Error: ${err.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        setProducts([]);
+        setCategories([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Map slug to category name
+  const category = categories.find((cat) => cat.slug === categorySlug);
+  const categoryName = category ? category.name : "Unknown Category";
+
+  const filteredProducts = products
+    .filter((product) => product.category === categoryName)
+    .filter((product) => {
+      if (filter === "All") return true;
+      if (filter === "Customizable") return product.badge === "Customizable";
+      if (filter === "Non-Customizable") return product.badge === null;
+      return true;
+    });
 
   return (
     <div>
+      <ToastContainer />
       <Noti />
       <Header />
       <Phero />
       <div className="py-12 md:py-16">
         <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 mx-auto">
-          {/* Category Title */}
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             {categoryName}
           </h2>
-
-          {/* Filter Section */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Filter Products
@@ -72,11 +145,17 @@ const CategoryPage = () => {
               ))}
             </div>
           </div>
-
-          {/* Product Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayedProducts.length > 0 ? (
-              displayedProducts.map((product) => (
+            {isLoading ? (
+              <div className="col-span-full text-center text-gray-600">
+                Loading products...
+              </div>
+            ) : error ? (
+              <div className="col-span-full text-center text-red-500">
+                {error}
+              </div>
+            ) : filteredProducts.length > 0 ? (
+              filteredProducts.map((product) => (
                 <Link
                   key={product.id}
                   to={`/product/${product.id}`}

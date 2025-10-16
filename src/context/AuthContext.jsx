@@ -1,6 +1,5 @@
 // src/context/AuthContext.jsx
 import React, { useState, useEffect } from "react";
-// import { toast } from "react-toastify";
 import { AuthContext } from "./AuthContextObject";
 
 export const AuthProvider = ({ children }) => {

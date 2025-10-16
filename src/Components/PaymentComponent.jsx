@@ -1,17 +1,32 @@
-import React, { useState, useContext } from "react";
+// src/Components/PaymentComponent.jsx
+import React, { useState, useContext, useEffect } from "react";
 import { CartContext } from "../context/CartContextObject";
+import { AuthContext } from "../context/AuthContextObject";
 import { useNavigate, useLocation } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import i1 from "../assets/i1.png";
 import i2 from "../assets/i2.png";
-import PaymentForm from "../Components/PaymentForm";
 
 const PaymentComponent = () => {
-  const { items, selectedAddress } = useContext(CartContext);
+  const { items, selectedAddress, setItems, setTotal, setCartSessionId } =
+    useContext(CartContext);
+  const { auth } = useContext(AuthContext);
   const [selectedPayment, setSelectedPayment] = useState("paystack");
-  const [showModal, setShowModal] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const selectedDelivery = location.state?.selectedDelivery || { value: 6000 }; // Default to Express delivery
+
+  // Debug auth state
+  useEffect(() => {
+    console.log("PaymentComponent: auth state:", {
+      isAuthenticated: auth.isAuthenticated,
+      token: auth.token,
+      email: auth.email,
+      isValidEmail: auth.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.email),
+    });
+  }, [auth]);
 
   const paymentMethods = [
     {
@@ -41,22 +56,201 @@ const PaymentComponent = () => {
     new Intl.NumberFormat("en-NG", {
       style: "currency",
       currency: "NGN",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     })
       .format(amount)
       .replace("NGN", "₦");
 
-  const handlePayment = () => {
+  // Load Paystack script dynamically
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v2/inline.js";
+    script.async = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      console.log("PaymentComponent: Paystack script loaded");
+    };
+    script.onerror = () => {
+      console.error("PaymentComponent: Failed to load Paystack script");
+      toast.error("Failed to load payment system. Please try again later.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    };
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const handlePayment = async () => {
+    // Log auth details before redirect
+    if (!auth.isAuthenticated) {
+      console.log(
+        "PaymentComponent: Redirecting to signin - not authenticated"
+      );
+      toast.error("Please log in to proceed with payment", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      navigate("/signin");
+      return;
+    }
+    if (!auth.token) {
+      console.log("PaymentComponent: Redirecting to signin - no token");
+      toast.error("Authentication token missing. Please log in again.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      navigate("/signin");
+      return;
+    }
+    if (!auth.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.email)) {
+      console.log(
+        "PaymentComponent: Redirecting to signin - invalid or missing email:",
+        auth.email
+      );
+      toast.error(
+        "Valid email required for payment. Please update your profile or log in again.",
+        {
+          position: "top-right",
+          autoClose: 3000,
+        }
+      );
+      navigate("/signin");
+      return;
+    }
+
+    const orderId = `SABIL-${new Date()
+      .toISOString()
+      .split("T")[0]
+      .replace(/-/g, "")}-${Math.floor(Math.random() * 10000)}`;
+
     if (selectedPayment === "paystack") {
-      setShowModal(true); // Show PaymentForm modal
+      if (total <= 0) {
+        toast.error("Order amount must be greater than zero.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      setIsProcessingPayment(true);
+      try {
+        if (!window.PaystackPop) {
+          throw new Error("PaystackPop not loaded");
+        }
+        const popup = new window.PaystackPop();
+        popup.newTransaction({
+          key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+          email: auth.email,
+          amount: total * 100, // Convert to kobo
+          reference: `order_${orderId}_${Date.now()}`,
+          onLoad: () => {
+            console.log("PaymentComponent: Payment form loaded");
+          },
+          onSuccess: async (transaction) => {
+            console.log(
+              "PaymentComponent: Transaction successful:",
+              transaction
+            );
+            try {
+              const response = await fetch(
+                `https://api.sablle.ng/api/verify-payment/${transaction.reference}/${orderId}`,
+                {
+                  method: "GET",
+                  headers: {
+                    Authorization: `Bearer ${auth.token}`,
+                  },
+                }
+              );
+              const data = await response.json();
+              console.log(
+                "PaymentComponent: GET /api/verify-payment response:",
+                JSON.stringify(data, null, 2)
+              );
+
+              if (response.ok) {
+                setItems([]);
+                setTotal(0);
+                setCartSessionId(null);
+                localStorage.setItem("cart_items", JSON.stringify([]));
+                localStorage.setItem("cart_total", 0);
+                localStorage.removeItem("cart_session_id");
+
+                toast.success("Payment successful! Order placed.", {
+                  position: "top-right",
+                  autoClose: 3000,
+                  onClose: () =>
+                    navigate("/order-success", {
+                      state: {
+                        orderId,
+                        items,
+                        subtotal,
+                        vat,
+                        delivery,
+                        total,
+                        address: selectedAddress,
+                      },
+                    }),
+                });
+              } else {
+                console.error(
+                  "PaymentComponent: Verification error:",
+                  data.message
+                );
+                toast.error(
+                  data.message ||
+                    "Failed to verify payment. Please contact support.",
+                  {
+                    position: "top-right",
+                    autoClose: 3000,
+                  }
+                );
+              }
+            } catch (error) {
+              console.error(
+                "PaymentComponent: Verification error:",
+                error.message
+              );
+              toast.error(
+                "Network error during payment verification. Please contact support.",
+                {
+                  position: "top-right",
+                  autoClose: 3000,
+                }
+              );
+            }
+          },
+          onCancel: () => {
+            toast.info("Payment cancelled. You can try again.", {
+              position: "top-right",
+              autoClose: 3000,
+            });
+          },
+          onError: (error) => {
+            console.error("PaymentComponent: Payment error:", error);
+            toast.error(`Payment failed: ${error.message}`, {
+              position: "top-right",
+              autoClose: 3000,
+            });
+          },
+        });
+      } catch (error) {
+        console.error("PaymentComponent: Payment initialization error:", error);
+        toast.error("Failed to initialize payment. Please try again.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } finally {
+        setIsProcessingPayment(false);
+      }
     } else {
       navigate("/order-success", {
         state: {
-          orderId: `SABIL-${new Date()
-            .toISOString()
-            .split("T")[0]
-            .replace(/-/g, "")}-${Math.floor(Math.random() * 10000)}`,
+          orderId,
           items,
           subtotal,
           vat,
@@ -68,12 +262,10 @@ const PaymentComponent = () => {
     }
   };
 
-  const closeModal = () => setShowModal(false);
-
   return (
     <div className="max-w-[1200px] mx-auto p-4 lg:p-6">
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="grid md:grid-cols-2 gap-8 lg:gap-20">
-        {/* Payment Methods Section */}
         <div className="space-y-6">
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
@@ -130,8 +322,6 @@ const PaymentComponent = () => {
             ))}
           </div>
         </div>
-
-        {/* Order Summary Section */}
         <div className="space-y-6 border border-gray-200 rounded-lg p-8">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">Summary</h3>
@@ -166,9 +356,21 @@ const PaymentComponent = () => {
           </div>
           <button
             onClick={handlePayment}
-            className="w-full bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+            disabled={isProcessingPayment || items.length === 0}
+            className={`w-full bg-[#CB5B6A] text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+              isProcessingPayment || items.length === 0
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-[#CB5B6A]/70"
+            }`}
           >
-            Complete Payment
+            {isProcessingPayment ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white"></div>
+                <span>Processing Payment...</span>
+              </>
+            ) : (
+              <span>Complete Payment</span>
+            )}
           </button>
           <div className="text-center">
             <p className="text-xs text-gray-500">
@@ -177,54 +379,6 @@ const PaymentComponent = () => {
           </div>
         </div>
       </div>
-
-      {/* Modal for PaymentForm */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="relative bg-white rounded-lg max-w-2xl w-full">
-            <button
-              onClick={closeModal}
-              className="absolute top-2 h-4 right-2 text-gray-600 hover:text-gray-800"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-            <PaymentForm
-              total={total}
-              items={items}
-              address={selectedAddress}
-              onSuccess={() =>
-                navigate("/order-success", {
-                  state: {
-                    orderId: `SABIL-${new Date()
-                      .toISOString()
-                      .split("T")[0]
-                      .replace(/-/g, "")}-${Math.floor(Math.random() * 10000)}`,
-                    items,
-                    subtotal,
-                    vat,
-                    delivery,
-                    total,
-                    address: selectedAddress,
-                  },
-                })
-              }
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };
