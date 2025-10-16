@@ -17,12 +17,12 @@ export const CartProvider = ({ children }) => {
     localStorage.getItem("cart_session_id") || null
   );
 
-  // ✅ CRITICAL FIX: Access auth object correctly
+  // Access auth object
   const { auth } = useContext(AuthContext);
 
   // Debug auth state
   useEffect(() => {
-    console.log("CartContext: Auth state changed:", {
+    console.log("🛒 CartContext: Auth state changed:", {
       isAuthenticated: auth?.isAuthenticated,
       hasToken: !!auth?.token,
       tokenPreview: auth?.token ? auth.token.substring(0, 20) + "..." : null,
@@ -33,26 +33,27 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem("cart_items", JSON.stringify(items));
     localStorage.setItem("cart_total", String(total));
-  }, [items, total]);
+    if (cart_session_id) {
+      localStorage.setItem("cart_session_id", cart_session_id);
+    }
+  }, [items, total, cart_session_id]);
 
-  // Fetch cart on mount and auth changes
+  // Fetch cart for auth'd users or guests with session
   useEffect(() => {
     const fetchCart = async () => {
-      // Skip if no authentication method available
+      // Only fetch if we have auth or a session ID
       if (!auth?.isAuthenticated && !cart_session_id) {
-        console.log("CartContext: No auth or session, skipping fetch");
+        console.log("🛒 CartContext: No auth or session, skipping fetch.");
         return;
       }
 
       try {
-        console.log("CartContext: Fetching cart...");
-        console.log("  Auth authenticated:", auth?.isAuthenticated);
+        console.log("🛒 CartContext: Fetching cart...");
+        console.log("  Authenticated:", auth?.isAuthenticated);
         console.log("  Token exists:", !!auth?.token);
         console.log("  Session ID:", cart_session_id);
 
-        // Build headers based on authentication method
         const headers = {};
-
         if (auth?.isAuthenticated && auth?.token) {
           headers["Authorization"] = `Bearer ${auth.token}`;
           console.log("  Using Bearer token authentication");
@@ -67,13 +68,11 @@ export const CartProvider = ({ children }) => {
         });
 
         const data = await response.json();
-        console.log("Cart fetch response status:", response.status);
-        console.log("Cart fetch response data:", data);
+        console.log("🛒 Cart fetch response status:", response.status);
+        console.log("🛒 Cart fetch response data:", data);
 
         if (response.ok) {
           const newItemsFromApi = data.data?.items || [];
-
-          // Merge names and images from cache
           const newItemsWithDetails = newItemsFromApi.map((apiItem) => {
             const cachedItem = items.find(
               (cache) => cache.product_id === apiItem.product_id
@@ -90,32 +89,127 @@ export const CartProvider = ({ children }) => {
           });
 
           console.log(
-            "Setting cart items:",
+            "✅ Setting cart items:",
             newItemsWithDetails.length,
             "items"
           );
           setItems(newItemsWithDetails);
           setTotal(data.data?.total || 0);
 
-          // Store session ID for guest users
+          // Update session ID for guests if provided
           if (!auth?.isAuthenticated && data.data?.session_id) {
-            console.log("Storing session ID:", data.data.session_id);
-            setCartSessionId(data.data.session_id);
-            localStorage.setItem("cart_session_id", data.data.session_id);
+            const newSessionId = data.data.session_id;
+            if (newSessionId !== cart_session_id) {
+              console.log("✅ Updating session ID:", newSessionId);
+              setCartSessionId(newSessionId);
+              localStorage.setItem("cart_session_id", newSessionId);
+            }
           }
         } else {
-          console.error("CartContext: API error:", data.message);
+          console.error("❌ CartContext: API error:", data.message);
           if (response.status === 401) {
             toast.error("Session expired, please log in again");
           }
         }
       } catch (error) {
-        console.error("CartContext: Fetch cart error:", error);
+        console.error("❌ CartContext: Fetch cart error:", error);
         toast.error("Network error while fetching cart");
       }
     };
 
     fetchCart();
+  }, [auth?.isAuthenticated, auth?.token, cart_session_id]);
+
+  // Handle cart merge on login
+  useEffect(() => {
+    const handleMergeOnLogin = async () => {
+      if (
+        auth?.isAuthenticated &&
+        auth?.token &&
+        cart_session_id &&
+        !localStorage.getItem("cart_merged")
+      ) {
+        console.log(
+          "🛒 CartContext: Detected login with guest session. Merging cart..."
+        );
+        console.log("  Old session ID:", cart_session_id);
+
+        try {
+          const formData = new FormData();
+          formData.append("session_id", cart_session_id);
+
+          const response = await fetch("https://api.sablle.ng/api/cart/merge", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${auth.token}`,
+            },
+            body: formData,
+          });
+
+          const data = await response.json();
+          console.log("🛒 Merge response status:", response.status);
+          console.log("🛒 Merge response data:", data);
+
+          if (response.ok) {
+            toast.success(
+              "Cart merged successfully! All your items are now saved."
+            );
+            const mergedItems = data.data?.items || [];
+            const newItemsWithDetails = mergedItems.map((apiItem) => {
+              const existingItem = items.find(
+                (stateItem) => stateItem.product_id === apiItem.product_id
+              );
+              return {
+                ...apiItem,
+                name:
+                  existingItem?.name ||
+                  apiItem.product?.name ||
+                  "Unknown Product",
+                image:
+                  existingItem?.image ||
+                  apiItem.product?.image ||
+                  "/placeholder-image.jpg",
+              };
+            });
+
+            setItems(newItemsWithDetails);
+            setTotal(data.data?.total || 0);
+
+            // Clear old session
+            setCartSessionId(null);
+            localStorage.removeItem("cart_session_id");
+            localStorage.setItem("cart_merged", "true");
+
+            console.log(
+              "✅ Merge successful. Cart now has",
+              newItemsWithDetails.length,
+              "items."
+            );
+          } else {
+            console.error("❌ Merge failed:", data);
+            if (response.status === 401) {
+              toast.error(
+                "Authentication issue during merge. Please try adding items again."
+              );
+            } else {
+              toast.error(
+                data.message || "Failed to merge cart. Items preserved locally."
+              );
+            }
+          }
+        } catch (error) {
+          console.error("❌ CartContext: Merge error:", error);
+          toast.error(
+            "Network error during cart merge. Items preserved locally."
+          );
+        }
+      } else if (auth?.isAuthenticated) {
+        console.log("🛒 CartContext: Logged in, no guest session to merge.");
+        localStorage.removeItem("cart_merged");
+      }
+    };
+
+    handleMergeOnLogin();
   }, [auth?.isAuthenticated, auth?.token, cart_session_id]);
 
   const addItem = async (product) => {
@@ -135,7 +229,6 @@ export const CartProvider = ({ children }) => {
       });
       console.log("Session ID:", cart_session_id);
 
-      // ✅ Create FormData (matching Postman's format)
       const formData = new FormData();
       formData.append("product_id", String(product.id));
       formData.append("quantity", String(product.quantity));
@@ -147,9 +240,7 @@ export const CartProvider = ({ children }) => {
         console.log(`  ${key}: ${value}`);
       }
 
-      // ✅ Build headers (NO Content-Type for FormData!)
       const headers = {};
-
       if (auth?.isAuthenticated && auth?.token) {
         headers["Authorization"] = `Bearer ${auth.token}`;
         console.log("Using Bearer token:", auth.token.substring(0, 30) + "...");
@@ -157,9 +248,7 @@ export const CartProvider = ({ children }) => {
         headers["X-Cart-Session"] = cart_session_id;
         console.log("Using session ID:", cart_session_id);
       } else {
-        console.warn("⚠️ No authentication method available!");
-        toast.error("Unable to add to cart. Please refresh the page.");
-        return;
+        console.log("🛒 Guest add: No session ID, letting API create one.");
       }
 
       console.log("Request headers:", Object.keys(headers));
@@ -178,26 +267,25 @@ export const CartProvider = ({ children }) => {
         toast.success(data.message || "Item added to cart successfully");
         const apiItems = data.data?.cart?.items || [];
 
-        // Merge product details into API response
         const newItemsWithDetails = apiItems.map((apiItem) => {
           const existingItem = items.find(
             (stateItem) => stateItem.product_id === apiItem.product_id
           );
-
-          // If this is the newly added item, use the product data we just sent
           if (apiItem.product_id === product.id) {
             return {
               ...apiItem,
               name: product.name || product.product_name,
-              image: product.image,
+              image: product.image || "/placeholder-image.jpg",
             };
           }
-
-          // Otherwise preserve existing state
           return {
             ...apiItem,
-            name: existingItem?.name || apiItem.product?.name,
-            image: existingItem?.image || apiItem.product?.image,
+            name:
+              existingItem?.name || apiItem.product?.name || "Unknown Product",
+            image:
+              existingItem?.image ||
+              apiItem.product?.image ||
+              "/placeholder-image.jpg",
           };
         });
 
@@ -211,11 +299,11 @@ export const CartProvider = ({ children }) => {
         setItems(newItemsWithDetails);
         setTotal(data.data?.cart?.total || 0);
 
-        // Store session ID if provided (for guest users)
-        if (!auth?.isAuthenticated && data.data?.cart_session_id) {
-          console.log("Storing new session ID:", data.data.cart_session_id);
-          setCartSessionId(data.data.cart_session_id);
-          localStorage.setItem("cart_session_id", data.data.cart_session_id);
+        // Capture session ID for guests if provided
+        if (!auth?.isAuthenticated && data.cart_session_id) {
+          console.log("✅ Storing new session ID:", data.cart_session_id);
+          setCartSessionId(data.cart_session_id);
+          localStorage.setItem("cart_session_id", data.cart_session_id);
         }
       } else {
         console.error("❌ API Error:", data);
@@ -239,11 +327,13 @@ export const CartProvider = ({ children }) => {
 
     try {
       const headers = {};
-
       if (auth?.isAuthenticated && auth?.token) {
         headers["Authorization"] = `Bearer ${auth.token}`;
       } else if (cart_session_id) {
         headers["X-Cart-Session"] = cart_session_id;
+      } else {
+        toast.error("No active cart session. Please add an item first.");
+        return;
       }
 
       const response = await fetch(
@@ -257,7 +347,6 @@ export const CartProvider = ({ children }) => {
       const data = await response.json();
 
       if (response.ok) {
-        // Refresh cart data
         const cartResponse = await fetch("https://api.sablle.ng/api/cart", {
           method: "GET",
           headers,
@@ -272,8 +361,14 @@ export const CartProvider = ({ children }) => {
             );
             return {
               ...apiItem,
-              name: existingItem?.name || apiItem.product?.name,
-              image: existingItem?.image || apiItem.product?.image,
+              name:
+                existingItem?.name ||
+                apiItem.product?.name ||
+                "Unknown Product",
+              image:
+                existingItem?.image ||
+                apiItem.product?.image ||
+                "/placeholder-image.jpg",
             };
           });
 
@@ -297,11 +392,13 @@ export const CartProvider = ({ children }) => {
   const removeItem = async (id) => {
     try {
       const headers = {};
-
       if (auth?.isAuthenticated && auth?.token) {
         headers["Authorization"] = `Bearer ${auth.token}`;
       } else if (cart_session_id) {
         headers["X-Cart-Session"] = cart_session_id;
+      } else {
+        toast.error("No active cart session. Please add an item first.");
+        return;
       }
 
       const response = await fetch(
@@ -322,8 +419,12 @@ export const CartProvider = ({ children }) => {
           );
           return {
             ...apiItem,
-            name: existingItem?.name || apiItem.product?.name,
-            image: existingItem?.image || apiItem.product?.image,
+            name:
+              existingItem?.name || apiItem.product?.name || "Unknown Product",
+            image:
+              existingItem?.image ||
+              apiItem.product?.image ||
+              "/placeholder-image.jpg",
           };
         });
 

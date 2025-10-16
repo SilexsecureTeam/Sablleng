@@ -3,7 +3,8 @@ import { Minus, Plus, X } from "lucide-react";
 import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function ShoppingCart() {
   const { items, total, updateQuantity, removeItem } = useContext(CartContext);
@@ -52,7 +53,7 @@ export default function ShoppingCart() {
         position: "top-right",
         autoClose: 3000,
       });
-      navigate("/signin");
+      // navigate("/signin");
       return;
     }
     navigate("/delivery");
@@ -60,6 +61,7 @@ export default function ShoppingCart() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">
+      <ToastContainer />
       <h1 className="text-xl sm:text-2xl font-semibold mb-6 sm:mb-8">
         Shopping Cart
       </h1>
