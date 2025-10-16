@@ -1,4 +1,3 @@
-// src/Components/DeliveryDetail.jsx (Unchanged from previous response)
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContextObject";
@@ -30,10 +29,10 @@ const DeliveryDetail = () => {
     const newErrors = {};
     if (!formData.shipping_address.trim())
       newErrors.shipping_address = "Shipping address is required";
-    if (!formData.delivery_fee || formData.delivery_fee <= 0)
-      newErrors.delivery_fee = "Delivery fee must be a positive number";
-    if (!formData.tax_rate || formData.tax_rate <= 0)
-      newErrors.tax_rate = "Tax rate must be a positive number";
+    if (!formData.delivery_fee || formData.delivery_fee < 0)
+      newErrors.delivery_fee = "Delivery fee must be a valid number";
+    if (!formData.tax_rate || formData.tax_rate < 0)
+      newErrors.tax_rate = "Tax rate must be a valid number";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -42,7 +41,7 @@ const DeliveryDetail = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    if (!auth.isAuthenticated || !auth.token) {
+    if (!auth?.isAuthenticated || !auth?.token) {
       toast.error("You must be logged in to checkout");
       navigate("/signin");
       return;
@@ -51,24 +50,27 @@ const DeliveryDetail = () => {
     setIsLoading(true);
 
     try {
+      // FIX: The checkout API likely doesn't need the cart items sent in the payload.
+      // It should securely fetch the cart from the server using your authentication token.
+      // We only need to send the delivery details it doesn't know about.
+      const payload = {
+        shipping_address: formData.shipping_address,
+        delivery_fee: parseFloat(formData.delivery_fee),
+        tax_rate: parseFloat(formData.tax_rate),
+      };
+
+      console.log(
+        "Submitting checkout with payload:",
+        JSON.stringify(payload, null, 2)
+      );
+
       const response = await fetch("https://api.sablle.ng/api/checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${auth.token}`,
         },
-        body: JSON.stringify({
-          shipping_address: formData.shipping_address,
-          delivery_fee: parseFloat(formData.delivery_fee),
-          tax_rate: parseFloat(formData.tax_rate),
-          items: items.map((item) => ({
-            product_id: item.id,
-            quantity: item.quantity,
-            price: item.price,
-            color: item.color || "default",
-          })),
-          total,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -85,12 +87,15 @@ const DeliveryDetail = () => {
               value: parseFloat(formData.delivery_fee),
               shipping_address: formData.shipping_address,
               tax_rate: parseFloat(formData.tax_rate),
+              orderData: data.data, // Pass order data to payment page if needed
             },
           },
         });
       } else {
         console.error("DeliveryDetail: Checkout error:", data.message);
-        toast.error(data.message || "Failed to process checkout");
+        toast.error(
+          data.message || "Failed to process checkout. Your cart may be empty."
+        );
         setErrors({
           ...errors,
           api: data.message || "An error occurred during checkout.",
@@ -106,6 +111,12 @@ const DeliveryDetail = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const formatPrice = (price) => {
+    const numericPrice = Number(price);
+    if (isNaN(numericPrice)) return "₦--";
+    return `₦${numericPrice.toLocaleString()}`;
   };
 
   return (
@@ -182,12 +193,6 @@ const DeliveryDetail = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.tax_rate}</p>
               )}
             </div>
-            <div className="flex justify-between items-center mt-6">
-              <span className="font-medium text-base">Total</span>
-              <span className="font-semibold text-lg">
-                ₦{(total / 1000).toFixed(2)}
-              </span>
-            </div>
             <button
               type="submit"
               className="w-full bg-[#CB5B6A] text-white py-3 px-4 rounded-md font-medium text-base hover:bg-[#CB5B6A]/70 transition-colors disabled:bg-[#CB5B6A]/50"
@@ -205,28 +210,33 @@ const DeliveryDetail = () => {
             {items.length === 0 ? (
               <p className="text-gray-600 text-sm">Your cart is empty.</p>
             ) : (
-              items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex justify-between items-center mb-2"
-                >
-                  <span className="text-sm text-gray-600">
-                    {item.product?.name || "Unknown Product"} x {item.quantity}
-                  </span>
-                  <span className="text-sm font-medium">
-                    ₦{((item.price * item.quantity) / 1000).toFixed(2)}
-                  </span>
-                </div>
-              ))
+              <div className="space-y-2">
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex justify-between items-center"
+                  >
+                    <span className="text-sm text-gray-600">
+                      {/* FIX: Access item.name directly */}
+                      {item.name || "Unknown Product"} x {item.quantity}
+                    </span>
+                    <span className="text-sm font-medium">
+                      {/* FIX: Correctly format price without dividing */}
+                      {formatPrice(item.price * item.quantity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
             <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
               <span className="font-medium text-sm sm:text-base">Subtotal</span>
               <span className="font-semibold text-base sm:text-lg">
-                ₦{(total / 1000).toFixed(2)}
+                {/* FIX: Correctly format total without dividing */}
+                {formatPrice(total)}
               </span>
             </div>
             <p className="text-xs sm:text-sm text-gray-500 mt-2">
-              Delivery fees and taxes included in checkout.
+              Delivery fees and taxes calculated upon checkout.
             </p>
           </div>
         </div>

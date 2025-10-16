@@ -1,12 +1,17 @@
-// src/context/CartContext.jsx
 import React, { useState, useContext, useEffect, useMemo } from "react";
 import { CartContext } from "./CartContextObject";
 import { AuthContext } from "./AuthContextObject";
 import { toast } from "react-toastify";
 
 export const CartProvider = ({ children }) => {
-  const [items, setItems] = useState([]);
-  const [total, setTotal] = useState(0);
+  // Initialize state from localStorage to prevent flicker on load
+  const [items, setItems] = useState(() =>
+    JSON.parse(localStorage.getItem("cart_items") || "[]")
+  );
+  const [total, setTotal] = useState(() =>
+    parseFloat(localStorage.getItem("cart_total") || "0")
+  );
+
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [cart_session_id, setCartSessionId] = useState(
     localStorage.getItem("cart_session_id") || null
@@ -18,28 +23,21 @@ export const CartProvider = ({ children }) => {
     [authContext]
   );
 
+  // useEffect to automatically sync state with localStorage
+  useEffect(() => {
+    localStorage.setItem("cart_items", JSON.stringify(items));
+    localStorage.setItem("cart_total", String(total));
+  }, [items, total]);
+
   useEffect(() => {
     const fetchCart = async () => {
       if (!auth.isAuthenticated && !cart_session_id) {
-        console.log("CartContext: Skipping fetch, no auth or session_id");
-        // Load from localStorage if available
-        const cachedItems = JSON.parse(
-          localStorage.getItem("cart_items") || "[]"
-        );
-        const cachedTotal = parseFloat(
-          localStorage.getItem("cart_total") || "0"
-        );
-        setItems(cachedItems);
-        setTotal(cachedTotal);
+        console.log("CartContext: Skipping fetch, using cached cart");
         return;
       }
 
       try {
-        console.log("CartContext: Fetching cart with auth:", {
-          isAuthenticated: auth.isAuthenticated,
-          token: auth.token ? auth.token.substring(0, 20) + "..." : null,
-          sessionId: cart_session_id,
-        });
+        console.log("CartContext: Fetching cart...");
         const headers =
           auth.isAuthenticated && auth.token
             ? { Authorization: `Bearer ${auth.token}` }
@@ -50,27 +48,30 @@ export const CartProvider = ({ children }) => {
           headers,
         });
         const data = await response.json();
-        console.log(
-          "CartContext: GET /api/cart response:",
-          JSON.stringify(data, null, 2)
-        );
-        console.log("CartContext: Items to set:", data.data?.items || []);
 
         if (response.ok) {
-          const newItems = data.data?.items || [];
-          setItems(newItems);
+          const newItemsFromApi = data.data?.items || [];
+
+          const cachedItems = items;
+
+          // Merge names and images from cache into the fresh data from the API
+          const newItemsWithDetails = newItemsFromApi.map((apiItem) => {
+            const cachedItem = cachedItems.find(
+              (cache) => cache.id === apiItem.id
+            );
+            return {
+              ...apiItem,
+              name: cachedItem?.name,
+              image: cachedItem?.image,
+            };
+          });
+
+          setItems(newItemsWithDetails);
           setTotal(data.data?.total || 0);
-          // Update localStorage
-          localStorage.setItem("cart_items", JSON.stringify(newItems));
-          localStorage.setItem("cart_total", data.data?.total || 0);
-          console.log("CartContext: Updated items state:", newItems);
+
           if (!auth.isAuthenticated && data.data?.session_id) {
             setCartSessionId(data.data.session_id);
             localStorage.setItem("cart_session_id", data.data.session_id);
-            console.log(
-              "CartContext: Set cart_session_id:",
-              data.data.session_id
-            );
           }
           toast.success("Cart loaded successfully");
         } else {
@@ -81,32 +82,15 @@ export const CartProvider = ({ children }) => {
           } else {
             toast.error(data.message || "Failed to fetch cart");
           }
-          // Fallback to localStorage
-          const cachedItems = JSON.parse(
-            localStorage.getItem("cart_items") || "[]"
-          );
-          const cachedTotal = parseFloat(
-            localStorage.getItem("cart_total") || "0"
-          );
-          setItems(cachedItems);
-          setTotal(cachedTotal);
         }
       } catch (error) {
         console.error("CartContext: Fetch cart error:", error.message);
         toast.error("Network error while fetching cart");
-        // Fallback to localStorage
-        const cachedItems = JSON.parse(
-          localStorage.getItem("cart_items") || "[]"
-        );
-        const cachedTotal = parseFloat(
-          localStorage.getItem("cart_total") || "0"
-        );
-        setItems(cachedItems);
-        setTotal(cachedTotal);
       }
     };
 
     fetchCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.isAuthenticated, auth.token, cart_session_id]);
 
   const addItem = async (product) => {
@@ -133,19 +117,36 @@ export const CartProvider = ({ children }) => {
         }),
       });
       const data = await response.json();
-      console.log(
-        "CartContext: POST /api/cart/add response:",
-        JSON.stringify(data, null, 2)
-      );
 
       if (response.ok) {
         toast.success(data.message || "Item added to cart successfully");
-        setItems(data.data?.cart?.items || []);
+        const apiItems = data.data?.cart?.items || [];
+
+        // FIX: Merge name AND image into the new cart items
+        const newItemsWithDetails = apiItems.map((apiItem) => {
+          const existingItem = items.find(
+            (stateItem) => stateItem.id === apiItem.id
+          );
+
+          // If this is the item we just added, grab details from the 'product' object
+          if (apiItem.product_id === product.id) {
+            return {
+              ...apiItem,
+              name: product.name || product.product_name,
+              image: product.image,
+            };
+          }
+          // Otherwise, preserve the details from the existing state
+          return {
+            ...apiItem,
+            name: existingItem?.name,
+            image: existingItem?.image,
+          };
+        });
+
+        setItems(newItemsWithDetails);
         setTotal(data.data?.cart?.total || 0);
-        console.log(
-          "CartContext: Updated items after add:",
-          data.data?.cart?.items || []
-        );
+
         if (!auth.isAuthenticated && data.data?.cart_session_id) {
           setCartSessionId(data.data.cart_session_id);
           localStorage.setItem("cart_session_id", data.data.cart_session_id);
@@ -180,10 +181,6 @@ export const CartProvider = ({ children }) => {
         }
       );
       const data = await response.json();
-      console.log(
-        "CartContext: PATCH /api/cart/items response:",
-        JSON.stringify(data, null, 2)
-      );
 
       if (response.ok) {
         const cartResponse = await fetch("https://api.sablle.ng/api/cart", {
@@ -191,18 +188,23 @@ export const CartProvider = ({ children }) => {
           headers,
         });
         const cartData = await cartResponse.json();
-        console.log(
-          "CartContext: GET /api/cart after update response:",
-          JSON.stringify(cartData, null, 2)
-        );
 
         if (cartResponse.ok) {
-          setItems(cartData.data?.items || []);
+          const apiItems = cartData.data?.items || [];
+          // Preserve details from the current state
+          const newItemsWithDetails = apiItems.map((apiItem) => {
+            const existingItem = items.find(
+              (stateItem) => stateItem.id === apiItem.id
+            );
+            return {
+              ...apiItem,
+              name: existingItem?.name,
+              image: existingItem?.image,
+            };
+          });
+
+          setItems(newItemsWithDetails);
           setTotal(cartData.data?.total || 0);
-          console.log(
-            "CartContext: Updated items after quantity update:",
-            cartData.data?.items || []
-          );
           toast.success("Quantity updated successfully");
         } else {
           if (cartResponse.status === 401) {
@@ -228,7 +230,6 @@ export const CartProvider = ({ children }) => {
 
   const removeItem = async (id) => {
     try {
-      console.log("CartContext: Removing item with ID:", id);
       const headers =
         auth.isAuthenticated && auth.token
           ? { Authorization: `Bearer ${auth.token}` }
@@ -242,18 +243,23 @@ export const CartProvider = ({ children }) => {
         }
       );
       const data = await response.json();
-      console.log(
-        "CartContext: DELETE /api/cart/items response:",
-        JSON.stringify(data, null, 2)
-      );
 
       if (response.ok) {
-        setItems(data.data?.items || []);
+        const apiItems = data.data?.items || [];
+        // Preserve details from the current state
+        const newItemsWithDetails = apiItems.map((apiItem) => {
+          const existingItem = items.find(
+            (stateItem) => stateItem.id === apiItem.id
+          );
+          return {
+            ...apiItem,
+            name: existingItem?.name,
+            image: existingItem?.image,
+          };
+        });
+
+        setItems(newItemsWithDetails);
         setTotal(data.data?.total || 0);
-        console.log(
-          "CartContext: Updated items after remove:",
-          data.data?.items || []
-        );
         toast.success(data.message || "Item removed successfully");
       } else {
         console.error("CartContext: Delete error:", data.message);
@@ -262,27 +268,6 @@ export const CartProvider = ({ children }) => {
           auth.logout();
         } else {
           toast.error(data.message || "Failed to remove item from cart");
-        }
-        // Fallback fetch only if necessary
-        try {
-          const cartResponse = await fetch("https://api.sablle.ng/api/cart", {
-            method: "GET",
-            headers,
-          });
-          const cartData = await cartResponse.json();
-          if (cartResponse.ok) {
-            setItems(cartData.data?.items || []);
-            setTotal(cartData.data?.total || 0);
-            console.log(
-              "CartContext: Recovered cart after delete error:",
-              cartData.data?.items || []
-            );
-          } else {
-            toast.error(cartData.message || "Failed to recover cart");
-          }
-        } catch (error) {
-          console.error("CartContext: Recovery fetch error:", error.message);
-          toast.error("Network error while recovering cart");
         }
       }
     } catch (error) {

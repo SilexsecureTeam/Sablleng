@@ -48,9 +48,14 @@ const ProductDetail = () => {
         const formattedProducts = productsArray.map((item) => ({
           id: item.id,
           name: item.name || "",
+          // FIX: Store the raw price for calculations
+          rawPrice: item.sale_price_inc_tax
+            ? parseFloat(item.sale_price_inc_tax)
+            : 0,
+          // FIX: Keep the formatted price for display only
           price: item.sale_price_inc_tax
             ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-            : "",
+            : "₦0",
           category: item.category?.name || "",
           badge: item.is_variable_price ? "Customizable" : null,
           image: item.images?.[0] || "/placeholder-image.jpg",
@@ -76,11 +81,6 @@ const ProductDetail = () => {
           index: 0,
           bgColor: "bg-blue-100",
           image: foundProduct.image,
-        });
-
-        toast.success("Product fetched successfully!", {
-          position: "top-right",
-          autoClose: 3000,
         });
       } catch (err) {
         console.error("Fetch error:", err);
@@ -120,23 +120,28 @@ const ProductDetail = () => {
 
   const handleAddToCart = async () => {
     if (!product) return;
-    const price = parseFloat(product.price.replace("₦", ""));
+
+    // FIX: Use the unformatted rawPrice for the payload
+    const price = product.rawPrice;
     console.log("ProductDetail: Adding to cart with price:", price);
+
     await addItem({
       id: product.id,
       name: product.name,
       model: product.model,
-      price: price,
+      price: price, // This will now be the correct number (e.g., 4000)
       image: selectedThumbnail.image,
       quantity: quantity,
       color: selectedColor,
     });
+
     setQuantity(1);
     toast.success("Added to cart!", {
       position: "top-right",
       autoClose: 3000,
     });
   };
+
   const handleQuantityChange = (newQuantity) => {
     if (newQuantity >= 1) {
       setQuantity(newQuantity);
@@ -162,7 +167,8 @@ const ProductDetail = () => {
   if (isLoading) {
     return (
       <div className="max-w-[1200px] mx-auto p-8 text-center">
-        <p className="text-gray-600">Loading product...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#CB5B6A] mx-auto"></div>
+        <p className="text-gray-600 mt-4">Loading product...</p>
       </div>
     );
   }
@@ -259,6 +265,7 @@ const ProductDetail = () => {
                   </div>
                   <div className="flex">
                     <span className="text-gray-500 w-24">Price:</span>
+                    {/* The displayed price is still the formatted string */}
                     <span className="text-gray-900">{product.price}</span>
                   </div>
                 </div>
@@ -288,6 +295,7 @@ const ProductDetail = () => {
                     <button
                       onClick={() => handleQuantityChange(quantity - 1)}
                       className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                      disabled={quantity <= 1}
                     >
                       <svg
                         className="w-4 h-4 text-gray-600"
@@ -361,7 +369,7 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      {/* Reviews Section (Static for now, as API doesn't provide reviews) */}
+      {/* Reviews Section */}
       <div className="max-w-[1200px] mx-auto">
         <div className="bg-white p-8">
           <h2 className="text-2xl font-semibold text-gray-900 mb-8">Reviews</h2>
@@ -396,7 +404,7 @@ const ProductDetail = () => {
       </div>
 
       {/* Related Products Slider */}
-      {relatedProducts.length > 0 ? (
+      {relatedProducts.length > 0 && (
         <div className="max-w-[1200px] mx-auto p-8">
           <div className="bg-white rounded-lg shadow-sm p-8">
             <div className="flex justify-between items-center mb-6">
@@ -488,10 +496,6 @@ const ProductDetail = () => {
               ))}
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="max-w-[1200px] mx-auto p-8 text-center">
-          <p className="text-gray-600">No related products found.</p>
         </div>
       )}
     </div>

@@ -1,33 +1,38 @@
-// src/Components/ShoppingCart.jsx
 import React, { useContext, useState } from "react";
 import { Minus, Plus, X } from "lucide-react";
-import { AuthContext } from "../context/AuthContextObject"; // Added import
+import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 export default function ShoppingCart() {
   const { items, total, updateQuantity, removeItem } = useContext(CartContext);
-  const { auth } = useContext(AuthContext); // Added to check authentication
+  const authContext = useContext(AuthContext);
   const [promoCode, setPromoCode] = useState("");
   const [bonusCard, setBonusCard] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   React.useEffect(() => {
+    // Items are now loaded from context, which is initialized from localStorage
     console.log("ShoppingCart: Items state:", JSON.stringify(items, null, 2));
-    const timer = setTimeout(() => setIsLoading(false), 2000); // Extended to 2s
+    const timer = setTimeout(() => setIsLoading(false), 500); // Reduced loading time
     return () => clearTimeout(timer);
   }, [items]);
 
   const formatPrice = (price) => {
-    return `₦${(price / 1000).toFixed(2)}`;
+    // Ensure price is a number before formatting
+    const numericPrice = Number(price);
+    if (isNaN(numericPrice)) {
+      return "₦--";
+    }
+    return `₦${numericPrice.toLocaleString()}`;
   };
 
   const handleRemoveItem = (e, id) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("ShoppingCart: Attempting to remove item with ID:", id); // Debug log
+    console.log("ShoppingCart: Attempting to remove item with ID:", id);
     toast.info("Removing item...", {
       autoClose: 1500,
       toastId: `remove-${id}`,
@@ -36,7 +41,7 @@ export default function ShoppingCart() {
   };
 
   const handleCheckout = () => {
-    if (!auth.isAuthenticated) {
+    if (!authContext?.auth?.isAuthenticated) {
       toast.error("Please log in to continue with checkout", {
         position: "top-right",
         autoClose: 3000,
@@ -62,9 +67,11 @@ export default function ShoppingCart() {
         </div>
       ) : (
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-16 sm:gap-8">
-          <div className="flex-1 space-y-4 sm:space-y-6 max-h-[420px] overflow-y-auto">
+          <div className="flex-1 space-y-4 sm:space-y-6 max-h-[420px] overflow-y-auto pr-2">
             {items.length === 0 ? (
-              <p className="text-gray-600 text-center">Your cart is empty.</p>
+              <p className="text-gray-600 text-center py-10">
+                Your cart is empty.
+              </p>
             ) : (
               items.map((item) => (
                 <div
@@ -72,16 +79,18 @@ export default function ShoppingCart() {
                   className="flex items-start sm:items-center space-x-4 sm:space-x-10 pb-4 sm:pb-6 border-b border-gray-100"
                 >
                   <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex-shrink-0 flex items-center justify-center bg-gray-50">
+                    {/* FIX: Access item.image directly */}
                     <img
-                      src={item.product?.images?.[0] || "/placeholder.png"}
-                      alt={item.product?.name || "Product"}
+                      src={item.image || "/placeholder.png"}
+                      alt={item.name || "Product"} // FIX: Access item.name directly
                       className="max-h-full max-w-full object-contain"
                     />
                   </div>
                   <div className="flex flex-grow flex-col md:flex-row md:items-center">
                     <div className="flex-grow">
+                      {/* FIX: Access item.name directly */}
                       <h3 className="font-medium text-gray-900 text-sm sm:text-base mb-1">
-                        {item.product?.name || "Unknown Product"}
+                        {item.name || "Unknown Product"}
                         {item.customization_id && (
                           <span className="ml-2 inline-block bg-[#CB5B6A] text-white text-xs px-2 py-1 rounded">
                             Customized
@@ -97,7 +106,7 @@ export default function ShoppingCart() {
                         onClick={() =>
                           updateQuantity(item.id, item.quantity - 1)
                         }
-                        disabled={item.quantity === 1}
+                        disabled={item.quantity <= 1}
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-50"
                       >
                         <Minus size={14} className="text-gray-600" />
@@ -114,6 +123,7 @@ export default function ShoppingCart() {
                         <Plus size={14} className="text-gray-600" />
                       </button>
                       <div className="text-right min-w-[80px] sm:min-w-[100px]">
+                        {/* FIX: Access item.price directly */}
                         <p className="font-medium text-gray-900 text-sm sm:text-base">
                           {formatPrice(item.price * item.quantity)}
                         </p>
@@ -171,8 +181,8 @@ export default function ShoppingCart() {
                 Delivery fees not included yet.
               </p>
               <button
-                onClick={handleCheckout} // Updated to use new handler
-                className="w-full bg-[#CB5B6A] text-white py-2 sm:py-3 px-4 rounded-md font-medium text-sm sm:text-base hover:bg-[#CB5B6A]/70 transition-colors"
+                onClick={handleCheckout}
+                className="w-full bg-[#CB5B6A] text-white py-2 sm:py-3 px-4 rounded-md font-medium text-sm sm:text-base hover:bg-[#CB5B6A]/70 transition-colors disabled:opacity-50"
                 disabled={items.length === 0}
               >
                 Checkout
