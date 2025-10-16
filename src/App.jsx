@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
-import { AuthProvider } from "./context/AuthContext"; // Add AuthProvider
 import ProtectedRoute from "./Components/ProtectedRoute"; // Add ProtectedRoute
 import "./App.css";
 import logo from "./assets/logo.png";
@@ -82,11 +82,11 @@ const ScrollToTop = () => {
 
 const App = () => {
   return (
-    <CartProvider>
+    <BrowserRouter>
       <AuthProvider>
-        {" "}
-        {/* Wrap with AuthProvider */}
-        <BrowserRouter>
+        <CartProvider>
+          {" "}
+          {/* Wrap with AuthProvider */}
           <div className="min-h-screen">
             <ToastContainer position="top-right" autoClose={3000} />
             <ScrollToTop />
@@ -127,9 +127,9 @@ const App = () => {
               </Routes>
             </Suspense>
           </div>
-        </BrowserRouter>
+        </CartProvider>
       </AuthProvider>
-    </CartProvider>
+    </BrowserRouter>
   );
 };
 

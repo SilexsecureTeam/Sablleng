@@ -18,13 +18,17 @@ const PaymentComponent = () => {
   const location = useLocation();
   const selectedDelivery = location.state?.selectedDelivery || { value: 6000 }; // Default to Express delivery
 
-  // Debug auth state
+  // Debug auth state and Paystack keys
   useEffect(() => {
     console.log("PaymentComponent: auth state:", {
       isAuthenticated: auth.isAuthenticated,
-      token: auth.token,
-      email: auth.email,
-      isValidEmail: auth.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.email),
+      token: auth.token ? auth.token.substring(0, 20) + "..." : "Missing",
+      email: auth.user?.email,
+      isValidEmail:
+        auth.user?.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.user.email),
+    });
+    console.log("PaymentComponent: Paystack public key:", {
+      publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ? "Set" : "Missing",
     });
   }, [auth]);
 
@@ -107,10 +111,13 @@ const PaymentComponent = () => {
       navigate("/signin");
       return;
     }
-    if (!auth.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.email)) {
+    if (
+      !auth.user?.email ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.user.email)
+    ) {
       console.log(
         "PaymentComponent: Redirecting to signin - invalid or missing email:",
-        auth.email
+        auth.user?.email
       );
       toast.error(
         "Valid email required for payment. Please update your profile or log in again.",
@@ -145,7 +152,7 @@ const PaymentComponent = () => {
         const popup = new window.PaystackPop();
         popup.newTransaction({
           key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-          email: auth.email,
+          email: auth.user.email,
           amount: total * 100, // Convert to kobo
           reference: `order_${orderId}_${Date.now()}`,
           onLoad: () => {
@@ -157,16 +164,37 @@ const PaymentComponent = () => {
               transaction
             );
             try {
+              console.log("PaymentComponent: Verification request:", {
+                url: `https://api.sablle.ng/api/verify-payment/${transaction.reference}/${orderId}`,
+                orderId,
+                tokenPreview: auth.token
+                  ? auth.token.substring(0, 20) + "..."
+                  : "Missing",
+              });
+
               const response = await fetch(
                 `https://api.sablle.ng/api/verify-payment/${transaction.reference}/${orderId}`,
                 {
                   method: "GET",
                   headers: {
-                    Authorization: `Bearer ${auth.token}`,
+                    Authorization: `Bearer ${auth.token}`, // Use user JWT, like in Invoice.jsx
                   },
                 }
               );
-              const data = await response.json();
+
+              let data;
+              try {
+                data = await response.json(); // Try parsing JSON
+              } catch (jsonError) {
+                console.error(
+                  "PaymentComponent: JSON parsing error:",
+                  jsonError.message
+                );
+                data = {
+                  error: `Server returned non-JSON response (status: ${response.status})`,
+                };
+              }
+
               console.log(
                 "PaymentComponent: GET /api/verify-payment response:",
                 JSON.stringify(data, null, 2)
@@ -199,10 +227,11 @@ const PaymentComponent = () => {
               } else {
                 console.error(
                   "PaymentComponent: Verification error:",
-                  data.message
+                  data.error || data.message
                 );
                 toast.error(
-                  data.message ||
+                  data.error ||
+                    data.message ||
                     "Failed to verify payment. Please contact support.",
                   {
                     position: "top-right",
@@ -223,6 +252,7 @@ const PaymentComponent = () => {
                 }
               );
             }
+            return true; // Resolve promise
           },
           onCancel: () => {
             toast.info("Payment cancelled. You can try again.", {

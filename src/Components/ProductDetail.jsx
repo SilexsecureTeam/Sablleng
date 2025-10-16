@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CartContext } from "../context/CartContextObject";
+import { AuthContext } from "../context/AuthContextObject";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ImageUploadComponent from "./ImageUploadComponent";
@@ -8,9 +9,12 @@ import ImageUploadComponent from "./ImageUploadComponent";
 const ProductDetail = () => {
   const { id } = useParams();
   const { addItem } = useContext(CartContext);
+  const { auth } = useContext(AuthContext);
+
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [error, setError] = useState(null);
   const [selectedColor, setSelectedColor] = useState("white");
   const [quantity, setQuantity] = useState(1);
@@ -30,8 +34,18 @@ const ProductDetail = () => {
   ];
 
   useEffect(() => {
+    console.log("ProductDetail: Auth state:", {
+      isAuthenticated: auth?.isAuthenticated,
+      hasToken: !!auth?.token,
+      tokenPreview: auth?.token ? auth.token.substring(0, 20) + "..." : null,
+    });
+  }, [auth]);
+
+  useEffect(() => {
     const fetchProduct = async () => {
       setIsLoading(true);
+      setError(null);
+
       try {
         const response = await fetch(`https://api.sablle.ng/api/products`, {
           method: "GET",
@@ -48,11 +62,9 @@ const ProductDetail = () => {
         const formattedProducts = productsArray.map((item) => ({
           id: item.id,
           name: item.name || "",
-          // FIX: Store the raw price for calculations
           rawPrice: item.sale_price_inc_tax
             ? parseFloat(item.sale_price_inc_tax)
             : 0,
-          // FIX: Keep the formatted price for display only
           price: item.sale_price_inc_tax
             ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
             : "₦0",
@@ -65,6 +77,7 @@ const ProductDetail = () => {
         const foundProduct = formattedProducts.find(
           (p) => p.id === parseInt(id)
         );
+
         if (!foundProduct) {
           throw new Error("Product not found");
         }
@@ -88,6 +101,10 @@ const ProductDetail = () => {
         toast.error(`Error: ${err.message}`, {
           position: "top-right",
           autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
         });
       } finally {
         setIsLoading(false);
@@ -119,36 +136,100 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = async () => {
-    if (!product) return;
+    if (!product) {
+      toast.error("Product information not available");
+      return;
+    }
 
-    // FIX: Use the unformatted rawPrice for the payload
-    const price = product.rawPrice;
-    console.log("ProductDetail: Adding to cart with price:", price);
-
-    await addItem({
+    console.log("\n=== PRODUCT DETAIL: ADD TO CART ===");
+    console.log("Product:", {
       id: product.id,
       name: product.name,
-      model: product.model,
-      price: price, // This will now be the correct number (e.g., 4000)
-      image: selectedThumbnail.image,
-      quantity: quantity,
+      rawPrice: product.rawPrice,
+      quantity,
       color: selectedColor,
     });
+    console.log("Auth context available:", !!auth);
+    console.log("Auth authenticated:", auth?.isAuthenticated);
+    console.log("Auth token exists:", !!auth?.token);
 
-    setQuantity(1);
-    toast.success("Added to cart!", {
-      position: "top-right",
-      autoClose: 3000,
-    });
+    setIsAddingToCart(true);
+
+    try {
+      const price = product.rawPrice;
+
+      if (!price || price <= 0) {
+        toast.error("Invalid product price");
+        return;
+      }
+
+      await addItem({
+        id: product.id,
+        name: product.name,
+        model: product.model,
+        price: price,
+        image: selectedThumbnail.image,
+        quantity: quantity,
+        color: selectedColor,
+      });
+
+      toast.success(
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+            <svg
+              className="w-6 h-6 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900">Added to cart!</p>
+            <p className="text-sm text-gray-600">{product.name}</p>
+          </div>
+        </div>,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          className: "!bg-white !shadow-xl",
+        }
+      );
+
+      setQuantity(1);
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      toast.error("Failed to add item to cart. Please try again.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
+    } finally {
+      setIsAddingToCart(false);
+      console.log("===================================\n");
+    }
   };
 
   const handleQuantityChange = (newQuantity) => {
-    if (newQuantity >= 1) {
+    if (newQuantity >= 1 && newQuantity <= 99) {
       setQuantity(newQuantity);
     }
   };
 
   const handleOrderNow = () => {
+    toast.info("Order now feature coming soon!", {
+      position: "top-right",
+      autoClose: 3000,
+    });
     console.log("Order Now clicked for", product?.name);
   };
 
@@ -265,7 +346,6 @@ const ProductDetail = () => {
                   </div>
                   <div className="flex">
                     <span className="text-gray-500 w-24">Price:</span>
-                    {/* The displayed price is still the formatted string */}
                     <span className="text-gray-900">{product.price}</span>
                   </div>
                 </div>
@@ -295,7 +375,7 @@ const ProductDetail = () => {
                     <button
                       onClick={() => handleQuantityChange(quantity - 1)}
                       className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                      disabled={quantity <= 1}
+                      disabled={quantity <= 1 || isAddingToCart}
                     >
                       <svg
                         className="w-4 h-4 text-gray-600"
@@ -319,10 +399,13 @@ const ProductDetail = () => {
                       }
                       className="w-16 text-center border border-gray-300 rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
                       min="1"
+                      max="99"
+                      disabled={isAddingToCart}
                     />
                     <button
                       onClick={() => handleQuantityChange(quantity + 1)}
                       className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                      disabled={quantity >= 99 || isAddingToCart}
                     >
                       <svg
                         className="w-4 h-4 text-gray-600"
@@ -344,13 +427,15 @@ const ProductDetail = () => {
                   <button
                     className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
                     onClick={handleAddToCart}
+                    disabled={isAddingToCart}
                   >
-                    Add to Cart
+                    {isAddingToCart ? "Adding..." : "Add to Cart"}
                   </button>
                   {product.badge === "Customizable" ? (
                     <button
                       className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
                       onClick={handleCustomize}
+                      disabled={isAddingToCart}
                     >
                       Customize
                     </button>
@@ -358,6 +443,7 @@ const ProductDetail = () => {
                     <button
                       className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
                       onClick={handleOrderNow}
+                      disabled={isAddingToCart}
                     >
                       Order Now
                     </button>

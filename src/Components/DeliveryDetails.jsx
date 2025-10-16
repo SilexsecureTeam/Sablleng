@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
@@ -6,8 +6,9 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const DeliveryDetail = () => {
+  // ✅ CRITICAL FIX: Access auth object correctly
   const { auth } = useContext(AuthContext);
-  const { items, total } = useContext(CartContext);
+  const { items, total, cart_session_id } = useContext(CartContext);
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -16,6 +17,22 @@ const DeliveryDetail = () => {
     tax_rate: 7.5,
   });
   const [errors, setErrors] = useState({});
+
+  // Debug logging on mount
+  useEffect(() => {
+    console.log("\n=== CHECKOUT PAGE LOADED ===");
+    console.log("Cart items:", items);
+    console.log("Cart total:", total);
+    console.log("Items count:", items?.length || 0);
+    console.log("Auth state:", {
+      isAuthenticated: auth?.isAuthenticated,
+      hasToken: !!auth?.token,
+      tokenPreview: auth?.token ? auth.token.substring(0, 20) + "..." : null,
+      user: auth?.user?.name || auth?.user?.email,
+    });
+    console.log("Session ID:", cart_session_id);
+    console.log("=========================\n");
+  }, [items, total, auth, cart_session_id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,30 +56,43 @@ const DeliveryDetail = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
 
+    console.log("\n=== CHECKOUT SUBMISSION ===");
+
+    if (!validateForm()) {
+      console.log("❌ Form validation failed");
+      return;
+    }
+
+    // Check authentication
     if (!auth?.isAuthenticated || !auth?.token) {
+      console.log("❌ User not authenticated");
       toast.error("You must be logged in to checkout");
       navigate("/signin");
       return;
     }
 
+    // Check cart
+    if (!items || items.length === 0) {
+      console.log("❌ Cart is empty");
+      toast.error("Your cart is empty. Please add items before checking out.");
+      return;
+    }
+
+    console.log("✅ Validation passed");
+    console.log("Items in cart:", items.length);
+    console.log("Token available:", auth.token.substring(0, 20) + "...");
+
     setIsLoading(true);
 
     try {
-      // FIX: The checkout API likely doesn't need the cart items sent in the payload.
-      // It should securely fetch the cart from the server using your authentication token.
-      // We only need to send the delivery details it doesn't know about.
       const payload = {
         shipping_address: formData.shipping_address,
         delivery_fee: parseFloat(formData.delivery_fee),
         tax_rate: parseFloat(formData.tax_rate),
       };
 
-      console.log(
-        "Submitting checkout with payload:",
-        JSON.stringify(payload, null, 2)
-      );
+      console.log("Request payload:", JSON.stringify(payload, null, 2));
 
       const response = await fetch("https://api.sablle.ng/api/checkout", {
         method: "POST",
@@ -74,35 +104,46 @@ const DeliveryDetail = () => {
       });
 
       const data = await response.json();
-      console.log(
-        "DeliveryDetail: POST /api/checkout response:",
-        JSON.stringify(data, null, 2)
-      );
+      console.log("Response status:", response.status);
+      console.log("Response data:", JSON.stringify(data, null, 2));
 
       if (response.ok) {
+        console.log("✅ Checkout successful");
         toast.success("Checkout submitted! Proceeding to payment.");
+
         navigate("/payment", {
           state: {
             selectedDelivery: {
               value: parseFloat(formData.delivery_fee),
               shipping_address: formData.shipping_address,
               tax_rate: parseFloat(formData.tax_rate),
-              orderData: data.data, // Pass order data to payment page if needed
+              orderData: data.data,
             },
           },
         });
       } else {
-        console.error("DeliveryDetail: Checkout error:", data.message);
-        toast.error(
-          data.message || "Failed to process checkout. Your cart may be empty."
-        );
+        console.error("❌ Checkout failed:", data);
+
+        if (response.status === 401) {
+          toast.error("Session expired. Please log in again.");
+          navigate("/signin");
+        } else if (response.status === 400 && data.message?.includes("cart")) {
+          toast.error(
+            "Your cart appears to be empty on the server. Please try adding items again."
+          );
+        } else {
+          toast.error(
+            data.message || "Failed to process checkout. Please try again."
+          );
+        }
+
         setErrors({
           ...errors,
           api: data.message || "An error occurred during checkout.",
         });
       }
     } catch (error) {
-      console.error("DeliveryDetail: Network error:", error.message);
+      console.error("❌ Network error:", error);
       toast.error("Network error. Please check your connection and try again.");
       setErrors({
         ...errors,
@@ -110,6 +151,7 @@ const DeliveryDetail = () => {
       });
     } finally {
       setIsLoading(false);
+      console.log("=========================\n");
     }
   };
 
@@ -122,122 +164,287 @@ const DeliveryDetail = () => {
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">
       <ToastContainer position="top-right" autoClose={3000} />
-      <h1 className="text-xl sm:text-2xl font-semibold mb-6 sm:mb-8">
-        Delivery Details
-      </h1>
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-16 sm:gap-8">
-        <div className="flex-1">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {errors.api && (
-              <p className="text-red-500 text-sm mb-4">{errors.api}</p>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">
-                Shipping Address
-              </label>
-              <input
-                type="text"
-                name="shipping_address"
-                value={formData.shipping_address}
-                onChange={handleChange}
-                placeholder="Enter your shipping address"
-                className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
-                required
-                disabled={isLoading}
-              />
-              {errors.shipping_address && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.shipping_address}
-                </p>
+
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          Delivery Details
+        </h1>
+        <p className="text-gray-600 mt-2">
+          Complete your order by providing delivery information
+        </p>
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Form Section */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {errors.api && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <svg
+                      className="w-5 h-5 text-red-600 mt-0.5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <p className="ml-3 text-sm text-red-800">{errors.api}</p>
+                  </div>
+                </div>
               )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">
-                Delivery Fee (₦)
-              </label>
-              <input
-                type="number"
-                name="delivery_fee"
-                value={formData.delivery_fee}
-                onChange={handleChange}
-                placeholder="Enter delivery fee"
-                className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
-                min="0"
-                step="0.01"
-                required
-                disabled={isLoading}
-              />
-              {errors.delivery_fee && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.delivery_fee}
-                </p>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Shipping Address
+                </label>
+                <input
+                  type="text"
+                  name="shipping_address"
+                  value={formData.shipping_address}
+                  onChange={handleChange}
+                  placeholder="Enter your full shipping address"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
+                  required
+                  disabled={isLoading}
+                />
+                {errors.shipping_address && (
+                  <p className="text-red-500 text-sm mt-2 flex items-center">
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {errors.shipping_address}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Delivery Fee (₦)
+                  </label>
+                  <input
+                    type="number"
+                    name="delivery_fee"
+                    value={formData.delivery_fee}
+                    onChange={handleChange}
+                    placeholder="0.00"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
+                    min="0"
+                    step="0.01"
+                    required
+                    disabled={isLoading}
+                  />
+                  {errors.delivery_fee && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.delivery_fee}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Tax Rate (%)
+                  </label>
+                  <input
+                    type="number"
+                    name="tax_rate"
+                    value={formData.tax_rate}
+                    onChange={handleChange}
+                    placeholder="0.0"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
+                    min="0"
+                    step="0.01"
+                    required
+                    disabled={isLoading}
+                  />
+                  {errors.tax_rate && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.tax_rate}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-[#CB5B6A] text-white py-4 px-6 rounded-lg font-semibold text-base hover:bg-[#B54F5E] active:bg-[#A0444F] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl"
+                disabled={isLoading || items.length === 0}
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Processing...
+                  </span>
+                ) : (
+                  "Proceed to Payment →"
+                )}
+              </button>
+
+              {items.length === 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+                  <p className="text-amber-800 text-sm font-medium">
+                    ⚠️ Please add items to your cart before proceeding
+                  </p>
+                </div>
               )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">
-                Tax Rate (%)
-              </label>
-              <input
-                type="number"
-                name="tax_rate"
-                value={formData.tax_rate}
-                onChange={handleChange}
-                placeholder="Enter tax rate"
-                className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
-                min="0"
-                step="0.01"
-                required
-                disabled={isLoading}
-              />
-              {errors.tax_rate && (
-                <p className="text-red-500 text-sm mt-1">{errors.tax_rate}</p>
-              )}
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-[#CB5B6A] text-white py-3 px-4 rounded-md font-medium text-base hover:bg-[#CB5B6A]/70 transition-colors disabled:bg-[#CB5B6A]/50"
-              disabled={isLoading || items.length === 0}
-            >
-              {isLoading ? "Processing..." : "Proceed to Payment"}
-            </button>
-          </form>
+            </form>
+          </div>
         </div>
-        <div className="lg:w-80 xl:w-96">
-          <div className="border-gray-200 border rounded-lg p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
+
+        {/* Order Summary Sidebar */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+              <svg
+                className="w-6 h-6 mr-2 text-[#CB5B6A]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                />
+              </svg>
               Order Summary
             </h2>
+
             {items.length === 0 ? (
-              <p className="text-gray-600 text-sm">Your cart is empty.</p>
-            ) : (
-              <div className="space-y-2">
-                {items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex justify-between items-center"
+              <div className="text-center py-12">
+                <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-10 h-10 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <span className="text-sm text-gray-600">
-                      {/* FIX: Access item.name directly */}
-                      {item.name || "Unknown Product"} x {item.quantity}
-                    </span>
-                    <span className="text-sm font-medium">
-                      {/* FIX: Correctly format price without dividing */}
-                      {formatPrice(item.price * item.quantity)}
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-gray-600 text-sm mb-4">Your cart is empty</p>
+                <button
+                  onClick={() => navigate("/product")}
+                  className="text-[#CB5B6A] hover:text-[#B54F5E] text-sm font-semibold hover:underline transition-colors"
+                >
+                  Continue Shopping →
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4 mb-6 max-h-80 overflow-y-auto pr-2">
+                  {items.map((item, index) => (
+                    <div
+                      key={item.id || index}
+                      className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0"
+                    >
+                      <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
+                        <img
+                          src={
+                            item.image ||
+                            item.product?.image ||
+                            "/placeholder-image.jpg"
+                          }
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-gray-900 truncate">
+                          {item.name || item.product?.name || "Unknown Product"}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Qty: {item.quantity} × {formatPrice(item.price)}
+                        </p>
+                      </div>
+                      <div className="text-sm font-bold text-gray-900 whitespace-nowrap">
+                        {formatPrice(item.price * item.quantity)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-3 pt-4 border-t-2 border-gray-200">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="font-semibold text-gray-900">
+                      {formatPrice(total)}
                     </span>
                   </div>
-                ))}
-              </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Delivery Fee</span>
+                    <span className="font-semibold text-gray-900">
+                      {formatPrice(formData.delivery_fee)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">
+                      Tax ({formData.tax_rate}%)
+                    </span>
+                    <span className="font-semibold text-gray-900">
+                      {formatPrice((total * formData.tax_rate) / 100)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                    <span className="text-base font-bold text-gray-900">
+                      Total
+                    </span>
+                    <span className="text-xl font-bold text-[#CB5B6A]">
+                      {formatPrice(
+                        total +
+                          parseFloat(formData.delivery_fee) +
+                          (total * formData.tax_rate) / 100
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-xs text-blue-800">
+                    <strong>Note:</strong> Final pricing will be confirmed at
+                    checkout
+                  </p>
+                </div>
+              </>
             )}
-            <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
-              <span className="font-medium text-sm sm:text-base">Subtotal</span>
-              <span className="font-semibold text-base sm:text-lg">
-                {/* FIX: Correctly format total without dividing */}
-                {formatPrice(total)}
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-gray-500 mt-2">
-              Delivery fees and taxes calculated upon checkout.
-            </p>
           </div>
         </div>
       </div>
