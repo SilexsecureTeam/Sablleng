@@ -10,7 +10,7 @@ const SignUp = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
-    username: "",
+    // username: "",
     email: "",
     mobile: "",
     password: "",
@@ -34,7 +34,7 @@ const SignUp = () => {
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = "Name is required";
-    if (!formData.username.trim()) newErrors.username = "Username is required";
+    // if (!formData.username.trim()) newErrors.username = "Username is required";
     if (!formData.email.trim()) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email))
       newErrors.email = "Email is invalid";
@@ -66,7 +66,7 @@ const SignUp = () => {
         },
         body: JSON.stringify({
           name: formData.name,
-          username: formData.username,
+          // username: formData.username,
           email: formData.email,
           phone: formData.mobile,
           password: formData.password,
@@ -161,7 +161,7 @@ const SignUp = () => {
             {errors.name && (
               <p className="text-red-500 text-sm">{errors.name}</p>
             )}
-
+            {/* 
             <input
               type="text"
               name="username"
@@ -174,7 +174,7 @@ const SignUp = () => {
             />
             {errors.username && (
               <p className="text-red-500 text-sm">{errors.username}</p>
-            )}
+            )} */}
 
             <input
               type="email"

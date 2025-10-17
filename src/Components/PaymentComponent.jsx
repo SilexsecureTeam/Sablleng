@@ -15,9 +15,9 @@ const PaymentComponent = () => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const selectedDelivery = location.state?.selectedDelivery || { value: 6000 }; // Default to Express delivery
+  const selectedDelivery = location.state?.selectedDelivery || { value: 6000 };
 
-  // Debug auth state and Paystack keys
+  // Debug auth and Paystack keys
   useEffect(() => {
     console.log("PaymentComponent: auth state:", {
       isAuthenticated: auth.isAuthenticated,
@@ -28,6 +28,9 @@ const PaymentComponent = () => {
     });
     console.log("PaymentComponent: Paystack public key:", {
       publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ? "Set" : "Missing",
+      mode: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY.startsWith("pk_test")
+        ? "Test"
+        : "Live",
     });
   }, [auth]);
 
@@ -51,7 +54,7 @@ const PaymentComponent = () => {
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-  const vat = subtotal * 0.075; // 7.5% VAT
+  const vat = subtotal * 0.075;
   const delivery = selectedDelivery.value;
   const total = subtotal + vat + delivery;
 
@@ -65,35 +68,117 @@ const PaymentComponent = () => {
       .format(amount)
       .replace("NGN", "₦");
 
-  // Load Paystack script dynamically
+  // Load Paystack script
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://js.paystack.co/v2/inline.js";
     script.async = true;
     document.body.appendChild(script);
 
-    script.onload = () => {
+    script.onload = () =>
       console.log("PaymentComponent: Paystack script loaded");
-    };
-    script.onerror = () => {
-      console.error("PaymentComponent: Failed to load Paystack script");
-      toast.error("Failed to load payment system. Please try again later.", {
+    script.onerror = () =>
+      toast.error("Failed to load payment system. Please try again.", {
         position: "top-right",
         autoClose: 3000,
       });
-    };
 
-    return () => {
-      document.body.removeChild(script);
-    };
+    return () => document.body.removeChild(script);
   }, []);
 
-  const handlePayment = async () => {
-    // Log auth details before redirect
-    if (!auth.isAuthenticated) {
-      console.log(
-        "PaymentComponent: Redirecting to signin - not authenticated"
+  const verifyPayment = async (paystackReference, orderId) => {
+    console.log("PaymentComponent: Verifying payment:", {
+      paystackReference,
+      orderId,
+    });
+
+    try {
+      const response = await fetch(
+        `https://api.sablle.ng/api/verify-payment/${paystackReference}/${orderId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            // Authorization: `Bearer ${auth.token}`, // Uncomment if backend requires token
+          },
+        }
       );
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error(
+          "PaymentComponent: JSON parsing error:",
+          jsonError.message
+        );
+        const rawResponse = await response.text();
+        console.error(
+          "PaymentComponent: Raw response:",
+          rawResponse.slice(0, 200)
+        );
+        throw new Error(
+          `Server returned non-JSON response (status: ${response.status})`
+        );
+      }
+
+      console.log("PaymentComponent: Verification response:", data);
+
+      if (response.ok && data.status === "success") {
+        // Clear cart
+        setItems([]);
+        setTotal(0);
+        setCartSessionId(null);
+        localStorage.setItem("cart_items", JSON.stringify([]));
+        localStorage.setItem("cart_total", 0);
+        localStorage.removeItem("cart_session_id");
+
+        toast.success("Payment successful! Order placed.", {
+          position: "top-right",
+          autoClose: 3000,
+          onClose: () =>
+            navigate("/order-success", {
+              state: {
+                orderId,
+                items,
+                subtotal,
+                vat,
+                delivery,
+                total,
+                address: selectedAddress,
+              },
+            }),
+        });
+      } else {
+        const errorMessage =
+          data.error ||
+          data.message ||
+          "Failed to verify payment. Please contact support.";
+        console.error("PaymentComponent: Verification failed:", errorMessage);
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      console.error(
+        "PaymentComponent: Verification network error:",
+        error.message
+      );
+      toast.error(
+        "Network error during payment verification. Please try again.",
+        {
+          position: "top-right",
+          autoClose: 3000,
+        }
+      );
+    }
+  };
+
+  const handlePayment = async () => {
+    // Validate auth
+    if (!auth.isAuthenticated || !auth.token) {
+      console.log("PaymentComponent: Redirecting to signin - auth issue");
       toast.error("Please log in to proceed with payment", {
         position: "top-right",
         autoClose: 3000,
@@ -101,25 +186,17 @@ const PaymentComponent = () => {
       navigate("/signin");
       return;
     }
-    if (!auth.token) {
-      console.log("PaymentComponent: Redirecting to signin - no token");
-      toast.error("Authentication token missing. Please log in again.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      navigate("/signin");
-      return;
-    }
+
     if (
       !auth.user?.email ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.user.email)
     ) {
       console.log(
-        "PaymentComponent: Redirecting to signin - invalid or missing email:",
+        "PaymentComponent: Invalid or missing email:",
         auth.user?.email
       );
       toast.error(
-        "Valid email required for payment. Please update your profile or log in again.",
+        "Valid email required for payment. Please update your profile.",
         {
           position: "top-right",
           autoClose: 3000,
@@ -133,6 +210,7 @@ const PaymentComponent = () => {
       .toISOString()
       .split("T")[0]
       .replace(/-/g, "")}-${Math.floor(Math.random() * 10000)}`;
+    const cleanOrderId = orderId.replace(/^SABIL-/, "");
 
     if (selectedPayment === "paystack") {
       if (total <= 0) {
@@ -148,123 +226,26 @@ const PaymentComponent = () => {
         if (!window.PaystackPop) {
           throw new Error("PaystackPop not loaded");
         }
-        const popup = new window.PaystackPop();
-        popup.newTransaction({
+
+        const handler = new window.PaystackPop();
+        handler.newTransaction({
           key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
           email: auth.user.email,
           amount: total * 100, // Convert to kobo
           reference: `order_${orderId}_${Date.now()}`,
-          onLoad: () => {
-            console.log("PaymentComponent: Payment form loaded");
-          },
-          onSuccess: async (transaction) => {
+          callback: (response) => {
             console.log(
-              "PaymentComponent: Transaction successful:",
-              transaction
+              "PaymentComponent: Payment complete! Reference:",
+              response.reference
             );
-            try {
-              console.log("PaymentComponent: Verification request:", {
-                url: `https://api.sablle.ng/api/verify-payment/${transaction.reference}/${orderId}`,
-                orderId,
-              });
-
-              const response = await fetch(
-                `https://api.sablle.ng/api/verify-payment/${transaction.reference}/${orderId}`,
-                {
-                  method: "GET",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                }
-              );
-
-              let data;
-              try {
-                data = await response.json();
-              } catch (jsonError) {
-                console.error(
-                  "PaymentComponent: JSON parsing error:",
-                  jsonError.message
-                );
-                const rawResponse = await response.text();
-                console.error(
-                  "PaymentComponent: Raw response:",
-                  rawResponse.slice(0, 200)
-                );
-                data = {
-                  error: `Server returned non-JSON response (status: ${response.status})`,
-                };
-              }
-
-              console.log(
-                "PaymentComponent: GET /api/verify-payment response:",
-                JSON.stringify(data, null, 2)
-              );
-
-              if (response.ok) {
-                setItems([]);
-                setTotal(0);
-                setCartSessionId(null);
-                localStorage.setItem("cart_items", JSON.stringify([]));
-                localStorage.setItem("cart_total", 0);
-                localStorage.removeItem("cart_session_id");
-
-                toast.success("Payment successful! Order placed.", {
-                  position: "top-right",
-                  autoClose: 3000,
-                  onClose: () =>
-                    navigate("/order-success", {
-                      state: {
-                        orderId,
-                        items,
-                        subtotal,
-                        vat,
-                        delivery,
-                        total,
-                        address: selectedAddress,
-                      },
-                    }),
-                });
-              } else {
-                console.error(
-                  "PaymentComponent: Verification error:",
-                  data.error || data.message
-                );
-                let errorMessage =
-                  "Failed to verify payment. Please contact support.";
-                if (response.status === 400) {
-                  errorMessage =
-                    data.error || "Invalid payment reference or order ID.";
-                } else if (response.status === 404) {
-                  errorMessage =
-                    data.error || "Order not found. Please contact support.";
-                } else if (response.status === 500) {
-                  errorMessage =
-                    data.error ||
-                    "Server error during payment verification. Please try again.";
-                }
-                toast.error(errorMessage, {
-                  position: "top-right",
-                  autoClose: 3000,
-                });
-              }
-            } catch (error) {
-              console.error("PaymentComponent: Network error:", error.message);
-              toast.error(
-                "Network error during payment verification. Please try again.",
-                {
-                  position: "top-right",
-                  autoClose: 3000,
-                }
-              );
-            }
-            return true;
+            verifyPayment(response.reference, cleanOrderId); // Verify with Paystack reference and order ID
           },
-          onCancel: () => {
+          onClose: () => {
             toast.info("Payment cancelled. You can try again.", {
               position: "top-right",
               autoClose: 3000,
             });
+            setIsProcessingPayment(false);
           },
           onError: (error) => {
             console.error("PaymentComponent: Payment error:", error);
@@ -272,6 +253,7 @@ const PaymentComponent = () => {
               position: "top-right",
               autoClose: 3000,
             });
+            setIsProcessingPayment(false);
           },
         });
       } catch (error) {
@@ -280,13 +262,13 @@ const PaymentComponent = () => {
           position: "top-right",
           autoClose: 3000,
         });
-      } finally {
         setIsProcessingPayment(false);
       }
     } else {
+      // COD: Navigate directly to order success
       navigate("/order-success", {
         state: {
-          orderId,
+          orderId: cleanOrderId,
           items,
           subtotal,
           vat,
