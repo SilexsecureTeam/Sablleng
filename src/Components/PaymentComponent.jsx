@@ -1,4 +1,3 @@
-// src/Components/PaymentComponent.jsx
 import React, { useState, useContext, useEffect } from "react";
 import { CartContext } from "../context/CartContextObject";
 import { AuthContext } from "../context/AuthContextObject";
@@ -167,9 +166,6 @@ const PaymentComponent = () => {
               console.log("PaymentComponent: Verification request:", {
                 url: `https://api.sablle.ng/api/verify-payment/${transaction.reference}/${orderId}`,
                 orderId,
-                tokenPreview: auth.token
-                  ? auth.token.substring(0, 20) + "..."
-                  : "Missing",
               });
 
               const response = await fetch(
@@ -177,18 +173,23 @@ const PaymentComponent = () => {
                 {
                   method: "GET",
                   headers: {
-                    Authorization: `Bearer ${auth.token}`, // Use user JWT, like in Invoice.jsx
+                    "Content-Type": "application/json",
                   },
                 }
               );
 
               let data;
               try {
-                data = await response.json(); // Try parsing JSON
+                data = await response.json();
               } catch (jsonError) {
                 console.error(
                   "PaymentComponent: JSON parsing error:",
                   jsonError.message
+                );
+                const rawResponse = await response.text();
+                console.error(
+                  "PaymentComponent: Raw response:",
+                  rawResponse.slice(0, 200)
                 );
                 data = {
                   error: `Server returned non-JSON response (status: ${response.status})`,
@@ -229,30 +230,35 @@ const PaymentComponent = () => {
                   "PaymentComponent: Verification error:",
                   data.error || data.message
                 );
-                toast.error(
-                  data.error ||
-                    data.message ||
-                    "Failed to verify payment. Please contact support.",
-                  {
-                    position: "top-right",
-                    autoClose: 3000,
-                  }
-                );
+                let errorMessage =
+                  "Failed to verify payment. Please contact support.";
+                if (response.status === 400) {
+                  errorMessage =
+                    data.error || "Invalid payment reference or order ID.";
+                } else if (response.status === 404) {
+                  errorMessage =
+                    data.error || "Order not found. Please contact support.";
+                } else if (response.status === 500) {
+                  errorMessage =
+                    data.error ||
+                    "Server error during payment verification. Please try again.";
+                }
+                toast.error(errorMessage, {
+                  position: "top-right",
+                  autoClose: 3000,
+                });
               }
             } catch (error) {
-              console.error(
-                "PaymentComponent: Verification error:",
-                error.message
-              );
+              console.error("PaymentComponent: Network error:", error.message);
               toast.error(
-                "Network error during payment verification. Please contact support.",
+                "Network error during payment verification. Please try again.",
                 {
                   position: "top-right",
                   autoClose: 3000,
                 }
               );
             }
-            return true; // Resolve promise
+            return true;
           },
           onCancel: () => {
             toast.info("Payment cancelled. You can try again.", {

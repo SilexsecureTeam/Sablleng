@@ -1,505 +1,416 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
-import { Link, useParams } from "react-router-dom";
+// src/Components/PaymentComponent.jsx
+import React, { useState, useContext, useEffect } from "react";
 import { CartContext } from "../context/CartContextObject";
+import { AuthContext } from "../context/AuthContextObject";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ImageUploadComponent from "./ImageUploadComponent";
+import i1 from "../assets/i1.png";
+import i2 from "../assets/i2.png";
 
-const ProductDetail = () => {
-  const { id } = useParams();
-  const { addItem } = useContext(CartContext);
-  const [product, setProduct] = useState(null);
-  const [relatedProducts, setRelatedProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [selectedColor, setSelectedColor] = useState("white");
-  const [quantity, setQuantity] = useState(1);
-  const [isCustomizing, setIsCustomizing] = useState(false);
-  const [selectedThumbnail, setSelectedThumbnail] = useState({
-    index: 0,
-    bgColor: "bg-gray-50",
-    image: null,
-  });
-  const sliderRef = useRef(null);
+const PaymentComponent = () => {
+  const { items, selectedAddress, setItems, setTotal, setCartSessionId } =
+    useContext(CartContext);
+  const { auth } = useContext(AuthContext);
+  const [selectedPayment, setSelectedPayment] = useState("paystack");
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const selectedDelivery = location.state?.selectedDelivery || { value: 6000 }; // Default to Express delivery
 
-  const colors = [
-    { name: "black", color: "bg-black" },
-    { name: "purple", color: "bg-purple-600" },
-    { name: "red", color: "bg-red-500" },
-    { name: "yellow", color: "bg-yellow-400" },
+  // Debug auth state and Paystack keys
+  useEffect(() => {
+    console.log("PaymentComponent: auth state:", {
+      isAuthenticated: auth.isAuthenticated,
+      token: auth.token ? auth.token.substring(0, 20) + "..." : "Missing",
+      email: auth.user?.email,
+      isValidEmail:
+        auth.user?.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.user.email),
+    });
+    console.log("PaymentComponent: Paystack public key:", {
+      publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ? "Set" : "Missing",
+    });
+  }, [auth]);
+
+  const paymentMethods = [
+    {
+      id: "paystack",
+      icon: i1,
+      title: "Paystack",
+      description: "Pay securely with card or bank transfer",
+    },
+    {
+      id: "cod",
+      icon: i2,
+      title: "Cash on Delivery",
+      description: "Pay when your order arrives",
+    },
   ];
 
+  // Calculate order summary
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  const vat = subtotal * 0.075; // 7.5% VAT
+  const delivery = selectedDelivery.value;
+  const total = subtotal + vat + delivery;
+
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+      .format(amount)
+      .replace("NGN", "₦");
+
+  // Load Paystack script dynamically
   useEffect(() => {
-    const fetchProduct = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`https://api.sablle.ng/api/products`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v2/inline.js";
+    script.async = true;
+    document.body.appendChild(script);
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch product: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const productsArray = Array.isArray(data.data) ? data.data : [];
-
-        const formattedProducts = productsArray.map((item) => ({
-          id: item.id,
-          name: item.name || "",
-          // FIX: Store the raw price for calculations
-          rawPrice: item.sale_price_inc_tax
-            ? parseFloat(item.sale_price_inc_tax)
-            : 0,
-          // FIX: Keep the formatted price for display only
-          price: item.sale_price_inc_tax
-            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-            : "₦0",
-          category: item.category?.name || "",
-          badge: item.is_variable_price ? "Customizable" : null,
-          image: item.images?.[0] || "/placeholder-image.jpg",
-          model: item.product_code || "N/A",
-        }));
-
-        const foundProduct = formattedProducts.find(
-          (p) => p.id === parseInt(id)
-        );
-        if (!foundProduct) {
-          throw new Error("Product not found");
-        }
-
-        setProduct(foundProduct);
-        setRelatedProducts(
-          formattedProducts.filter(
-            (p) =>
-              p.category === foundProduct.category && p.id !== foundProduct.id
-          )
-        );
-
-        setSelectedThumbnail({
-          index: 0,
-          bgColor: "bg-blue-100",
-          image: foundProduct.image,
-        });
-      } catch (err) {
-        console.error("Fetch error:", err);
-        setError(err.message);
-        toast.error(`Error: ${err.message}`, {
-          position: "top-right",
-          autoClose: 5000,
-        });
-      } finally {
-        setIsLoading(false);
-      }
+    script.onload = () => {
+      console.log("PaymentComponent: Paystack script loaded");
+    };
+    script.onerror = () => {
+      console.error("PaymentComponent: Failed to load Paystack script");
+      toast.error("Failed to load payment system. Please try again later.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
     };
 
-    fetchProduct();
-  }, [id]);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
-  const thumbnails = product
-    ? [
-        { bgColor: "bg-blue-100", image: product.image },
-        { bgColor: "bg-green-100", image: product.image },
-        { bgColor: "bg-red-100", image: product.image },
-        { bgColor: "bg-yellow-100", image: product.image },
-      ]
-    : [];
+  const handlePayment = async () => {
+    // Log auth details before redirect
+    if (!auth.isAuthenticated) {
+      console.log(
+        "PaymentComponent: Redirecting to signin - not authenticated"
+      );
+      toast.error("Please log in to proceed with payment", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      navigate("/signin");
+      return;
+    }
+    if (!auth.token) {
+      console.log("PaymentComponent: Redirecting to signin - no token");
+      toast.error("Authentication token missing. Please log in again.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      navigate("/signin");
+      return;
+    }
+    if (
+      !auth.user?.email ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.user.email)
+    ) {
+      console.log(
+        "PaymentComponent: Redirecting to signin - invalid or missing email:",
+        auth.user?.email
+      );
+      toast.error(
+        "Valid email required for payment. Please update your profile or log in again.",
+        {
+          position: "top-right",
+          autoClose: 3000,
+        }
+      );
+      navigate("/signin");
+      return;
+    }
 
-  const scrollLeft = () => {
-    if (sliderRef.current) {
-      sliderRef.current.scrollBy({ left: -300, behavior: "smooth" });
+    const orderId = `SABIL-${new Date()
+      .toISOString()
+      .split("T")[0]
+      .replace(/-/g, "")}-${Math.floor(Math.random() * 10000)}`;
+
+    if (selectedPayment === "paystack") {
+      if (total <= 0) {
+        toast.error("Order amount must be greater than zero.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+
+      setIsProcessingPayment(true);
+      try {
+        if (!window.PaystackPop) {
+          throw new Error("PaystackPop not loaded");
+        }
+        const popup = new window.PaystackPop();
+        popup.newTransaction({
+          key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+          email: auth.user.email,
+          amount: total * 100, // Convert to kobo
+          reference: `order_${orderId}_${Date.now()}`,
+          onLoad: () => {
+            console.log("PaymentComponent: Payment form loaded");
+          },
+          onSuccess: async (transaction) => {
+            console.log(
+              "PaymentComponent: Transaction successful:",
+              transaction
+            );
+            try {
+              console.log("PaymentComponent: Verification request:", {
+                url: `https://api.sablle.ng/api/verify-payment/${transaction.reference}/${orderId}`,
+                orderId,
+                tokenPreview: auth.token
+                  ? auth.token.substring(0, 20) + "..."
+                  : "Missing",
+              });
+
+              const response = await fetch(
+                `https://api.sablle.ng/api/verify-payment/${transaction.reference}/${orderId}`,
+                {
+                  method: "GET",
+                  headers: {
+                    Authorization: `Bearer ${auth.token}`, // Use user JWT, like in Invoice.jsx
+                  },
+                }
+              );
+
+              let data;
+              try {
+                data = await response.json(); // Try parsing JSON
+              } catch (jsonError) {
+                console.error(
+                  "PaymentComponent: JSON parsing error:",
+                  jsonError.message
+                );
+                data = {
+                  error: `Server returned non-JSON response (status: ${response.status})`,
+                };
+              }
+
+              console.log(
+                "PaymentComponent: GET /api/verify-payment response:",
+                JSON.stringify(data, null, 2)
+              );
+
+              if (response.ok) {
+                setItems([]);
+                setTotal(0);
+                setCartSessionId(null);
+                localStorage.setItem("cart_items", JSON.stringify([]));
+                localStorage.setItem("cart_total", 0);
+                localStorage.removeItem("cart_session_id");
+
+                toast.success("Payment successful! Order placed.", {
+                  position: "top-right",
+                  autoClose: 3000,
+                  onClose: () =>
+                    navigate("/order-success", {
+                      state: {
+                        orderId,
+                        items,
+                        subtotal,
+                        vat,
+                        delivery,
+                        total,
+                        address: selectedAddress,
+                      },
+                    }),
+                });
+              } else {
+                console.error(
+                  "PaymentComponent: Verification error:",
+                  data.error || data.message
+                );
+                toast.error(
+                  data.error ||
+                    data.message ||
+                    "Failed to verify payment. Please contact support.",
+                  {
+                    position: "top-right",
+                    autoClose: 3000,
+                  }
+                );
+              }
+            } catch (error) {
+              console.error(
+                "PaymentComponent: Verification error:",
+                error.message
+              );
+              toast.error(
+                "Network error during payment verification. Please contact support.",
+                {
+                  position: "top-right",
+                  autoClose: 3000,
+                }
+              );
+            }
+            return true; // Resolve promise
+          },
+          onCancel: () => {
+            toast.info("Payment cancelled. You can try again.", {
+              position: "top-right",
+              autoClose: 3000,
+            });
+          },
+          onError: (error) => {
+            console.error("PaymentComponent: Payment error:", error);
+            toast.error(`Payment failed: ${error.message}`, {
+              position: "top-right",
+              autoClose: 3000,
+            });
+          },
+        });
+      } catch (error) {
+        console.error("PaymentComponent: Payment initialization error:", error);
+        toast.error("Failed to initialize payment. Please try again.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } finally {
+        setIsProcessingPayment(false);
+      }
+    } else {
+      navigate("/order-success", {
+        state: {
+          orderId,
+          items,
+          subtotal,
+          vat,
+          delivery,
+          total,
+          address: selectedAddress,
+        },
+      });
     }
   };
-
-  const scrollRight = () => {
-    if (sliderRef.current) {
-      sliderRef.current.scrollBy({ left: 300, behavior: "smooth" });
-    }
-  };
-
-  const handleAddToCart = async () => {
-    if (!product) return;
-
-    // FIX: Use the unformatted rawPrice for the payload
-    const price = product.rawPrice;
-    console.log("ProductDetail: Adding to cart with price:", price);
-
-    await addItem({
-      id: product.id,
-      name: product.name,
-      model: product.model,
-      price: price, // This will now be the correct number (e.g., 4000)
-      image: selectedThumbnail.image,
-      quantity: quantity,
-      color: selectedColor,
-    });
-
-    setQuantity(1);
-    toast.success("Added to cart!", {
-      position: "top-right",
-      autoClose: 3000,
-    });
-  };
-
-  const handleQuantityChange = (newQuantity) => {
-    if (newQuantity >= 1) {
-      setQuantity(newQuantity);
-    }
-  };
-
-  const handleOrderNow = () => {
-    console.log("Order Now clicked for", product?.name);
-  };
-
-  const handleCustomize = () => {
-    setIsCustomizing(true);
-  };
-
-  const handleThumbnailClick = (index, thumbnail) => {
-    setSelectedThumbnail({
-      index,
-      bgColor: thumbnail.bgColor,
-      image: thumbnail.image,
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="max-w-[1200px] mx-auto p-8 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#CB5B6A] mx-auto"></div>
-        <p className="text-gray-600 mt-4">Loading product...</p>
-      </div>
-    );
-  }
-
-  if (error || !product) {
-    return (
-      <div className="max-w-[1200px] mx-auto p-8 text-center">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          {error || "Product not found"}
-        </h2>
-        <Link
-          to="/product"
-          className="text-[#CB5B6A] underline mt-4 inline-block"
-        >
-          Back to Products
-        </Link>
-      </div>
-    );
-  }
 
   return (
-    <div className="bg-white py-8 md:py-10">
-      <ToastContainer />
-      <div className="max-w-[1200px] mx-auto">
-        <div className="bg-white p-8">
-          {isCustomizing ? (
-            <ImageUploadComponent
-              productId={id}
-              onBack={() => setIsCustomizing(false)}
-            />
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-              <div className="space-y-6">
-                <div
-                  className={`rounded-lg p-8 flex items-center justify-center ${selectedThumbnail.bgColor}`}
-                >
-                  <img
-                    src={selectedThumbnail.image || product.image}
-                    alt={product.name}
-                    className="max-h-64 md:h-80 max-w-full object-contain"
-                  />
-                </div>
-                <div className="flex space-x-4">
-                  {thumbnails.map((thumbnail, index) => (
-                    <div
-                      key={index}
-                      className={`w-20 h-20 ${
-                        thumbnail.bgColor
-                      } rounded border flex items-center justify-center cursor-pointer ${
-                        selectedThumbnail.index === index
-                          ? "border-gray-800 border-2"
-                          : "border-gray-300"
-                      }`}
-                      onClick={() => handleThumbnailClick(index, thumbnail)}
-                    >
-                      <img
-                        src={thumbnail.image}
-                        alt={`${product.name} thumbnail ${index + 1}`}
-                        className="max-h-16 max-w-full object-contain"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-6">
-                <h1 className="text-2xl font-semibold text-gray-900">
-                  {product.name}
-                </h1>
-                <p className="text-gray-600 leading-relaxed">
-                  {product.badge
-                    ? `Customizable product: ${
-                        product.name
-                      }. Perfect for ${product.category.toLowerCase()}. Model: ${
-                        product.model
-                      }.`
-                    : `Explore the ${product.name}, a premium product in the ${product.category} category. Model: ${product.model}.`}
-                </p>
-                <div className="space-y-3">
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Color:</span>
-                    <span className="text-gray-900">{selectedColor}</span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Brand:</span>
-                    <span className="text-gray-900">ACMELL</span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Material:</span>
-                    <span className="text-gray-900">Premium</span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Category:</span>
-                    <span className="text-gray-900">{product.category}</span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Price:</span>
-                    {/* The displayed price is still the formatted string */}
-                    <span className="text-gray-900">{product.price}</span>
-                  </div>
-                </div>
-                <div className="space-x-3 flex items-center">
-                  <label className="text-gray-900 font-medium">
-                    Select color:
-                  </label>
-                  <div className="flex space-x-3">
-                    {colors.map((color) => (
-                      <button
-                        key={color.name}
-                        onClick={() => setSelectedColor(color.name)}
-                        className={`w-6 h-6 rounded-full border-2 ${
-                          color.color
-                        } ${
-                          selectedColor === color.name
-                            ? "border-gray-800"
-                            : "border-gray-300"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="space-x-3 flex items-center">
-                  <label className="text-gray-900 font-medium">Quantity:</label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => handleQuantityChange(quantity - 1)}
-                      className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                      disabled={quantity <= 1}
-                    >
-                      <svg
-                        className="w-4 h-4 text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M18 12H6"
-                        />
-                      </svg>
-                    </button>
-                    <input
-                      type="number"
-                      value={quantity}
-                      onChange={(e) =>
-                        handleQuantityChange(parseInt(e.target.value) || 1)
-                      }
-                      className="w-16 text-center border border-gray-300 rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
-                      min="1"
-                    />
-                    <button
-                      onClick={() => handleQuantityChange(quantity + 1)}
-                      className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                    >
-                      <svg
-                        className="w-4 h-4 text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                <div className="space-x-3 space-y-3">
-                  <button
-                    className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
-                    onClick={handleAddToCart}
+    <div className="max-w-[1200px] mx-auto p-4 lg:p-6">
+      <ToastContainer position="top-right" autoClose={3000} />
+      <div className="grid md:grid-cols-2 gap-8 lg:gap-20">
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Payment
+            </h2>
+            <p className="text-sm text-gray-600">
+              Choose a method and complete payment securely.
+            </p>
+          </div>
+          <div className="space-y-4">
+            {paymentMethods.map((method) => (
+              <label
+                key={method.id}
+                className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  selectedPayment === method.id
+                    ? "border-[#CB5B6A] bg-[#CB5B6A]/10"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="payment"
+                  value={method.id}
+                  checked={selectedPayment === method.id}
+                  onChange={(e) => setSelectedPayment(e.target.value)}
+                  className="text-[#CB5B6A] focus:ring-[#CB5B6A]"
+                />
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`p-2 rounded-lg ${
+                      selectedPayment === method.id
+                        ? "bg-[#CB5B6A]/20"
+                        : "bg-gray-100"
+                    }`}
                   >
-                    Add to Cart
-                  </button>
-                  {product.badge === "Customizable" ? (
-                    <button
-                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
-                      onClick={handleCustomize}
-                    >
-                      Customize
-                    </button>
-                  ) : (
-                    <button
-                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
-                      onClick={handleOrderNow}
-                    >
-                      Order Now
-                    </button>
-                  )}
+                    <img
+                      src={method.icon}
+                      alt={method.title}
+                      className="w-5 h-5 object-contain"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      {method.title}
+                    </h4>
+                    {method.description && (
+                      <p className="text-sm text-gray-500">
+                        {method.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
+              </label>
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* Reviews Section */}
-      <div className="max-w-[1200px] mx-auto">
-        <div className="bg-white p-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-8">Reviews</h2>
-          <div className="grid gap-10">
-            <div className="flex flex-col md:flex-row md:space-x-10 md:space-y-0 space-y-6">
-              <div className="text-center bg-gray-100 p-4">
-                <div className="text-6xl font-bold text-gray-900 mb-2">N/A</div>
-                <div className="text-gray-500 mb-3">of 0 reviews</div>
-                <div className="flex justify-center space-x-1 mb-6">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <svg
-                      key={star}
-                      className="w-5 h-5 text-gray-300 fill-current"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                    </svg>
-                  ))}
+        <div className="space-y-6 border border-gray-200 rounded-lg p-8">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">Summary</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Subtotal</span>
+                <span className="font-medium">{formatCurrency(subtotal)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Discount</span>
+                <span className="font-medium">₦0</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">VAT (7.5%)</span>
+                <span className="font-medium">{formatCurrency(vat)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Delivery</span>
+                <span className="font-medium">{formatCurrency(delivery)}</span>
+              </div>
+              <div className="border-t pt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold text-gray-900">
+                    Total
+                  </span>
+                  <span className="text-xl font-bold text-gray-900">
+                    {formatCurrency(total)}
+                  </span>
                 </div>
               </div>
-              <div className="space-y-3 flex-1">
-                <p className="text-gray-700 text-sm">No reviews available.</p>
-              </div>
             </div>
-            <div className="pt-6 text-center">
-              <button className="text-gray-400 text-sm underline">
-                Leave Comment
-              </button>
-            </div>
+          </div>
+          <button
+            onClick={handlePayment}
+            disabled={isProcessingPayment || items.length === 0}
+            className={`w-full bg-[#CB5B6A] text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+              isProcessingPayment || items.length === 0
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-[#CB5B6A]/70"
+            }`}
+          >
+            {isProcessingPayment ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white"></div>
+                <span>Processing Payment...</span>
+              </>
+            ) : (
+              <span>Complete Payment</span>
+            )}
+          </button>
+          <div className="text-center">
+            <p className="text-xs text-gray-500">
+              Your payment information is secure and encrypted
+            </p>
           </div>
         </div>
       </div>
-
-      {/* Related Products Slider */}
-      {relatedProducts.length > 0 && (
-        <div className="max-w-[1200px] mx-auto p-8">
-          <div className="bg-white rounded-lg shadow-sm p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900">
-                Related Products
-              </h2>
-              <div className="flex space-x-2">
-                <button
-                  onClick={scrollLeft}
-                  className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
-                  aria-label="Scroll left"
-                >
-                  <svg
-                    className="w-6 h-6 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                </button>
-                <button
-                  onClick={scrollRight}
-                  className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
-                  aria-label="Scroll right"
-                >
-                  <svg
-                    className="w-6 h-6 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div
-              ref={sliderRef}
-              className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide space-x-6 pb-4"
-            >
-              {relatedProducts.map((relatedProduct) => (
-                <div
-                  key={relatedProduct.id}
-                  className="flex-none w-64 snap-start"
-                >
-                  <Link
-                    to={`/product/${relatedProduct.id}`}
-                    className="bg-white overflow-hidden block hover:shadow-lg transition-shadow duration-200"
-                    aria-label={`View details for ${relatedProduct.name}`}
-                  >
-                    <div className="relative bg-[#F4F2F2] p-4 h-48 flex items-center justify-center">
-                      {relatedProduct.badge && (
-                        <div className="absolute top-6 left-0 bg-[#CB5B6A] text-white px-8 py-2 rounded text-sm font-medium">
-                          {relatedProduct.badge}
-                        </div>
-                      )}
-                      <img
-                        src={relatedProduct.image}
-                        alt={relatedProduct.name}
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    </div>
-                    <div className="py-4">
-                      <h3 className="font-medium text-gray-900 text-sm">
-                        {relatedProduct.name}
-                      </h3>
-                      <span className="text-lg font-semibold text-gray-900">
-                        {relatedProduct.price}
-                      </span>
-                      <div className="flex items-center justify-between">
-                        <span className="text-base text-[#CB5B6A] py-1 rounded">
-                          {relatedProduct.category}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default ProductDetail;
+export default PaymentComponent;

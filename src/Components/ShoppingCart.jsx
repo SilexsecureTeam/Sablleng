@@ -53,7 +53,7 @@ export default function ShoppingCart() {
         position: "top-right",
         autoClose: 3000,
       });
-      // navigate("/signin");
+      navigate("/signin");
       return;
     }
     navigate("/delivery");
