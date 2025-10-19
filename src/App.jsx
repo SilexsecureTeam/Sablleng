@@ -25,8 +25,10 @@ const FaqPage = lazy(() => import("./Pages/FaqPage"));
 const OrderSuccess = lazy(() => import("./Components/OrderSuccess"));
 const OrderTracking = lazy(() => import("./Components/OrderTracking"));
 const SignIn = lazy(() => import("./Auth/SignIn"));
+const AdminSignIn = lazy(() => import("./Auth/AdminSignIn"));
 const SignUp = lazy(() => import("./Auth/SignUp"));
 const OtpPage = lazy(() => import("./Auth/OTP"));
+const AdminOtpPage = lazy(() => import("./Auth/AdminOTP"));
 const CustomizablePage = lazy(() => import("./Pages/Customizable"));
 const DashboardLayout = lazy(() => import("./Pages/DashboardLayout"));
 
@@ -108,7 +110,9 @@ const App = () => {
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/signin" element={<SignIn />} />
+                <Route path="/admin/signin" element={<AdminSignIn />} />
                 <Route path="/otp" element={<OtpPage />} />
+                <Route path="/admin/otp" element={<AdminOtpPage />} />
                 <Route path="/customize" element={<CustomizablePage />} />
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/cookie-policy" element={<CookiesPage />} />

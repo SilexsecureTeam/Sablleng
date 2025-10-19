@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import auth from "../assets/auth3.png";
+import auth from "../assets/auth1.png";
 import logo from "../assets/logo.png";
 
 const SignUp = () => {

@@ -6,10 +6,10 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
-import auth from "../assets/auth1.png";
+import auth from "../assets/auth3.png";
 import logo from "../assets/logo.png";
 
-const SignIn = () => {
+const AdminSignIn = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
   const { cart_session_id, setCartSessionId, setItems, setTotal } =
@@ -67,11 +67,11 @@ const SignIn = () => {
 
       if (response.ok) {
         const role = data.user?.role || "user";
-        if (role.toLowerCase() !== "user") {
-          toast.error("Access denied. Please use the admin login page.");
+        if (role.toLowerCase() !== "admin") {
+          toast.error("Access denied. Please use the user login page.");
           setErrors({
             ...errors,
-            api: "Access denied. Please use the admin login page.",
+            api: "Access denied. Please use the user login page.",
           });
           setIsLoading(false);
           return;
@@ -221,14 +221,8 @@ const SignIn = () => {
             <img src={logo} alt="Logo" className="mb-6 w-32 h-auto mx-auto" />
           </Link>
           <h2 className="text-xl sm:text-2xl font-medium text-gray-800 mb-2">
-            Sign In
+            Admin Sign In
           </h2>
-          <p className="text-base text-[#141718] mb-6">
-            Don’t have an account yet?{" "}
-            <a href="/signup" className="text-[#CB5B6A] hover:underline">
-              Sign Up
-            </a>
-          </p>
           {errors.api && (
             <p className="text-red-500 text-sm mb-4">{errors.api}</p>
           )}
@@ -308,4 +302,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default AdminSignIn;

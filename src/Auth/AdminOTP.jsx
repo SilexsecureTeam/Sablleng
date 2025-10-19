@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import auth from "../assets/auth1.png";
+import auth from "../assets/auth3.png";
 import logo from "../assets/logo.png";
 
-const OtpPage = () => {
+const AdminOtpPage = () => {
   const navigate = useNavigate();
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [errors, setErrors] = useState({});
@@ -63,7 +63,7 @@ const OtpPage = () => {
 
       if (response.ok) {
         toast.success("Verification successful! Redirecting...");
-        setTimeout(() => navigate("/signin"), 2000);
+        setTimeout(() => navigate("/dashboard"), 2000);
       } else {
         toast.error(data.message || "Verification failed. Please try again.");
         setErrors({
@@ -178,4 +178,4 @@ const OtpPage = () => {
   );
 };
 
-export default OtpPage;
+export default AdminOtpPage;
