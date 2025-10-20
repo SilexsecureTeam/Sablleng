@@ -22,7 +22,7 @@ const TermsPage = lazy(() => import("./Pages/TermsPage"));
 const CookiesPage = lazy(() => import("./Pages/CookiesPage"));
 const CareerPage = lazy(() => import("./Pages/CareerPage"));
 const FaqPage = lazy(() => import("./Pages/FaqPage"));
-const OrderSuccess = lazy(() => import("./Components/OrderSuccess"));
+const OrderSuccessPage = lazy(() => import("./Pages/OrderSuccessPage"));
 const OrderTracking = lazy(() => import("./Components/OrderTracking"));
 const SignIn = lazy(() => import("./Auth/SignIn"));
 const AdminSignIn = lazy(() => import("./Auth/AdminSignIn"));
@@ -105,7 +105,7 @@ const App = () => {
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/delivery" element={<DeliveryPage />} />
                 <Route path="/payment" element={<PaymentPage />} />
-                <Route path="/order-success" element={<OrderSuccess />} />
+                <Route path="/order-success" element={<OrderSuccessPage />} />
                 <Route path="/order-tracking" element={<OrderTracking />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/signup" element={<SignUp />} />

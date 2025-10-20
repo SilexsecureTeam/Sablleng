@@ -51,7 +51,7 @@ const PaymentComponent = () => {
       .format(amount)
       .replace("NGN", "₦");
 
-  // Generate unique order ID (for COD and success page)
+  // Generate unique order ID (for COD only)
   const generateOrderId = () => {
     return `SABIL-${new Date()
       .toISOString()
@@ -97,7 +97,7 @@ const PaymentComponent = () => {
       return;
     }
 
-    // Get order_reference from location.state (still needed for success page)
+    // Get order_reference from location.state
     const orderReference =
       location.state?.selectedDelivery?.orderData?.order_reference;
     if (!orderReference) {
@@ -117,7 +117,7 @@ const PaymentComponent = () => {
     const paystackReference = generatePaystackReference(orderReference);
 
     console.log("Initializing Paystack with reference:", paystackReference);
-    console.log("Order Reference (for success page):", orderReference);
+    console.log("Order Reference:", orderReference);
 
     // Initialize Paystack inline popup
     const paystack = new PaystackPop();
@@ -145,7 +145,7 @@ const PaymentComponent = () => {
           "Payment complete! Paystack Reference:",
           transaction.reference
         );
-        console.log("Order Reference (for success page):", orderReference);
+        console.log("Order Reference:", orderReference);
         verifyPayment(transaction.reference, orderReference);
       },
       onCancel: () => {
@@ -165,15 +165,15 @@ const PaymentComponent = () => {
     });
   };
 
-  const verifyPayment = async (paystackReference) => {
-    console.log(
-      "Verifying payment with Paystack Reference:",
-      paystackReference
-    );
+  const verifyPayment = async (paystackReference, orderReference) => {
+    console.log("Verifying payment:", {
+      paystackReference,
+      orderReference,
+    });
 
     try {
       const response = await fetch(
-        `https://api.sablle.ng/api/verify-payment/${paystackReference}`,
+        `https://api.sablle.ng/api/verify-payment/${paystackReference}/${orderReference}`,
         {
           method: "GET",
           headers: {
@@ -184,7 +184,7 @@ const PaymentComponent = () => {
       );
 
       const data = await response.json();
-      console.log("Verification response:", JSON.stringify(data, null, 2));
+      console.log("Verification response:", data);
 
       if (!response.ok || data.error) {
         toast.error(
@@ -212,7 +212,7 @@ const PaymentComponent = () => {
         onClose: () =>
           navigate("/order-success", {
             state: {
-              // orderId: orderReference, // Retain orderReference for success page
+              orderId: orderReference, // Use order_reference for consistency
               items,
               subtotal,
               vat,
@@ -224,7 +224,6 @@ const PaymentComponent = () => {
           }),
       });
     } catch (error) {
-      console.error("Verification request failed:", error.message);
       toast.error(`Verification request failed: ${error.message}`, {
         position: "top-right",
         autoClose: 4000,
