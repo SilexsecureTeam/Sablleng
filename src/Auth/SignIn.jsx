@@ -67,6 +67,11 @@ const SignIn = () => {
 
       if (response.ok) {
         const role = data.user?.role || "user";
+        console.log("SignIn: Login successful with details:", {
+          token: data.token?.substring(0, 20) + "...", // Truncate for readability
+          user: data.user,
+          role: role,
+        });
         if (role.toLowerCase() !== "user") {
           toast.error("Access denied. Please use the admin login page.");
           setErrors({

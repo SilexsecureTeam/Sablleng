@@ -2,18 +2,22 @@ import React, { useState, useEffect, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
 import { Search, User, ShoppingCart, ChevronDown, Menu, X } from "lucide-react";
 import { CartContext } from "../context/CartContextObject";
+import { AuthContext } from "../context/AuthContextObject";
 import logo from "../assets/logo.png";
 
 const Header = () => {
   const { items } = useContext(CartContext);
+  const { auth, logout } = useContext(AuthContext); // Access auth and logout from AuthContext
   const [mobileMenu, setMobileMenu] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false); // State for profile dropdown
   const timeoutRef = useRef(null);
+  const profileRef = useRef(null); // Ref for profile dropdown click-outside
 
   // Calculate total items in cart
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Handle dropdown delay for desktop
+  // Handle dropdown delay for desktop (categories)
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => setCategoryOpen(true), 200);
@@ -24,7 +28,12 @@ const Header = () => {
     timeoutRef.current = setTimeout(() => setCategoryOpen(false), 200);
   };
 
-  // Close mobile menu when clicking outside
+  // Handle profile dropdown toggle
+  const toggleProfileDropdown = () => {
+    setProfileOpen((prev) => !prev);
+  };
+
+  // Close mobile menu and profile dropdown when clicking outside
   const mobileMenuRef = useRef(null);
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -34,6 +43,9 @@ const Header = () => {
       ) {
         setMobileMenu(false);
         setCategoryOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -68,7 +80,7 @@ const Header = () => {
             Home
           </Link>
           <div
-            className="relative group "
+            className="relative group"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
@@ -103,7 +115,6 @@ const Header = () => {
           </Link>
           <Link
             to="/product"
-            // onClick={(e) => e.preventDefault()}
             className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
           >
             Product
@@ -124,14 +135,60 @@ const Header = () => {
           >
             <Search size={22} />
           </button>
-          <Link to="/signup">
-            <button
-              className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200"
-              aria-label="User Profile"
-            >
-              <User size={22} />
-            </button>
-          </Link>
+          {/* Profile Section */}
+          <div className="relative" ref={profileRef}>
+            {auth.isAuthenticated ? (
+              <button
+                onClick={toggleProfileDropdown}
+                className="flex items-center gap-1 text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+                aria-label="User Profile"
+              >
+                <User size={22} />
+                <span className="hidden sm:inline-block text-sm font-medium">
+                  {auth.user?.name || "User"}
+                </span>
+                <ChevronDown
+                  size={18}
+                  className={`transition-transform duration-200 ${
+                    profileOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            ) : (
+              <Link
+                to="/signin"
+                className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200"
+                aria-label="User Profile"
+              >
+                <User size={22} />
+              </Link>
+            )}
+            {auth.isAuthenticated && profileOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white shadow-lg rounded-lg py-2 border border-gray-100 transition-all duration-300 ease-in-out">
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <p className="text-sm font-medium text-gray-700">
+                    Name: {auth.user?.name || "N/A"}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Email: {auth.user?.email || "N/A"}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Role: {auth.role || "N/A"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    logout();
+                    setProfileOpen(false);
+                    setMobileMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
           <Link
             to="/cart"
             className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200 relative"
@@ -217,7 +274,7 @@ const Header = () => {
             Product
           </Link>
           <Link
-            to="#"
+            to="/contact"
             className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
             onClick={() => setMobileMenu(false)}
           >
@@ -230,6 +287,38 @@ const Header = () => {
           >
             Cart
           </Link>
+          {auth.isAuthenticated ? (
+            <>
+              <div className="px-4 py-2 border-t border-gray-100">
+                <p className="text-sm font-medium text-gray-700">
+                  Name: {auth.user?.name || "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Email: {auth.user?.email || "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Role: {auth.role || "N/A"}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  logout();
+                  setMobileMenu(false);
+                }}
+                className="w-full text-left px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/signin"
+              className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+              onClick={() => setMobileMenu(false)}
+            >
+              Sign In
+            </Link>
+          )}
           <Link
             to="#"
             className="block bg-[#CB5B6A] text-white text-center mx-3 my-2 py-2 rounded-lg hover:bg-[#b34f5c] transition-colors duration-200"

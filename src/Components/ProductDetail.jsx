@@ -14,24 +14,9 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedColor, setSelectedColor] = useState("white");
-  const [quantity, setQuantity] = useState(1);
-  const [isCustomizing, setIsCustomizing] = useState(false);
-  const [selectedThumbnail, setSelectedThumbnail] = useState({
-    index: 0,
-    bgColor: "bg-gray-50",
-    image: null,
-  });
+  const [isCustomizing, setIsCustomizing] = useState(true); // Always show customization
   const sliderRef = useRef(null);
-
-  const colors = [
-    { name: "black", color: "bg-black" },
-    { name: "purple", color: "bg-purple-600" },
-    { name: "red", color: "bg-red-500" },
-    { name: "yellow", color: "bg-yellow-400" },
-  ];
 
   useEffect(() => {
     console.log("ProductDetail: Auth state:", {
@@ -89,12 +74,6 @@ const ProductDetail = () => {
               p.category === foundProduct.category && p.id !== foundProduct.id
           )
         );
-
-        setSelectedThumbnail({
-          index: 0,
-          bgColor: "bg-blue-100",
-          image: foundProduct.image,
-        });
       } catch (err) {
         console.error("Fetch error:", err);
         setError(err.message);
@@ -114,15 +93,6 @@ const ProductDetail = () => {
     fetchProduct();
   }, [id]);
 
-  const thumbnails = product
-    ? [
-        { bgColor: "bg-blue-100", image: product.image },
-        { bgColor: "bg-green-100", image: product.image },
-        { bgColor: "bg-red-100", image: product.image },
-        { bgColor: "bg-yellow-100", image: product.image },
-      ]
-    : [];
-
   const scrollLeft = () => {
     if (sliderRef.current) {
       sliderRef.current.scrollBy({ left: -300, behavior: "smooth" });
@@ -133,83 +103,6 @@ const ProductDetail = () => {
     if (sliderRef.current) {
       sliderRef.current.scrollBy({ left: 300, behavior: "smooth" });
     }
-  };
-
-  const handleAddToCart = async () => {
-    if (!product) {
-      toast.error("Product information not available");
-      return;
-    }
-
-    console.log("\n=== PRODUCT DETAIL: ADD TO CART ===");
-    console.log("Product:", {
-      id: product.id,
-      name: product.name,
-      rawPrice: product.rawPrice,
-      quantity,
-      color: selectedColor,
-    });
-    console.log("Auth context available:", !!auth);
-    console.log("Auth authenticated:", auth?.isAuthenticated);
-    console.log("Auth token exists:", !!auth?.token);
-
-    setIsAddingToCart(true);
-
-    try {
-      const price = product.rawPrice;
-
-      if (!price || price <= 0) {
-        toast.error("Invalid product price");
-        return;
-      }
-
-      await addItem({
-        id: product.id,
-        name: product.name,
-        model: product.model,
-        price: price,
-        image: selectedThumbnail.image,
-        quantity: quantity,
-        color: selectedColor,
-      });
-
-      setQuantity(1);
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-      toast.error("Failed to add item to cart. Please try again.", {
-        position: "top-right",
-        autoClose: 5000,
-      });
-    } finally {
-      setIsAddingToCart(false);
-      console.log("===================================\n");
-    }
-  };
-
-  const handleQuantityChange = (newQuantity) => {
-    if (newQuantity >= 1 && newQuantity <= 99) {
-      setQuantity(newQuantity);
-    }
-  };
-
-  const handleOrderNow = () => {
-    toast.info("Order now feature coming soon!", {
-      position: "top-right",
-      autoClose: 3000,
-    });
-    console.log("Order Now clicked for", product?.name);
-  };
-
-  const handleCustomize = () => {
-    setIsCustomizing(true);
-  };
-
-  const handleThumbnailClick = (index, thumbnail) => {
-    setSelectedThumbnail({
-      index,
-      bgColor: thumbnail.bgColor,
-      image: thumbnail.image,
-    });
   };
 
   if (isLoading) {
@@ -242,183 +135,11 @@ const ProductDetail = () => {
       <ToastContainer />
       <div className="max-w-[1200px] mx-auto">
         <div className="bg-white p-8">
-          {isCustomizing ? (
-            <ImageUploadComponent
-              productId={id}
-              onBack={() => setIsCustomizing(false)}
-            />
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-              <div className="space-y-6">
-                <div
-                  className={`rounded-lg p-8 flex items-center justify-center ${selectedThumbnail.bgColor}`}
-                >
-                  <img
-                    src={selectedThumbnail.image || product.image}
-                    alt={product.name}
-                    className="max-h-64 md:h-80 max-w-full object-contain"
-                  />
-                </div>
-                <div className="flex space-x-4">
-                  {thumbnails.map((thumbnail, index) => (
-                    <div
-                      key={index}
-                      className={`w-20 h-20 ${
-                        thumbnail.bgColor
-                      } rounded border flex items-center justify-center cursor-pointer ${
-                        selectedThumbnail.index === index
-                          ? "border-gray-800 border-2"
-                          : "border-gray-300"
-                      }`}
-                      onClick={() => handleThumbnailClick(index, thumbnail)}
-                    >
-                      <img
-                        src={thumbnail.image}
-                        alt={`${product.name} thumbnail ${index + 1}`}
-                        className="max-h-16 max-w-full object-contain"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-6">
-                <h1 className="text-2xl font-semibold text-gray-900">
-                  {product.name}
-                </h1>
-                <p className="text-gray-600 leading-relaxed">
-                  {product.badge
-                    ? `Customizable product: ${
-                        product.name
-                      }. Perfect for ${product.category.toLowerCase()}. Model: ${
-                        product.model
-                      }.`
-                    : `Explore the ${product.name}, a premium product in the ${product.category} category. Model: ${product.model}.`}
-                </p>
-                <div className="space-y-3">
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Color:</span>
-                    <span className="text-gray-900">{selectedColor}</span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Brand:</span>
-                    <span className="text-gray-900">ACMELL</span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Material:</span>
-                    <span className="text-gray-900">Premium</span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Category:</span>
-                    <span className="text-gray-900">{product.category}</span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Price:</span>
-                    <span className="text-gray-900">{product.price}</span>
-                  </div>
-                </div>
-                <div className="space-x-3 flex items-center">
-                  <label className="text-gray-900 font-medium">
-                    Select color:
-                  </label>
-                  <div className="flex space-x-3">
-                    {colors.map((color) => (
-                      <button
-                        key={color.name}
-                        onClick={() => setSelectedColor(color.name)}
-                        className={`w-6 h-6 rounded-full border-2 ${
-                          color.color
-                        } ${
-                          selectedColor === color.name
-                            ? "border-gray-800"
-                            : "border-gray-300"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="space-x-3 flex items-center">
-                  <label className="text-gray-900 font-medium">Quantity:</label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => handleQuantityChange(quantity - 1)}
-                      className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                      disabled={quantity <= 1 || isAddingToCart}
-                    >
-                      <svg
-                        className="w-4 h-4 text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M18 12H6"
-                        />
-                      </svg>
-                    </button>
-                    <input
-                      type="number"
-                      value={quantity}
-                      onChange={(e) =>
-                        handleQuantityChange(parseInt(e.target.value) || 1)
-                      }
-                      className="w-16 text-center border border-gray-300 rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
-                      min="1"
-                      max="99"
-                      disabled={isAddingToCart}
-                    />
-                    <button
-                      onClick={() => handleQuantityChange(quantity + 1)}
-                      className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                      disabled={quantity >= 99 || isAddingToCart}
-                    >
-                      <svg
-                        className="w-4 h-4 text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                <div className="space-x-3 space-y-3">
-                  <button
-                    className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
-                    onClick={handleAddToCart}
-                    disabled={isAddingToCart}
-                  >
-                    {isAddingToCart ? "Adding..." : "Add to Cart"}
-                  </button>
-                  {product.badge === "Customizable" ? (
-                    <button
-                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
-                      onClick={handleCustomize}
-                      disabled={isAddingToCart}
-                    >
-                      Customize
-                    </button>
-                  ) : (
-                    <button
-                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
-                      onClick={handleOrderNow}
-                      disabled={isAddingToCart}
-                    >
-                      Order Now
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+          <ImageUploadComponent
+            product={product}
+            auth={auth}
+            onBack={() => setIsCustomizing(false)}
+          />
         </div>
       </div>
 

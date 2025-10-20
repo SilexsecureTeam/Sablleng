@@ -51,12 +51,17 @@ const PaymentComponent = () => {
       .format(amount)
       .replace("NGN", "₦");
 
-  // Generate unique order ID and reference
+  // Generate unique order ID (for COD and success page)
   const generateOrderId = () => {
     return `SABIL-${new Date()
       .toISOString()
       .split("T")[0]
       .replace(/-/g, "")}-${Math.floor(Math.random() * 10000)}`;
+  };
+
+  // Generate Paystack reference
+  const generatePaystackReference = (orderReference) => {
+    return `SABIL_${orderReference}_${Date.now()}`; // e.g., SABIL_SAB-F5XXUKC3RI_1697051234567
   };
 
   const handlePaystackPayment = () => {
@@ -92,17 +97,35 @@ const PaymentComponent = () => {
       return;
     }
 
+    // Get order_reference from location.state (still needed for success page)
+    const orderReference =
+      location.state?.selectedDelivery?.orderData?.order_reference;
+    if (!orderReference) {
+      toast.error(
+        "Order reference not found. Please complete checkout first.",
+        {
+          position: "top-right",
+          autoClose: 3000,
+        }
+      );
+      navigate("/checkout");
+      return;
+    }
+
     setIsProcessingPayment(true);
 
-    const orderId = generateOrderId(); // e.g., SABIL-20251019-9027
-    const cleanOrderId = orderId.replace(/^SABIL-/, ""); // e.g., 20251019-9027
+    const paystackReference = generatePaystackReference(orderReference);
 
+    console.log("Initializing Paystack with reference:", paystackReference);
+    console.log("Order Reference (for success page):", orderReference);
+
+    // Initialize Paystack inline popup
     const paystack = new PaystackPop();
     paystack.newTransaction({
       key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
       email: auth.user.email,
       amount: Math.round(total * 100), // amount in kobo
-      ref: orderId, // Use custom reference
+      ref: paystackReference,
       metadata: {
         custom_fields: [
           {
@@ -110,16 +133,20 @@ const PaymentComponent = () => {
             variable_name: "mobile_number",
             value: auth.user.mobile || "",
           },
+          {
+            display_name: "Order Reference",
+            variable_name: "order_reference",
+            value: orderReference,
+          },
         ],
       },
       onSuccess: (transaction) => {
         console.log(
-          "PaymentComponent: Payment complete! Paystack Reference:",
+          "Payment complete! Paystack Reference:",
           transaction.reference
         );
-        console.log("Order ID:", cleanOrderId);
-        // Use transaction.reference directly for verification
-        verifyPayment(transaction.reference, cleanOrderId);
+        console.log("Order Reference (for success page):", orderReference);
+        verifyPayment(transaction.reference, orderReference);
       },
       onCancel: () => {
         setIsProcessingPayment(false);
@@ -138,15 +165,15 @@ const PaymentComponent = () => {
     });
   };
 
-  const verifyPayment = async (paystackReference, orderId) => {
-    console.log("PaymentComponent: Verifying payment:", {
-      paystackReference,
-      orderId,
-    });
+  const verifyPayment = async (paystackReference) => {
+    console.log(
+      "Verifying payment with Paystack Reference:",
+      paystackReference
+    );
 
     try {
       const response = await fetch(
-        `https://api.sablle.ng/api/verify-payment/${paystackReference}/${orderId}`,
+        `https://api.sablle.ng/api/verify-payment/${paystackReference}`,
         {
           method: "GET",
           headers: {
@@ -157,12 +184,15 @@ const PaymentComponent = () => {
       );
 
       const data = await response.json();
-      console.log("PaymentComponent: Verification response:", data);
+      console.log("Verification response:", JSON.stringify(data, null, 2));
 
       if (!response.ok || data.error) {
         toast.error(
           data.error || "Payment verification failed. Please contact support.",
-          { position: "top-right", autoClose: 4000 }
+          {
+            position: "top-right",
+            autoClose: 4000,
+          }
         );
         setIsProcessingPayment(false);
         return;
@@ -182,7 +212,7 @@ const PaymentComponent = () => {
         onClose: () =>
           navigate("/order-success", {
             state: {
-              orderId,
+              // orderId: orderReference, // Retain orderReference for success page
               items,
               subtotal,
               vat,
@@ -194,6 +224,7 @@ const PaymentComponent = () => {
           }),
       });
     } catch (error) {
+      console.error("Verification request failed:", error.message);
       toast.error(`Verification request failed: ${error.message}`, {
         position: "top-right",
         autoClose: 4000,
@@ -206,7 +237,6 @@ const PaymentComponent = () => {
     if (selectedPayment === "paystack") {
       handlePaystackPayment();
     } else if (selectedPayment === "cod") {
-      // COD flow - no payment gateway
       if (!auth.isAuthenticated || !auth.token) {
         toast.error("Please log in to proceed with payment", {
           position: "top-right",
@@ -216,6 +246,7 @@ const PaymentComponent = () => {
         return;
       }
 
+      // For COD, generate orderId (consider requiring checkout API call)
       const orderId = generateOrderId();
       const cleanOrderId = orderId.replace(/^SABIL-/, "");
 

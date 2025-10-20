@@ -1,22 +1,75 @@
-// src/Components/CustomizableProducts.js
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import products from "../data/products";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const CustomizableProducts = () => {
-  const customizableProducts = products.filter(
-    (p) => p.badge === "Customizable"
-  );
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("https://api.sablle.ng/api/products", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch products: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const productsArray = Array.isArray(data.data) ? data.data : [];
+
+        const formattedProducts = productsArray.map((item) => ({
+          id: item.id,
+          name: item.name || "",
+          price: item.sale_price_inc_tax
+            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+            : "",
+          category: item.category?.name || "",
+          badge: item.is_variable_price ? "Customizable" : null,
+          image: item.images?.[0] || "/placeholder-image.jpg",
+        }));
+
+        setProducts(formattedProducts);
+        toast.success("Products fetched successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError(err.message);
+        toast.error(`Error: ${err.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        setProducts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
     <div className="bg-white py-8 md:py-10">
+      <ToastContainer />
       <div className="max-w-[1200px] mx-auto p-8">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">
           Select a Product to Customize
         </h2>
-        {customizableProducts.length > 0 ? (
+        {isLoading ? (
+          <div className="text-center text-gray-600">Loading products...</div>
+        ) : error ? (
+          <p className="text-red-500 text-center">{error}</p>
+        ) : products.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {customizableProducts.map((product) => (
+            {products.map((product) => (
               <Link
                 key={product.id}
                 to={`/product/${product.id}`}

@@ -1,404 +1,147 @@
-import React, { useState, useContext, useEffect } from "react";
-import { CartContext } from "../context/CartContextObject";
-import { AuthContext } from "../context/AuthContextObject";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import i1 from "../assets/i1.png";
-import i2 from "../assets/i2.png";
 
-const PaymentComponent = () => {
-  const { items, selectedAddress, setItems, setTotal, setCartSessionId } =
-    useContext(CartContext);
-  const { auth } = useContext(AuthContext);
-  const [selectedPayment, setSelectedPayment] = useState("paystack");
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const selectedDelivery = location.state?.selectedDelivery || { value: 6000 };
+const Product = () => {
+  const [filter, setFilter] = useState("All");
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Debug auth and Paystack keys
   useEffect(() => {
-    console.log("PaymentComponent: auth state:", {
-      isAuthenticated: auth.isAuthenticated,
-      token: auth.token ? auth.token.substring(0, 20) + "..." : "Missing",
-      email: auth.user?.email,
-      isValidEmail:
-        auth.user?.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.user.email),
-    });
-    console.log("PaymentComponent: Paystack public key:", {
-      publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ? "Set" : "Missing",
-      mode: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY.startsWith("pk_test")
-        ? "Test"
-        : "Live",
-    });
-  }, [auth]);
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("https://api.sablle.ng/api/products", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
 
-  const paymentMethods = [
-    {
-      id: "paystack",
-      icon: i1,
-      title: "Paystack",
-      description: "Pay securely with card or bank transfer",
-    },
-    {
-      id: "cod",
-      icon: i2,
-      title: "Cash on Delivery",
-      description: "Pay when your order arrives",
-    },
-  ];
+        if (!response.ok) {
+          throw new Error(`Failed to fetch products: ${response.statusText}`);
+        }
 
-  // Calculate order summary
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  const vat = subtotal * 0.075;
-  const delivery = selectedDelivery.value;
-  const total = subtotal + vat + delivery;
+        const data = await response.json();
+        const productsArray = Array.isArray(data.data) ? data.data : [];
 
-  const formatCurrency = (amount) =>
-    new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-      .format(amount)
-      .replace("NGN", "₦");
+        const formattedProducts = productsArray.map((item) => ({
+          id: item.id,
+          name: item.name || "",
+          price: item.sale_price_inc_tax
+            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+            : "",
+          category: item.category?.name || "",
+          badge: item.is_variable_price ? "Customizable" : null,
+          image: item.images?.[0] || "/placeholder-image.jpg",
+        }));
 
-  // Load Paystack script
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://js.paystack.co/v2/inline.js";
-    script.async = true;
-    document.body.appendChild(script);
+        setProducts(formattedProducts);
+        toast.success("Products fetched successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError(err.message);
+        toast.error(`Error: ${err.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        setProducts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    script.onload = () =>
-      console.log("PaymentComponent: Paystack script loaded");
-    script.onerror = () =>
-      toast.error("Failed to load payment system. Please try again.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-
-    return () => document.body.removeChild(script);
+    fetchProducts();
   }, []);
 
-  const verifyPayment = async (paystackReference, orderId) => {
-    console.log("PaymentComponent: Verifying payment:", {
-      paystackReference,
-      orderId,
-    });
-
-    try {
-      const response = await fetch(
-        `https://api.sablle.ng/api/verify-payment/${paystackReference}/${orderId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            // Authorization: `Bearer ${auth.token}`, // Uncomment if backend requires token
-          },
-        }
-      );
-
-      let data;
-      try {
-        data = await response.json();
-      } catch (jsonError) {
-        console.error(
-          "PaymentComponent: JSON parsing error:",
-          jsonError.message
-        );
-        const rawResponse = await response.text();
-        console.error(
-          "PaymentComponent: Raw response:",
-          rawResponse.slice(0, 200)
-        );
-        throw new Error(
-          `Server returned non-JSON response (status: ${response.status})`
-        );
-      }
-
-      console.log("PaymentComponent: Verification response:", data);
-
-      if (response.ok && data.status === "success") {
-        // Clear cart
-        setItems([]);
-        setTotal(0);
-        setCartSessionId(null);
-        localStorage.setItem("cart_items", JSON.stringify([]));
-        localStorage.setItem("cart_total", 0);
-        localStorage.removeItem("cart_session_id");
-
-        toast.success("Payment successful! Order placed.", {
-          position: "top-right",
-          autoClose: 3000,
-          onClose: () =>
-            navigate("/order-success", {
-              state: {
-                orderId,
-                items,
-                subtotal,
-                vat,
-                delivery,
-                total,
-                address: selectedAddress,
-              },
-            }),
-        });
-      } else {
-        const errorMessage =
-          data.error ||
-          data.message ||
-          "Failed to verify payment. Please contact support.";
-        console.error("PaymentComponent: Verification failed:", errorMessage);
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
-      console.error(
-        "PaymentComponent: Verification network error:",
-        error.message
-      );
-      toast.error(
-        "Network error during payment verification. Please try again.",
-        {
-          position: "top-right",
-          autoClose: 3000,
-        }
-      );
-    }
-  };
-
-  const handlePayment = async () => {
-    // Validate auth
-    if (!auth.isAuthenticated || !auth.token) {
-      console.log("PaymentComponent: Redirecting to signin - auth issue");
-      toast.error("Please log in to proceed with payment", {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      navigate("/signin");
-      return;
-    }
-
-    if (
-      !auth.user?.email ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.user.email)
-    ) {
-      console.log(
-        "PaymentComponent: Invalid or missing email:",
-        auth.user?.email
-      );
-      toast.error(
-        "Valid email required for payment. Please update your profile.",
-        {
-          position: "top-right",
-          autoClose: 3000,
-        }
-      );
-      navigate("/signin");
-      return;
-    }
-
-    const orderId = `SABIL-${new Date()
-      .toISOString()
-      .split("T")[0]
-      .replace(/-/g, "")}-${Math.floor(Math.random() * 10000)}`;
-    const cleanOrderId = orderId.replace(/^SABIL-/, "");
-
-    if (selectedPayment === "paystack") {
-      if (total <= 0) {
-        toast.error("Order amount must be greater than zero.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        return;
-      }
-
-      setIsProcessingPayment(true);
-      try {
-        if (!window.PaystackPop) {
-          throw new Error("PaystackPop not loaded");
-        }
-
-        const handler = new window.PaystackPop();
-        handler.newTransaction({
-          key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-          email: auth.user.email,
-          amount: total * 100, // Convert to kobo
-          reference: `order_${orderId}_${Date.now()}`,
-          callback: (response) => {
-            console.log(
-              "PaymentComponent: Payment complete! Reference:",
-              response.reference
-            );
-            verifyPayment(response.reference, cleanOrderId); // Verify with Paystack reference and order ID
-          },
-          onClose: () => {
-            toast.info("Payment cancelled. You can try again.", {
-              position: "top-right",
-              autoClose: 3000,
-            });
-            setIsProcessingPayment(false);
-          },
-          onError: (error) => {
-            console.error("PaymentComponent: Payment error:", error);
-            toast.error(`Payment failed: ${error.message}`, {
-              position: "top-right",
-              autoClose: 3000,
-            });
-            setIsProcessingPayment(false);
-          },
-        });
-      } catch (error) {
-        console.error("PaymentComponent: Payment initialization error:", error);
-        toast.error("Failed to initialize payment. Please try again.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        setIsProcessingPayment(false);
-      }
-    } else {
-      // COD: Navigate directly to order success
-      navigate("/order-success", {
-        state: {
-          orderId: cleanOrderId,
-          items,
-          subtotal,
-          vat,
-          delivery,
-          total,
-          address: selectedAddress,
-        },
-      });
-    }
-  };
+  const filteredProducts = products.filter((product) => {
+    if (filter === "All") return true;
+    if (filter === "Customizable") return product.badge === "Customizable";
+    if (filter === "Non-Customizable") return product.badge === null;
+    return true;
+  });
 
   return (
-    <div className="max-w-[1200px] mx-auto p-4 lg:p-6">
-      <ToastContainer position="top-right" autoClose={3000} />
-      <div className="grid md:grid-cols-2 gap-8 lg:gap-20">
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Payment
-            </h2>
-            <p className="text-sm text-gray-600">
-              Choose a method and complete payment securely.
-            </p>
-          </div>
-          <div className="space-y-4">
-            {paymentMethods.map((method) => (
-              <label
-                key={method.id}
-                className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                  selectedPayment === method.id
-                    ? "border-[#CB5B6A] bg-[#CB5B6A]/10"
-                    : "border-gray-200 hover:border-gray-300"
+    <div className="py-12 md:py-16">
+      <ToastContainer />
+      <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 mx-auto">
+        <div className="mb-8">
+          <h3 className="text-lg hidden font-semibold text-gray-900 mb-4">
+            Filter Products
+          </h3>
+          <div className="flex flex-col sm:flex-row sm:space-x-4 hidden space-y-2 sm:space-y-0">
+            {["All", "Customizable", "Non-Customizable"].map((option) => (
+              <button
+                key={option}
+                onClick={() => setFilter(option)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                  filter === option
+                    ? "bg-[#CB5B6A] text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
+                aria-label={`Filter by ${option} products`}
+                aria-pressed={filter === option}
               >
-                <input
-                  type="radio"
-                  name="payment"
-                  value={method.id}
-                  checked={selectedPayment === method.id}
-                  onChange={(e) => setSelectedPayment(e.target.value)}
-                  className="text-[#CB5B6A] focus:ring-[#CB5B6A]"
-                />
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-lg ${
-                      selectedPayment === method.id
-                        ? "bg-[#CB5B6A]/20"
-                        : "bg-gray-100"
-                    }`}
-                  >
-                    <img
-                      src={method.icon}
-                      alt={method.title}
-                      className="w-5 h-5 object-contain"
-                    />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">
-                      {method.title}
-                    </h4>
-                    {method.description && (
-                      <p className="text-sm text-gray-500">
-                        {method.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </label>
+                {option}
+              </button>
             ))}
           </div>
         </div>
-        <div className="space-y-6 border border-gray-200 rounded-lg p-8">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">Summary</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium">{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Discount</span>
-                <span className="font-medium">₦0</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">VAT (7.5%)</span>
-                <span className="font-medium">{formatCurrency(vat)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Delivery</span>
-                <span className="font-medium">{formatCurrency(delivery)}</span>
-              </div>
-              <div className="border-t pt-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold text-gray-900">
-                    Total
-                  </span>
-                  <span className="text-xl font-bold text-gray-900">
-                    {formatCurrency(total)}
-                  </span>
-                </div>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {isLoading ? (
+            <div className="col-span-full text-center text-gray-600">
+              Loading products...
             </div>
-          </div>
-          <button
-            onClick={handlePayment}
-            disabled={isProcessingPayment || items.length === 0}
-            className={`w-full bg-[#CB5B6A] text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-              isProcessingPayment || items.length === 0
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-[#CB5B6A]/70"
-            }`}
-          >
-            {isProcessingPayment ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white"></div>
-                <span>Processing Payment...</span>
-              </>
-            ) : (
-              <span>Complete Payment</span>
-            )}
-          </button>
-          <div className="text-center">
-            <p className="text-xs text-gray-500">
-              Your payment information is secure and encrypted
-            </p>
-          </div>
+          ) : error ? (
+            <div className="col-span-full text-center text-red-500">
+              {error}
+            </div>
+          ) : filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => (
+              <Link
+                key={product.id}
+                to={`/product/${product.id}`}
+                className="bg-white overflow-hidden block hover:shadow-lg transition-shadow duration-200 animate-fade-in"
+              >
+                <div className="relative bg-[#F4F2F2] p-4 h-48 md:h-80 flex items-center justify-center">
+                  {product.badge && (
+                    <div className="absolute top-6 left-0 bg-[#CB5B6A] text-white px-8 py-2 rounded text-sm font-medium">
+                      {product.badge}
+                    </div>
+                  )}
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-medium text-gray-900 text-sm">
+                    {product.name}
+                  </h3>
+                  <span className="text-lg font-semibold text-gray-900">
+                    {product.price}
+                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-base font-bold text-[#CB5B6A] py-1 rounded">
+                      {product.category}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))
+          ) : (
+            <div className="col-span-full text-center text-gray-600">
+              No products match the selected filter.
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default PaymentComponent;
+export default Product;

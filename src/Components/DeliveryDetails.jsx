@@ -107,6 +107,14 @@ const DeliveryDetail = () => {
       console.log("Response status:", response.status);
       console.log("Response data:", JSON.stringify(data, null, 2));
 
+      // Log the order reference for testing
+      console.log("=== ORDER REFERENCE FOR TESTING ===");
+      console.log(
+        "order_reference:",
+        data.order?.order_reference || "Not found in response"
+      );
+      console.log("=================================\n");
+
       if (response.ok) {
         console.log("✅ Checkout successful");
         toast.success("Checkout submitted! Proceeding to payment.");
@@ -117,7 +125,7 @@ const DeliveryDetail = () => {
               value: parseFloat(formData.delivery_fee),
               shipping_address: formData.shipping_address,
               tax_rate: parseFloat(formData.tax_rate),
-              orderData: data.data,
+              orderData: data.order,
             },
           },
         });

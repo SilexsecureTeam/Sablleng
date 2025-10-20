@@ -4,7 +4,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const Product = () => {
-  const [filter, setFilter] = useState("All");
+  // const [filter, setFilter] = useState("All"); // Comment out filter state
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -57,22 +57,27 @@ const Product = () => {
     fetchProducts();
   }, []);
 
+  // Comment out filter logic
+  /*
   const filteredProducts = products.filter((product) => {
     if (filter === "All") return true;
     if (filter === "Customizable") return product.badge === "Customizable";
     if (filter === "Non-Customizable") return product.badge === null;
     return true;
   });
+  */
 
   return (
     <div className="py-12 md:py-16">
       <ToastContainer />
       <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 mx-auto">
+        {/* Comment out filter UI */}
+        {/*
         <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <h3 className="text-lg hidden font-semibold text-gray-900 mb-4">
             Filter Products
           </h3>
-          <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:space-x-4 hidden space-y-2 sm:space-y-0">
             {["All", "Customizable", "Non-Customizable"].map((option) => (
               <button
                 key={option}
@@ -90,6 +95,7 @@ const Product = () => {
             ))}
           </div>
         </div>
+        */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading ? (
             <div className="col-span-full text-center text-gray-600">
@@ -99,8 +105,8 @@ const Product = () => {
             <div className="col-span-full text-center text-red-500">
               {error}
             </div>
-          ) : filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
+          ) : products.length > 0 ? ( // Use `products` directly instead of `filteredProducts`
+            products.map((product) => (
               <Link
                 key={product.id}
                 to={`/product/${product.id}`}
@@ -135,7 +141,7 @@ const Product = () => {
             ))
           ) : (
             <div className="col-span-full text-center text-gray-600">
-              No products match the selected filter.
+              No products available.
             </div>
           )}
         </div>
