@@ -1,10 +1,12 @@
 import React, { useState, useContext, useRef, useEffect } from "react";
 import { CartContext } from "../context/CartContextObject";
+import { useNavigate } from "react-router-dom";
 import { X, Upload, Image, RotateCcw } from "lucide-react"; // Added RotateCcw for reset button
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const ImageUploadComponent = ({ product, auth, onBack }) => {
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null); // DataURL for preview
   const [uploadedFile, setUploadedFile] = useState(null); // File for FormData
@@ -261,6 +263,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     }
     if (!auth?.isAuthenticated || !auth?.token) {
       toast.error("Please log in to customize products");
+      navigate("/signin");
       return;
     }
 
