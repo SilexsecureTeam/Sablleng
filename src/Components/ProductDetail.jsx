@@ -14,9 +14,24 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [error, setError] = useState(null);
-  const [isCustomizing, setIsCustomizing] = useState(true); // Always show customization
+  const [selectedColor, setSelectedColor] = useState("white");
+  const [quantity, setQuantity] = useState(1);
+  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [selectedThumbnail, setSelectedThumbnail] = useState({
+    index: 0,
+    bgColor: "bg-gray-50",
+    image: null,
+  });
   const sliderRef = useRef(null);
+
+  const colors = [
+    { name: "black", color: "bg-black" },
+    { name: "purple", color: "bg-purple-600" },
+    { name: "red", color: "bg-red-500" },
+    { name: "yellow", color: "bg-yellow-400" },
+  ];
 
   useEffect(() => {
     console.log("ProductDetail: Auth state:", {
@@ -32,57 +47,101 @@ const ProductDetail = () => {
       setError(null);
 
       try {
-        // New: Calculate the page based on product ID (assuming sequential IDs)
         const productId = parseInt(id);
-        const productsPerPage = 10; // From API: per_page = 10
-        const page = Math.ceil(productId / productsPerPage); // E.g., ID 11 is on page 2
+        console.log(`Fetching product ID ${productId} via single-ID endpoint`);
 
         const response = await fetch(
-          `https://api.sablle.ng/api/products?page=${page}`,
+          `https://api.sablle.ng/api/products/${productId}`,
           {
-            // Updated: Fetch specific page
             method: "GET",
             headers: { "Content-Type": "application/json" },
           }
         );
 
+        let data;
         if (!response.ok) {
+          data = await response.json().catch(() => ({}));
+          if (
+            response.status === 404 ||
+            (data &&
+              data.status === false &&
+              data.message === "Resource not found.")
+          ) {
+            throw new Error("Product not found");
+          }
           throw new Error(`Failed to fetch product: ${response.statusText}`);
         }
 
-        const data = await response.json();
-        const productsArray = Array.isArray(data.data) ? data.data : [];
+        data = await response.json();
+        console.log(`API response for product ID ${productId}:`, data);
 
-        const formattedProducts = productsArray.map((item) => ({
-          id: item.id,
-          name: item.name || "",
-          rawPrice: item.sale_price_inc_tax
-            ? parseFloat(item.sale_price_inc_tax)
-            : 0,
-          price: item.sale_price_inc_tax
-            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-            : "₦0",
-          category: item.category?.name || "",
-          badge: item.is_variable_price ? "Customizable" : null,
-          image: item.images?.[0] || "/placeholder-image.jpg",
-          model: item.product_code || "N/A",
-        }));
-
-        const foundProduct = formattedProducts.find(
-          (p) => p.id === parseInt(id)
-        );
-
-        if (!foundProduct) {
+        if (!data || data.status === false) {
           throw new Error("Product not found");
         }
 
-        setProduct(foundProduct);
-        setRelatedProducts(
-          formattedProducts.filter(
-            (p) =>
-              p.category === foundProduct.category && p.id !== foundProduct.id
-          )
-        );
+        // Format the single product
+        const formattedProduct = {
+          id: data.id,
+          name: data.name || "",
+          rawPrice: data.sale_price_inc_tax
+            ? parseFloat(data.sale_price_inc_tax)
+            : 0,
+          price: data.sale_price_inc_tax
+            ? `₦${parseFloat(data.sale_price_inc_tax).toLocaleString()}`
+            : "Price Unavailable",
+          category: data.category?.name || "Uncategorized",
+          badge: data.customize ? "Customizable" : null,
+          image: data.images?.[0] || "/placeholder-image.jpg",
+          model: data.product_code || "N/A",
+          customize: data.customize,
+        };
+
+        setProduct(formattedProduct);
+
+        // Fetch related products from general products endpoint (first page, filter by category)
+        if (formattedProduct.category !== "Uncategorized") {
+          const relatedResponse = await fetch(
+            `https://api.sablle.ng/api/products`,
+            {
+              method: "GET",
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+
+          if (relatedResponse.ok) {
+            const relatedData = await relatedResponse.json();
+            const relatedArray = Array.isArray(relatedData.data)
+              ? relatedData.data
+              : [];
+            const formattedRelated = relatedArray
+              .map((item) => ({
+                id: item.id,
+                name: item.name || "",
+                price: item.sale_price_inc_tax
+                  ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+                  : "Price Unavailable",
+                category: item.category?.name || "Uncategorized",
+                badge: item.customize ? "Customizable" : null,
+                image: item.images?.[0] || "/placeholder-image.jpg",
+              }))
+              .filter(
+                (p) =>
+                  p.category === formattedProduct.category &&
+                  p.id !== formattedProduct.id
+              );
+
+            setRelatedProducts(formattedRelated.slice(0, 10)); // Limit to 10 for performance
+            console.log(
+              `Found ${formattedRelated.length} related products for category "${formattedProduct.category}"`
+            );
+          }
+        }
+
+        setSelectedThumbnail({
+          index: 0,
+          bgColor: "bg-blue-100",
+          image: formattedProduct.image,
+        });
       } catch (err) {
         console.error("Fetch error:", err);
         setError(err.message);
@@ -99,8 +158,19 @@ const ProductDetail = () => {
       }
     };
 
-    fetchProduct();
+    if (id) {
+      fetchProduct();
+    }
   }, [id]);
+
+  const thumbnails = product
+    ? [
+        { bgColor: "bg-blue-100", image: product.image },
+        { bgColor: "bg-green-100", image: product.image },
+        { bgColor: "bg-red-100", image: product.image },
+        { bgColor: "bg-yellow-100", image: product.image },
+      ]
+    : [];
 
   const scrollLeft = () => {
     if (sliderRef.current) {
@@ -112,6 +182,88 @@ const ProductDetail = () => {
     if (sliderRef.current) {
       sliderRef.current.scrollBy({ left: 300, behavior: "smooth" });
     }
+  };
+
+  const handleAddToCart = async () => {
+    if (!product) {
+      toast.error("Product information not available");
+      return;
+    }
+
+    console.log("\n=== PRODUCT DETAIL: ADD TO CART ===");
+    console.log("Product:", {
+      id: product.id,
+      name: product.name,
+      rawPrice: product.rawPrice,
+      quantity,
+      color: selectedColor,
+    });
+    console.log("Auth context available:", !!auth);
+    console.log("Auth authenticated:", auth?.isAuthenticated);
+    console.log("Auth token exists:", !!auth?.token);
+
+    setIsAddingToCart(true);
+
+    try {
+      const price = product.rawPrice;
+
+      if (!price || price <= 0) {
+        toast.error("Invalid product price");
+        return;
+      }
+
+      await addItem({
+        id: product.id,
+        name: product.name,
+        model: product.model,
+        price: price,
+        image: selectedThumbnail.image,
+        quantity: quantity,
+        color: selectedColor,
+        customized: false,
+      });
+
+      setQuantity(1);
+      toast.success(`${product.name} added to cart!`, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      toast.error("Failed to add item to cart. Please try again.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
+    } finally {
+      setIsAddingToCart(false);
+      console.log("===================================\n");
+    }
+  };
+
+  const handleQuantityChange = (newQuantity) => {
+    if (newQuantity >= 1 && newQuantity <= 99) {
+      setQuantity(newQuantity);
+    }
+  };
+
+  const handleOrderNow = () => {
+    toast.info("Order now feature coming soon!", {
+      position: "top-right",
+      autoClose: 3000,
+    });
+    console.log("Order Now clicked for", product?.name);
+  };
+
+  const handleCustomize = () => {
+    setIsCustomizing(true);
+  };
+
+  const handleThumbnailClick = (index, thumbnail) => {
+    setSelectedThumbnail({
+      index,
+      bgColor: thumbnail.bgColor,
+      image: thumbnail.image,
+    });
   };
 
   if (isLoading) {
@@ -144,11 +296,184 @@ const ProductDetail = () => {
       <ToastContainer />
       <div className="max-w-[1200px] mx-auto">
         <div className="bg-white p-8">
-          <ImageUploadComponent
-            product={product}
-            auth={auth}
-            onBack={() => setIsCustomizing(false)}
-          />
+          {isCustomizing ? (
+            <ImageUploadComponent
+              product={product}
+              auth={auth}
+              onBack={() => setIsCustomizing(false)}
+            />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div className="space-y-6">
+                <div
+                  className={`rounded-lg p-8 flex items-center justify-center ${selectedThumbnail.bgColor}`}
+                >
+                  <img
+                    src={selectedThumbnail.image || product.image}
+                    alt={product.name}
+                    className="max-h-64 md:h-80 max-w-full object-contain"
+                  />
+                </div>
+                <div className="flex space-x-4">
+                  {thumbnails.map((thumbnail, index) => (
+                    <div
+                      key={index}
+                      className={`w-20 h-20 ${
+                        thumbnail.bgColor
+                      } rounded border flex items-center justify-center cursor-pointer ${
+                        selectedThumbnail.index === index
+                          ? "border-gray-800 border-2"
+                          : "border-gray-300"
+                      }`}
+                      onClick={() => handleThumbnailClick(index, thumbnail)}
+                    >
+                      <img
+                        src={thumbnail.image}
+                        alt={`${product.name} thumbnail ${index + 1}`}
+                        className="max-h-16 max-w-full object-contain"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-6">
+                <h1 className="text-2xl font-semibold text-gray-900">
+                  {product.name}
+                </h1>
+                <p className="text-gray-600 leading-relaxed">
+                  {product.badge
+                    ? `Customizable product: ${
+                        product.name
+                      }. Perfect for ${product.category.toLowerCase()}. Model: ${
+                        product.model
+                      }.`
+                    : `Explore the ${product.name}, a premium product in the ${product.category} category. Model: ${product.model}.`}
+                </p>
+                <div className="space-y-3">
+                  <div className="flex">
+                    <span className="text-gray-500 w-24">Color:</span>
+                    <span className="text-gray-900">{selectedColor}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-24">Brand:</span>
+                    <span className="text-gray-900">ACMELL</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-24">Material:</span>
+                    <span className="text-gray-900">Premium</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-24">Category:</span>
+                    <span className="text-gray-900">{product.category}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="text-gray-500 w-24">Price:</span>
+                    <span className="text-gray-900">{product.price}</span>
+                  </div>
+                </div>
+                <div className="space-x-3 flex items-center">
+                  <label className="text-gray-900 font-medium">
+                    Select color:
+                  </label>
+                  <div className="flex space-x-3">
+                    {colors.map((color) => (
+                      <button
+                        key={color.name}
+                        onClick={() => setSelectedColor(color.name)}
+                        className={`w-6 h-6 rounded-full border-2 ${
+                          color.color
+                        } ${
+                          selectedColor === color.name
+                            ? "border-gray-800"
+                            : "border-gray-300"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="space-x-3 flex items-center">
+                  <label className="text-gray-900 font-medium">Quantity:</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleQuantityChange(quantity - 1)}
+                      className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                      disabled={quantity <= 1 || isAddingToCart}
+                    >
+                      <svg
+                        className="w-4 h-4 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M18 12H6"
+                        />
+                      </svg>
+                    </button>
+                    <input
+                      type="number"
+                      value={quantity}
+                      onChange={(e) =>
+                        handleQuantityChange(parseInt(e.target.value) || 1)
+                      }
+                      className="w-16 text-center border border-gray-300 rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                      min="1"
+                      max="99"
+                      disabled={isAddingToCart}
+                    />
+                    <button
+                      onClick={() => handleQuantityChange(quantity + 1)}
+                      className="w-8 h-8 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                      disabled={quantity >= 99 || isAddingToCart}
+                    >
+                      <svg
+                        className="w-4 h-4 text-gray-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-3 space-x-3">
+                  <button
+                    className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded-lg transition-colors"
+                    onClick={handleAddToCart}
+                    disabled={isAddingToCart || !product.rawPrice}
+                  >
+                    {isAddingToCart ? "Adding..." : "Add to Cart"}
+                  </button>
+                  {product.customize ? (
+                    <button
+                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded-lg transition-colors"
+                      onClick={handleCustomize}
+                      disabled={isAddingToCart}
+                    >
+                      Customize
+                    </button>
+                  ) : (
+                    <button
+                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded-lg transition-colors"
+                      onClick={handleOrderNow}
+                      disabled={isAddingToCart}
+                    >
+                      Order Now
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

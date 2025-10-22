@@ -18,7 +18,7 @@ const CategoryPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const productsPerPage = 10;
 
-  // Fetch and cache categories (unchanged)
+  // Fetch and cache categories
   useEffect(() => {
     const cachedCategories = localStorage.getItem("categories");
     if (cachedCategories) {
@@ -66,7 +66,7 @@ const CategoryPage = () => {
     fetchCategories();
   }, []);
 
-  // Memoize category ID and name (unchanged)
+  // Memoize category ID and name
   const { categoryId, categoryName } = useMemo(() => {
     const category =
       categories.find((cat) => cat.slug === categorySlug) || null;
@@ -136,10 +136,11 @@ const CategoryPage = () => {
           name: item.name || "",
           price: item.sale_price_inc_tax
             ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-            : "",
-          category: item.category?.name || categoryName,
+            : "Price Unavailable",
+          category: item.category?.name || "Uncategorized",
           badge: item.customize ? "Customizable" : null,
           image: item.images?.[0] || "/placeholder-image.jpg",
+          customize: item.customize, // Store customize field
         }));
 
         if (isMounted) {
@@ -189,7 +190,7 @@ const CategoryPage = () => {
     };
   }, [categorySlug, categoryId, categoryName, categories]);
 
-  // Handle page change for client-side pagination (unchanged)
+  // Handle page change for client-side pagination
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -197,22 +198,22 @@ const CategoryPage = () => {
     }
   };
 
-  // Client-side pagination (unchanged)
+  // Client-side pagination
   const startIndex = (currentPage - 1) * productsPerPage;
   const paginatedProducts = products.slice(
     startIndex,
     startIndex + productsPerPage
   );
 
-  // Filter products by customizable status (unchanged)
+  // Filter products by customizable status
   const filteredProducts = paginatedProducts.filter((product) => {
     if (filter === "All") return true;
-    if (filter === "Customizable") return product.badge === "Customizable";
-    if (filter === "Non-Customizable") return product.badge === null;
+    if (filter === "Customizable") return product.customize === true;
+    if (filter === "Non-Customizable") return product.customize === false;
     return true;
   });
 
-  // Generate page numbers for pagination (unchanged)
+  // Generate page numbers for pagination
   const getPageNumbers = () => {
     const maxPagesToShow = 5;
     const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));

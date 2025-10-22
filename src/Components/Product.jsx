@@ -4,22 +4,20 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const Product = () => {
-  // const [filter, setFilter] = useState("All"); // Comment out filter state
+  const [filter, setFilter] = useState("All");
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1); // New: Track current page
-  const [totalPages, setTotalPages] = useState(1); // New: Track total pages
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const fetchProducts = async (page = 1) => {
-      // Updated: Accept page parameter
       setIsLoading(true);
       try {
         const response = await fetch(
           `https://api.sablle.ng/api/products?page=${page}`,
           {
-            // Updated: Add page query
             method: "GET",
             headers: { "Content-Type": "application/json" },
           }
@@ -37,14 +35,15 @@ const Product = () => {
           name: item.name || "",
           price: item.sale_price_inc_tax
             ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-            : "",
-          category: item.category?.name || "",
-          badge: item.is_variable_price ? "Customizable" : null,
+            : "Price Unavailable",
+          category: item.category?.name || "Uncategorized",
+          badge: item.customize ? "Customizable" : null,
           image: item.images?.[0] || "/placeholder-image.jpg",
+          customize: item.customize, // Store customize field
         }));
 
         setProducts(formattedProducts);
-        setTotalPages(data.last_page || 1); // New: Set total pages from API
+        setTotalPages(data.last_page || 1);
         toast.success(`Products fetched successfully for page ${page}`, {
           position: "top-right",
           autoClose: 3000,
@@ -62,37 +61,33 @@ const Product = () => {
       }
     };
 
-    fetchProducts(currentPage); // Updated: Pass currentPage
-  }, [currentPage]); // Updated: Depend on currentPage
+    fetchProducts(currentPage);
+  }, [currentPage]);
 
-  // New: Handle page change
+  // Handle page change
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
   };
 
-  // Comment out filter logic
-  /*
+  // Filter products
   const filteredProducts = products.filter((product) => {
     if (filter === "All") return true;
-    if (filter === "Customizable") return product.badge === "Customizable";
-    if (filter === "Non-Customizable") return product.badge === null;
+    if (filter === "Customizable") return product.customize === true;
+    if (filter === "Non-Customizable") return product.customize === false;
     return true;
   });
-  */
 
   return (
     <div className="py-12 md:py-16">
       <ToastContainer />
       <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 mx-auto">
-        {/* Comment out filter UI */}
-        {/*
         <div className="mb-8">
-          <h3 className="text-lg hidden font-semibold text-gray-900 mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Filter Products
           </h3>
-          <div className="flex flex-col sm:flex-row sm:space-x-4 hidden space-y-2 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
             {["All", "Customizable", "Non-Customizable"].map((option) => (
               <button
                 key={option}
@@ -110,7 +105,6 @@ const Product = () => {
             ))}
           </div>
         </div>
-        */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading ? (
             <div className="col-span-full text-center text-gray-600">
@@ -120,8 +114,8 @@ const Product = () => {
             <div className="col-span-full text-center text-red-500">
               {error}
             </div>
-          ) : products.length > 0 ? ( // Use `products` directly instead of `filteredProducts`
-            products.map((product) => (
+          ) : filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => (
               <Link
                 key={product.id}
                 to={`/product/${product.id}`}
@@ -160,7 +154,6 @@ const Product = () => {
             </div>
           )}
         </div>
-        {/* New: Pagination Controls */}
         {totalPages > 1 && (
           <div className="mt-8 flex flex-col items-center space-y-4">
             <div className="text-gray-600">

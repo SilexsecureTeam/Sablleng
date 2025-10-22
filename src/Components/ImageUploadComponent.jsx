@@ -1,27 +1,27 @@
 import React, { useState, useContext, useRef, useEffect } from "react";
 import { CartContext } from "../context/CartContextObject";
 import { useNavigate } from "react-router-dom";
-import { X, Upload, Image, RotateCcw } from "lucide-react"; // Added RotateCcw for reset button
+import { X, Upload, Image, RotateCcw } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const ImageUploadComponent = ({ product, auth, onBack }) => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState(null); // DataURL for preview
-  const [uploadedFile, setUploadedFile] = useState(null); // File for FormData
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [uploadedFile, setUploadedFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [text, setText] = useState("");
   const [instruction, setInstruction] = useState("");
   const [position, setPosition] = useState("top-left");
-  const [imageCoordinates, setImageCoordinates] = useState({ x: 100, y: 100 }); // Separate coordinates for image
-  const [textCoordinates, setTextCoordinates] = useState({ x: 100, y: 160 }); // Separate coordinates for text
+  const [imageCoordinates, setImageCoordinates] = useState({ x: 100, y: 100 });
+  const [textCoordinates, setTextCoordinates] = useState({ x: 100, y: 160 });
   const [fontSize, setFontSize] = useState(24);
   const [textColor, setTextColor] = useState("#000000");
-  const [imageSize, setImageSize] = useState(0.5); // New: Controls image size (fraction of canvas width)
+  const [imageSize, setImageSize] = useState(0.5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState(null);
-  const [isDragging, setIsDragging] = useState(null); // Track dragging (image/text)
+  const [isDragging, setIsDragging] = useState(null);
   const { addItem } = useContext(CartContext);
   const canvasRef = useRef(null);
 
@@ -42,7 +42,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
       setTextCoordinates({
         ...positions[position],
         y: positions[position].y + 60,
-      }); // Offset text below image
+      });
     }
   }, [position, product]);
 
@@ -58,12 +58,11 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
       canvas.height = productImg.height;
       ctx.drawImage(productImg, 0, 0, canvas.width, canvas.height);
 
-      // Draw uploaded image
       if (uploadedImage) {
         const logoImg = new window.Image();
         logoImg.src = uploadedImage;
         logoImg.onload = () => {
-          const logoSize = canvas.width * imageSize; // Use dynamic image size
+          const logoSize = canvas.width * imageSize;
           ctx.drawImage(
             logoImg,
             imageCoordinates.x - logoSize / 2,
@@ -74,7 +73,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
         };
       }
 
-      // Draw text
       if (text) {
         ctx.font = `${fontSize}px Arial`;
         ctx.fillStyle = textColor;
@@ -83,7 +81,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
         ctx.fillText(text, textCoordinates.x, textCoordinates.y);
       }
 
-      // New: Add subtle outline when dragging
       if (isDragging === "image" && uploadedImage) {
         const logoSize = canvas.width * imageSize;
         ctx.strokeStyle = "#CB5B6A";
@@ -167,7 +164,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     setDragOver(false);
   };
 
-  // Handle drag events on canvas
   const handleMouseDown = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -175,7 +171,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     const y = e.clientY - rect.top;
     const logoSize = canvas.width * imageSize;
 
-    // Check if click is within image bounds
     if (
       uploadedImage &&
       x >= imageCoordinates.x - logoSize / 2 &&
@@ -184,9 +179,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
       y <= imageCoordinates.y + logoSize / 2
     ) {
       setIsDragging("image");
-    }
-    // Check if click is within text bounds
-    else if (
+    } else if (
       text &&
       x >= textCoordinates.x - 50 &&
       x <= textCoordinates.x + 50 &&
@@ -204,7 +197,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // New: Boundary checks to keep elements within canvas
     const logoSize = canvas.width * imageSize;
     const boundedX = Math.max(
       logoSize / 2,
@@ -226,7 +218,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     setIsDragging(null);
   };
 
-  // New: Reset customizations
   const handleReset = () => {
     setUploadedImage(null);
     setUploadedFile(null);
@@ -244,10 +235,9 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     });
   };
 
-  // New: Adjust image size
   const adjustImageSize = (delta) => {
     setImageSize((prev) => {
-      const newSize = Math.max(0.2, Math.min(1.0, prev + delta)); // Min: 20%, Max: 100% of canvas width
+      const newSize = Math.max(0.2, Math.min(1.0, prev + delta));
       return newSize;
     });
   };
@@ -276,8 +266,8 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     if (text) formData.append("text", text);
     if (instruction) formData.append("instruction", instruction);
     formData.append("position", position);
-    formData.append("coordinates[x]", imageCoordinates.x); // Use imageCoordinates
-    formData.append("coordinates[y]", imageCoordinates.y); // Use imageCoordinates
+    formData.append("coordinates[x]", imageCoordinates.x);
+    formData.append("coordinates[y]", imageCoordinates.y);
 
     try {
       const response = await fetch("https://api.sablle.ng/api/customizations", {
@@ -302,7 +292,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
         autoClose: 3000,
       });
 
-      // Add to cart with API image (if provided) or canvas fallback
       const combinedImage =
         data.customized_image_url || (await generateCombinedImage());
       addItem({
@@ -317,7 +306,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
         customized: true,
         text,
         position,
-        coordinates: imageCoordinates, // Use imageCoordinates
+        coordinates: imageCoordinates,
       });
 
       setUploadedImage(null);
@@ -327,7 +316,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
       setImageCoordinates({ x: 100, y: 100 });
       setTextCoordinates({ x: 100, y: 160 });
       setPosition("top-left");
-      setImageSize(0.5); // Reset image size
+      setImageSize(0.5);
       onBack();
     } catch (err) {
       console.error("Customization error:", err);
@@ -405,7 +394,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     <div className="bg-white">
       <ToastContainer />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 lg:p-6">
-        {/* Left Side - Upload and Inputs */}
         <div>
           <div className="flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 p-8 min-h-[400px]">
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center flex-1 flex flex-col justify-center">
@@ -416,7 +404,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
                 Upload your own design file
               </h3>
               <p className="text-gray-500 mb-6">PNG, JPEG, PSD, AI, etc</p>
-              {/* New: Thumbnail preview of uploaded image */}
               {uploadedImage && (
                 <div className="mt-4">
                   <img
@@ -436,7 +423,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
               >
                 Upload Logo
               </button>
-              {/* New: Reset button */}
               <button
                 onClick={handleReset}
                 className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
@@ -502,7 +488,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
                   ))}
                 </select>
               </div>
-              {/* New: Image size controls */}
               {uploadedImage && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
@@ -578,7 +563,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
           </div>
         </div>
 
-        {/* Right Side - Product Preview */}
         <div>
           <div className="flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 p-8 min-h-[400px]">
             <div className="bg-gray-50 rounded-lg p-8 text-center flex-1 flex flex-col justify-center">
@@ -616,7 +600,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
           )}
         </div>
 
-        {/* Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/30 bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-[#6B3838] rounded-lg shadow-xl max-w-lg w-full">
