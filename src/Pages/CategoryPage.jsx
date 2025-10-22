@@ -16,12 +16,9 @@ const CategoryPage = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [fetchProgress, setFetchProgress] = useState(0); // Track fetch progress
-  const productsPerPage = 10; // Match API's per-page limit
-  const minProductsToStop = 30; // Stop fetching if we have enough for 3 pages
-  const batchSize = 10; // Fetch 10 pages concurrently
+  const productsPerPage = 10;
 
-  // Fetch and cache categories
+  // Fetch and cache categories (unchanged)
   useEffect(() => {
     const cachedCategories = localStorage.getItem("categories");
     if (cachedCategories) {
@@ -69,7 +66,7 @@ const CategoryPage = () => {
     fetchCategories();
   }, []);
 
-  // Memoize category ID and name
+  // Memoize category ID and name (unchanged)
   const { categoryId, categoryName } = useMemo(() => {
     const category =
       categories.find((cat) => cat.slug === categorySlug) || null;
@@ -79,7 +76,7 @@ const CategoryPage = () => {
     };
   }, [categorySlug, categories]);
 
-  // Fetch all products and filter client-side
+  // Fetch products for this specific category
   useEffect(() => {
     const controller = new AbortController();
     let isMounted = true;
@@ -113,83 +110,45 @@ const CategoryPage = () => {
         setIsLoading(true);
         setError(null);
         setProducts([]);
-        setFetchProgress(0);
       }
 
       try {
-        let allProducts = [];
-        let page = 1;
-        let lastPage = 1;
-
-        while (page <= lastPage) {
-          // Fetch pages in batches
-          const batchPages = Array.from(
-            { length: Math.min(batchSize, lastPage - page + 1) },
-            (_, i) => page + i
-          );
-          const batchPromises = batchPages.map((p) =>
-            fetch(`https://api.sablle.ng/api/products?page=${p}`, {
-              method: "GET",
-              headers: { "Content-Type": "application/json" },
-              signal: controller.signal,
-            }).then(async (response) => {
-              if (!response.ok) {
-                throw new Error(
-                  `Failed to fetch page ${p}: ${response.statusText}`
-                );
-              }
-              return response.json();
-            })
-          );
-
-          const batchResults = await Promise.all(batchPromises);
-
-          for (const productData of batchResults) {
-            const productsArray = Array.isArray(productData.data)
-              ? productData.data
-              : [];
-            const formattedProducts = productsArray
-              .filter((item) => item.category_id === categoryId)
-              .map((item) => ({
-                id: item.id,
-                name: item.name || "",
-                price: item.sale_price_inc_tax
-                  ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-                  : "",
-                category: item.category?.name || categoryName,
-                badge: item.customize ? "Customizable" : null,
-                image: item.images?.[0] || "/placeholder-image.jpg",
-              }));
-
-            allProducts = [...allProducts, ...formattedProducts];
-
-            if (isMounted) {
-              setProducts([...allProducts]); // Update UI incrementally
-              setTotalPages(Math.ceil(allProducts.length / productsPerPage));
-              setFetchProgress(Math.round((page / lastPage) * 100));
-            }
-
-            // Stop early if enough products are found
-            if (allProducts.length >= minProductsToStop) {
-              break;
-            }
-
-            lastPage = productData.last_page || lastPage;
-            page += 1;
+        const response = await fetch(
+          `https://api.sablle.ng/api/categories/${categoryId}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
           }
+        );
 
-          if (allProducts.length >= minProductsToStop) {
-            break;
-          }
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch category products: ${response.statusText}`
+          );
         }
 
+        const data = await response.json();
+        const productsArray = Array.isArray(data.products) ? data.products : [];
+
+        const formattedProducts = productsArray.map((item) => ({
+          id: item.id,
+          name: item.name || "",
+          price: item.sale_price_inc_tax
+            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+            : "",
+          category: item.category?.name || categoryName,
+          badge: item.customize ? "Customizable" : null,
+          image: item.images?.[0] || "/placeholder-image.jpg",
+        }));
+
         if (isMounted) {
-          setProducts(allProducts);
-          localStorage.setItem(cacheKey, JSON.stringify(allProducts));
-          setTotalPages(Math.ceil(allProducts.length / productsPerPage));
+          setProducts(formattedProducts);
+          localStorage.setItem(cacheKey, JSON.stringify(formattedProducts));
+          setTotalPages(Math.ceil(formattedProducts.length / productsPerPage));
           setCurrentPage(1);
 
-          if (allProducts.length > 0) {
+          if (formattedProducts.length > 0) {
             toast.success("Products fetched successfully!", {
               position: "top-right",
               autoClose: 3000,
@@ -216,7 +175,6 @@ const CategoryPage = () => {
       } finally {
         if (isMounted) {
           setIsLoading(false);
-          setFetchProgress(0);
         }
       }
     };
@@ -229,9 +187,9 @@ const CategoryPage = () => {
       isMounted = false;
       controller.abort();
     };
-  }, [categorySlug, categoryId]);
+  }, [categorySlug, categoryId, categoryName, categories]);
 
-  // Handle page change for client-side pagination
+  // Handle page change for client-side pagination (unchanged)
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -239,14 +197,14 @@ const CategoryPage = () => {
     }
   };
 
-  // Client-side pagination
+  // Client-side pagination (unchanged)
   const startIndex = (currentPage - 1) * productsPerPage;
   const paginatedProducts = products.slice(
     startIndex,
     startIndex + productsPerPage
   );
 
-  // Filter products by customizable status
+  // Filter products by customizable status (unchanged)
   const filteredProducts = paginatedProducts.filter((product) => {
     if (filter === "All") return true;
     if (filter === "Customizable") return product.badge === "Customizable";
@@ -254,7 +212,7 @@ const CategoryPage = () => {
     return true;
   });
 
-  // Generate page numbers for pagination
+  // Generate page numbers for pagination (unchanged)
   const getPageNumbers = () => {
     const maxPagesToShow = 5;
     const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
@@ -302,7 +260,7 @@ const CategoryPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {isLoading ? (
               <div className="col-span-full text-center text-gray-600">
-                Loading products... {fetchProgress > 0 && `(${fetchProgress}%)`}
+                Loading products...
               </div>
             ) : error ? (
               <div className="col-span-full text-center text-red-500">
