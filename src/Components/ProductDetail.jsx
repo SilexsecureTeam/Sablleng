@@ -32,10 +32,19 @@ const ProductDetail = () => {
       setError(null);
 
       try {
-        const response = await fetch(`https://api.sablle.ng/api/products`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
+        // New: Calculate the page based on product ID (assuming sequential IDs)
+        const productId = parseInt(id);
+        const productsPerPage = 10; // From API: per_page = 10
+        const page = Math.ceil(productId / productsPerPage); // E.g., ID 11 is on page 2
+
+        const response = await fetch(
+          `https://api.sablle.ng/api/products?page=${page}`,
+          {
+            // Updated: Fetch specific page
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`Failed to fetch product: ${response.statusText}`);

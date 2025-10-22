@@ -45,7 +45,7 @@ const Product = () => {
 
         setProducts(formattedProducts);
         setTotalPages(data.last_page || 1); // New: Set total pages from API
-        toast.success(`Products fetched successfully for page ${page}!`, {
+        toast.success(`Products fetched successfully for page ${page}`, {
           position: "top-right",
           autoClose: 3000,
         });
