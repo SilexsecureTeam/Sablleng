@@ -14,14 +14,21 @@ const CategoryPage = () => {
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1); // Track current display page
-  const [totalPages, setTotalPages] = useState(1); // Track total display pages
-  const [maxPagesFetched, setMaxPagesFetched] = useState(5); // Limit initial fetch to 5 pages
-  const [totalApiPages, setTotalApiPages] = useState(1); // Track total API pages
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [fetchProgress, setFetchProgress] = useState(0); // Track fetch progress
   const productsPerPage = 10; // Match API's per-page limit
+  const minProductsToStop = 30; // Stop fetching if we have enough for 3 pages
+  const batchSize = 10; // Fetch 10 pages concurrently
 
-  // Fetch categories once for slug-to-ID mapping
+  // Fetch and cache categories
   useEffect(() => {
+    const cachedCategories = localStorage.getItem("categories");
+    if (cachedCategories) {
+      setCategories(JSON.parse(cachedCategories));
+      return;
+    }
+
     const fetchCategories = async () => {
       try {
         const response = await fetch("https://api.sablle.ng/api/categories", {
@@ -36,18 +43,19 @@ const CategoryPage = () => {
         const data = await response.json();
         const categoriesArray = Array.isArray(data) ? data : [];
 
-        setCategories(
-          categoriesArray
-            .filter((item) => item.is_active === 1) // Only active categories
-            .map((item) => ({
-              id: item.id,
-              name: item.name,
-              slug: item.name
-                .toLowerCase()
-                .replace(/\s+/g, "-")
-                .replace(/[^\w-]/g, ""), // Match Header's slug logic
-            }))
-        );
+        const formattedCategories = categoriesArray
+          .filter((item) => item.is_active === 1)
+          .map((item) => ({
+            id: item.id,
+            name: item.name,
+            slug: item.name
+              .toLowerCase()
+              .replace(/\s+/g, "-")
+              .replace(/[^\w-]/g, ""),
+          }));
+
+        setCategories(formattedCategories);
+        localStorage.setItem("categories", JSON.stringify(formattedCategories));
       } catch (err) {
         console.error("Fetch categories error:", err);
         setError(err.message);
@@ -61,7 +69,7 @@ const CategoryPage = () => {
     fetchCategories();
   }, []);
 
-  // Memoize category ID and name to stabilize dependencies
+  // Memoize category ID and name
   const { categoryId, categoryName } = useMemo(() => {
     const category =
       categories.find((cat) => cat.slug === categorySlug) || null;
@@ -71,7 +79,7 @@ const CategoryPage = () => {
     };
   }, [categorySlug, categories]);
 
-  // Fetch products and filter client-side by categoryId
+  // Fetch all products and filter client-side
   useEffect(() => {
     const controller = new AbortController();
     let isMounted = true;
@@ -87,10 +95,25 @@ const CategoryPage = () => {
         return;
       }
 
+      // Check cache first
+      const cacheKey = `products_${categoryId}`;
+      const cachedProducts = localStorage.getItem(cacheKey);
+      if (cachedProducts) {
+        const parsedProducts = JSON.parse(cachedProducts);
+        if (isMounted) {
+          setProducts(parsedProducts);
+          setTotalPages(Math.ceil(parsedProducts.length / productsPerPage));
+          setCurrentPage(1);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       if (isMounted) {
         setIsLoading(true);
         setError(null);
         setProducts([]);
+        setFetchProgress(0);
       }
 
       try {
@@ -98,49 +121,71 @@ const CategoryPage = () => {
         let page = 1;
         let lastPage = 1;
 
-        do {
-          const productResponse = await fetch(
-            `https://api.sablle.ng/api/products?page=${page}`,
-            {
+        while (page <= lastPage) {
+          // Fetch pages in batches
+          const batchPages = Array.from(
+            { length: Math.min(batchSize, lastPage - page + 1) },
+            (_, i) => page + i
+          );
+          const batchPromises = batchPages.map((p) =>
+            fetch(`https://api.sablle.ng/api/products?page=${p}`, {
               method: "GET",
               headers: { "Content-Type": "application/json" },
-              signal: controller.signal, // Allow canceling fetch
-            }
+              signal: controller.signal,
+            }).then(async (response) => {
+              if (!response.ok) {
+                throw new Error(
+                  `Failed to fetch page ${p}: ${response.statusText}`
+                );
+              }
+              return response.json();
+            })
           );
 
-          if (!productResponse.ok) {
-            throw new Error(
-              `Failed to fetch products: ${productResponse.statusText}`
-            );
+          const batchResults = await Promise.all(batchPromises);
+
+          for (const productData of batchResults) {
+            const productsArray = Array.isArray(productData.data)
+              ? productData.data
+              : [];
+            const formattedProducts = productsArray
+              .filter((item) => item.category_id === categoryId)
+              .map((item) => ({
+                id: item.id,
+                name: item.name || "",
+                price: item.sale_price_inc_tax
+                  ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+                  : "",
+                category: item.category?.name || categoryName,
+                badge: item.customize ? "Customizable" : null,
+                image: item.images?.[0] || "/placeholder-image.jpg",
+              }));
+
+            allProducts = [...allProducts, ...formattedProducts];
+
+            if (isMounted) {
+              setProducts([...allProducts]); // Update UI incrementally
+              setTotalPages(Math.ceil(allProducts.length / productsPerPage));
+              setFetchProgress(Math.round((page / lastPage) * 100));
+            }
+
+            // Stop early if enough products are found
+            if (allProducts.length >= minProductsToStop) {
+              break;
+            }
+
+            lastPage = productData.last_page || lastPage;
+            page += 1;
           }
 
-          const productData = await productResponse.json();
-          const productsArray = Array.isArray(productData.data)
-            ? productData.data
-            : [];
-
-          // Filter products client-side by categoryId
-          const formattedProducts = productsArray
-            .filter((item) => item.category_id === categoryId)
-            .map((item) => ({
-              id: item.id,
-              name: item.name || "",
-              price: item.sale_price_inc_tax
-                ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-                : "",
-              category: item.category?.name || categoryName, // Fallback to categoryName
-              badge: item.customize ? "Customizable" : null, // Use customize field
-              image: item.images?.[0] || "/placeholder-image.jpg",
-            }));
-
-          allProducts = [...allProducts, ...formattedProducts];
-          lastPage = productData.last_page || 1;
-          page += 1;
-        } while (page <= Math.min(lastPage, maxPagesFetched));
+          if (allProducts.length >= minProductsToStop) {
+            break;
+          }
+        }
 
         if (isMounted) {
           setProducts(allProducts);
-          setTotalApiPages(lastPage); // Store total API pages
+          localStorage.setItem(cacheKey, JSON.stringify(allProducts));
           setTotalPages(Math.ceil(allProducts.length / productsPerPage));
           setCurrentPage(1);
 
@@ -157,7 +202,7 @@ const CategoryPage = () => {
           }
         }
       } catch (err) {
-        if (err.name === "AbortError") return; // Ignore abort errors
+        if (err.name === "AbortError") return;
         console.error("Fetch products error:", err);
         if (isMounted) {
           setError(err.message);
@@ -169,7 +214,10 @@ const CategoryPage = () => {
           setTotalPages(1);
         }
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          setFetchProgress(0);
+        }
       }
     };
 
@@ -179,31 +227,26 @@ const CategoryPage = () => {
 
     return () => {
       isMounted = false;
-      controller.abort(); // Cancel fetches on unmount
+      controller.abort();
     };
-  }, [categorySlug, categoryId, maxPagesFetched]);
+  }, [categorySlug, categoryId]);
 
   // Handle page change for client-side pagination
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      window.scrollTo(0, 0); // Scroll to top
+      window.scrollTo(0, 0);
     }
   };
 
-  // Handle Load More to fetch additional pages
-  const handleLoadMore = () => {
-    setMaxPagesFetched((prev) => prev + 5); // Fetch 5 more pages
-  };
-
-  // Client-side pagination: Slice products for the current page
+  // Client-side pagination
   const startIndex = (currentPage - 1) * productsPerPage;
   const paginatedProducts = products.slice(
     startIndex,
     startIndex + productsPerPage
   );
 
-  // Filter products by selected filter (Customizable/Non-Customizable)
+  // Filter products by customizable status
   const filteredProducts = paginatedProducts.filter((product) => {
     if (filter === "All") return true;
     if (filter === "Customizable") return product.badge === "Customizable";
@@ -211,7 +254,7 @@ const CategoryPage = () => {
     return true;
   });
 
-  // Generate page numbers for pagination (show up to 5 pages around current)
+  // Generate page numbers for pagination
   const getPageNumbers = () => {
     const maxPagesToShow = 5;
     const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
@@ -259,7 +302,7 @@ const CategoryPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {isLoading ? (
               <div className="col-span-full text-center text-gray-600">
-                Loading products...
+                Loading products... {fetchProgress > 0 && `(${fetchProgress}%)`}
               </div>
             ) : error ? (
               <div className="col-span-full text-center text-red-500">
@@ -305,71 +348,52 @@ const CategoryPage = () => {
               </div>
             )}
           </div>
-          {/* Pagination Controls and Load More */}
-          {(totalPages > 1 || maxPagesFetched < totalApiPages) && (
+          {totalPages > 1 && (
             <div className="mt-8 flex flex-col items-center space-y-4">
-              {totalPages > 1 && (
-                <>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                        currentPage === 1
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-gray-100 text-gray-700 hover:bg-[#CB5B6A] hover:text-white"
-                      }`}
-                      aria-label="Previous page"
-                    >
-                      Previous
-                    </button>
-                    {getPageNumbers().map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                          currentPage === page
-                            ? "bg-[#CB5B6A] text-white"
-                            : "bg-gray-100 text-gray-700 hover:bg-[#CB5B6A] hover:text-white"
-                        }`}
-                        aria-label={`Page ${page}`}
-                        aria-current={currentPage === page ? "page" : undefined}
-                      >
-                        {page}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                        currentPage === totalPages
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-gray-100 text-gray-700 hover:bg-[#CB5B6A] hover:text-white"
-                      }`}
-                      aria-label="Next page"
-                    >
-                      Next
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Page {currentPage} of {totalPages}
-                  </p>
-                </>
-              )}
-              {maxPagesFetched < totalApiPages && (
+              <div className="flex items-center space-x-2">
                 <button
-                  onClick={handleLoadMore}
-                  disabled={isLoading}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                    isLoading
+                    currentPage === 1
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-[#CB5B6A] text-white hover:bg-[#b34f5c]"
+                      : "bg-gray-100 text-gray-700 hover:bg-[#CB5B6A] hover:text-white"
                   }`}
-                  aria-label="Load more products"
+                  aria-label="Previous page"
                 >
-                  {isLoading ? "Loading..." : "Load More"}
+                  Previous
                 </button>
-              )}
+                {getPageNumbers().map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                      currentPage === page
+                        ? "bg-[#CB5B6A] text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-[#CB5B6A] hover:text-white"
+                    }`}
+                    aria-label={`Page ${page}`}
+                    aria-current={currentPage === page ? "page" : undefined}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                    currentPage === totalPages
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-gray-100 text-gray-700 hover:bg-[#CB5B6A] hover:text-white"
+                  }`}
+                  aria-label="Next page"
+                >
+                  Next
+                </button>
+              </div>
+              <p className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </p>
             </div>
           )}
         </div>
