@@ -1,21 +1,91 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { Link } from "react-router-dom";
-import { Search, User, ShoppingCart, ChevronDown, Menu, X } from "lucide-react";
+import {
+  Search,
+  User,
+  ShoppingCart,
+  ChevronDown,
+  Menu,
+  X,
+  Loader2,
+} from "lucide-react";
 import { CartContext } from "../context/CartContextObject";
 import { AuthContext } from "../context/AuthContextObject";
 import logo from "../assets/logo.png";
+import { toast } from "react-toastify";
 
 const Header = () => {
   const { items } = useContext(CartContext);
-  const { auth, logout } = useContext(AuthContext); // Access auth and logout from AuthContext
+  const { auth, logout } = useContext(AuthContext);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false); // State for profile dropdown
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [errorCategories, setErrorCategories] = useState(null);
   const timeoutRef = useRef(null);
-  const profileRef = useRef(null); // Ref for profile dropdown click-outside
+  const profileRef = useRef(null);
+  const mobileMenuRef = useRef(null);
 
   // Calculate total items in cart
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Fetch all active categories
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoadingCategories(true);
+      setErrorCategories(null);
+
+      try {
+        // Fetch categories
+        const categoryResponse = await fetch(
+          "https://api.sablle.ng/api/categories",
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        if (!categoryResponse.ok) {
+          throw new Error(
+            `Failed to fetch categories: ${categoryResponse.statusText}`
+          );
+        }
+
+        const categoriesData = await categoryResponse.json();
+        const categoriesArray = Array.isArray(categoriesData)
+          ? categoriesData
+          : [];
+
+        // Filter active categories and format them
+        const formattedCategories = categoriesArray
+          .filter((item) => item.is_active === 1)
+          .map((item) => ({
+            id: item.id,
+            name: item.name,
+            slug: item.name
+              .toLowerCase()
+              .replace(/\s+/g, "-")
+              .replace(/[^\w-]/g, ""),
+          }))
+          // Sort alphabetically by name
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        setCategories(formattedCategories);
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setErrorCategories(err.message);
+        toast.error(`Error loading categories: ${err.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Handle dropdown delay for desktop (categories)
   const handleMouseEnter = () => {
@@ -34,7 +104,6 @@ const Header = () => {
   };
 
   // Close mobile menu and profile dropdown when clicking outside
-  const mobileMenuRef = useRef(null);
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -51,17 +120,6 @@ const Header = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // Define category types and their route-friendly slugs
-  const categories = [
-    { name: "Tech Gadgets", slug: "tech-gadgets" },
-    { name: "Audio", slug: "audio" },
-    { name: "Office and writing tools", slug: "office-and-writing-tools" },
-    { name: "Bags and Travel", slug: "bags-and-travel" },
-    { name: "Drink ware", slug: "drink-ware" },
-    { name: "Home and outdoor", slug: "home-and-outdoor" },
-    { name: "Edibles", slug: "edibles" },
-  ];
 
   return (
     <header className="bg-white sticky top-0 z-50">
@@ -94,16 +152,32 @@ const Header = () => {
               />
             </button>
             {categoryOpen && (
-              <div className="absolute left-0 top-full mt-2 w-56 bg-white shadow-lg rounded-lg py-2 border border-gray-100 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out transform scale-95 group-hover:scale-100">
-                {categories.map((category) => (
-                  <Link
-                    key={category.slug}
-                    to={`/categories/${category.slug}`}
-                    className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
-                  >
-                    {category.name}
-                  </Link>
-                ))}
+              <div className="absolute left-0 top-full mt-2 w-64 bg-white shadow-lg rounded-lg py-2 border border-gray-100 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out transform scale-95 group-hover:scale-100 overflow-hidden max-h-96 overflow-y-auto">
+                {isLoadingCategories ? (
+                  <div className="px-4 py-2 flex items-center gap-2 text-gray-500">
+                    <Loader2 size={16} className="animate-spin" />
+                    Loading categories...
+                  </div>
+                ) : errorCategories ? (
+                  <div className="px-4 py-2 text-red-500 text-sm">
+                    Error loading categories
+                  </div>
+                ) : categories.length === 0 ? (
+                  <div className="px-4 py-2 text-gray-500 text-sm">
+                    No categories available
+                  </div>
+                ) : (
+                  categories.map((category) => (
+                    <Link
+                      key={category.slug}
+                      to={`/categories/${category.slug}`}
+                      className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                      onClick={() => setCategoryOpen(false)}
+                    >
+                      {category.name}
+                    </Link>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -245,17 +319,35 @@ const Header = () => {
               />
             </button>
             {categoryOpen && (
-              <div className="pl-6 bg-gray-50 rounded-lg">
-                {categories.map((category) => (
-                  <Link
-                    key={category.slug}
-                    to={`/categories/${category.slug}`}
-                    className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
-                    onClick={() => setMobileMenu(false)}
-                  >
-                    {category.name}
-                  </Link>
-                ))}
+              <div className="pl-6 bg-gray-50 rounded-lg max-h-96 overflow-y-auto">
+                {isLoadingCategories ? (
+                  <div className="px-4 py-2 flex items-center gap-2 text-gray-500">
+                    <Loader2 size={16} className="animate-spin" />
+                    Loading categories...
+                  </div>
+                ) : errorCategories ? (
+                  <div className="px-4 py-2 text-red-500 text-sm">
+                    Error loading categories
+                  </div>
+                ) : categories.length === 0 ? (
+                  <div className="px-4 py-2 text-gray-500 text-sm">
+                    No categories available
+                  </div>
+                ) : (
+                  categories.map((category) => (
+                    <Link
+                      key={category.slug}
+                      to={`/categories/${category.slug}`}
+                      className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                      onClick={() => {
+                        setMobileMenu(false);
+                        setCategoryOpen(false);
+                      }}
+                    >
+                      {category.name}
+                    </Link>
+                  ))
+                )}
               </div>
             )}
           </div>
