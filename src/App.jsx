@@ -23,10 +23,11 @@ const CookiesPage = lazy(() => import("./Pages/CookiesPage"));
 const CareerPage = lazy(() => import("./Pages/CareerPage"));
 const FaqPage = lazy(() => import("./Pages/FaqPage"));
 const OrderSuccessPage = lazy(() => import("./Pages/OrderSuccessPage"));
-const OrderTracking = lazy(() => import("./Components/OrderTracking"));
+const OrderTrackingPage = lazy(() => import("./Pages/OrderTrackingPage"));
 const SignIn = lazy(() => import("./Auth/SignIn"));
 const AdminSignIn = lazy(() => import("./Auth/AdminSignIn"));
 const SignUp = lazy(() => import("./Auth/SignUp"));
+const ForgotPassword = lazy(() => import("./Auth/ForgotPassword"));
 const OtpPage = lazy(() => import("./Auth/OTP"));
 const AdminOtpPage = lazy(() => import("./Auth/AdminOTP"));
 const CustomizablePage = lazy(() => import("./Pages/Customizable"));
@@ -106,11 +107,12 @@ const App = () => {
                 <Route path="/delivery" element={<DeliveryPage />} />
                 <Route path="/payment" element={<PaymentPage />} />
                 <Route path="/order-success" element={<OrderSuccessPage />} />
-                <Route path="/order-tracking" element={<OrderTracking />} />
+                <Route path="/order-tracking" element={<OrderTrackingPage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/admin/signin" element={<AdminSignIn />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/otp" element={<OtpPage />} />
                 <Route path="/admin/otp" element={<AdminOtpPage />} />
                 <Route path="/customize" element={<CustomizablePage />} />

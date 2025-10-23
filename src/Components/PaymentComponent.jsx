@@ -24,12 +24,6 @@ const PaymentComponent = () => {
       title: "Pay with Paystack",
       description: "Secure online payment with Paystack",
     },
-    {
-      id: "cod",
-      icon: i2,
-      title: "Cash on Delivery",
-      description: "Pay when your order arrives",
-    },
   ];
 
   // Calculate order summary

@@ -8,6 +8,11 @@ import {
   Menu,
   X,
   Loader2,
+  UserCircle,
+  Package,
+  Heart,
+  Settings,
+  LogOut,
 } from "lucide-react";
 import { CartContext } from "../context/CartContextObject";
 import { AuthContext } from "../context/AuthContextObject";
@@ -29,6 +34,24 @@ const Header = () => {
 
   // Calculate total items in cart
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Get initials from user name
+  const getInitials = (name) => {
+    if (!name) return "U";
+
+    const nameParts = name.trim().split(/\s+/);
+
+    if (nameParts.length === 1) {
+      // Single name: return first letter
+      return nameParts[0].charAt(0).toUpperCase();
+    } else if (nameParts.length === 2) {
+      // Two names: return first letter of each
+      return (nameParts[0].charAt(0) + nameParts[1].charAt(0)).toUpperCase();
+    } else {
+      // Three or more names: return first two letters
+      return (nameParts[0].charAt(0) + nameParts[1].charAt(0)).toUpperCase();
+    }
+  };
 
   // Fetch all active categories
   useEffect(() => {
@@ -214,16 +237,18 @@ const Header = () => {
             {auth.isAuthenticated ? (
               <button
                 onClick={toggleProfileDropdown}
-                className="flex items-center gap-1 text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+                className="flex items-center gap-2 text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
                 aria-label="User Profile"
               >
-                <User size={22} />
+                <div className="w-8 h-8 rounded-full bg-[#CB5B6A] flex items-center justify-center text-white font-semibold text-sm">
+                  {getInitials(auth.user?.name)}
+                </div>
                 <span className="hidden sm:inline-block text-sm font-medium">
                   {auth.user?.name || "User"}
                 </span>
                 <ChevronDown
                   size={18}
-                  className={`transition-transform duration-200 ${
+                  className={`hidden sm:inline-block transition-transform duration-200 ${
                     profileOpen ? "rotate-180" : ""
                   }`}
                 />
@@ -238,28 +263,74 @@ const Header = () => {
               </Link>
             )}
             {auth.isAuthenticated && profileOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white shadow-lg rounded-lg py-2 border border-gray-100 transition-all duration-300 ease-in-out">
-                <div className="px-4 py-2 border-b border-gray-100">
-                  <p className="text-sm font-medium text-gray-700">
-                    Name: {auth.user?.name || "N/A"}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Email: {auth.user?.email || "N/A"}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Role: {auth.role || "N/A"}
-                  </p>
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white shadow-lg rounded-lg py-2 border border-gray-100 transition-all duration-300 ease-in-out">
+                {/* User Info Section */}
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-[#CB5B6A] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                    {getInitials(auth.user?.name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">
+                      {auth.user?.name || "N/A"}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {auth.user?.email || "N/A"}
+                    </p>
+                  </div>
                 </div>
-                <button
-                  onClick={() => {
-                    logout();
-                    setProfileOpen(false);
-                    setMobileMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
-                >
-                  Logout
-                </button>
+
+                {/* Menu Items */}
+                <div className="py-1">
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#CB5B6A] transition-colors duration-200"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <UserCircle size={18} />
+                    <span className="text-sm font-medium">My Profile</span>
+                  </Link>
+
+                  <Link
+                    to="/order-tracking"
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#CB5B6A] transition-colors duration-200"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <Package size={18} />
+                    <span className="text-sm font-medium">Order History</span>
+                  </Link>
+
+                  <Link
+                    to="/wishlist"
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#CB5B6A] transition-colors duration-200"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <Heart size={18} />
+                    <span className="text-sm font-medium">My Wishlist</span>
+                  </Link>
+
+                  <Link
+                    to="/setting"
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#CB5B6A] transition-colors duration-200"
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <Settings size={18} />
+                    <span className="text-sm font-medium">Settings</span>
+                  </Link>
+
+                  <div className="border-t border-gray-100 my-1"></div>
+
+                  <button
+                    onClick={() => {
+                      logout();
+                      setProfileOpen(false);
+                      setMobileMenu(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors duration-200"
+                  >
+                    <LogOut size={18} />
+                    <span className="text-sm font-medium">Sign Out</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -381,25 +452,67 @@ const Header = () => {
           </Link>
           {auth.isAuthenticated ? (
             <>
-              <div className="px-4 py-2 border-t border-gray-100">
-                <p className="text-sm font-medium text-gray-700">
-                  Name: {auth.user?.name || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Email: {auth.user?.email || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Role: {auth.role || "N/A"}
-                </p>
+              {/* Mobile User Info */}
+              <div className="px-4 py-3 border-t border-gray-100 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-[#CB5B6A] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                  {getInitials(auth.user?.name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800 truncate">
+                    {auth.user?.name || "N/A"}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {auth.user?.email || "N/A"}
+                  </p>
+                </div>
               </div>
+
+              {/* Mobile Menu Items */}
+              <Link
+                to="/profile"
+                className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+                onClick={() => setMobileMenu(false)}
+              >
+                <UserCircle size={18} />
+                <span className="text-sm font-medium">My Profile</span>
+              </Link>
+
+              <Link
+                to="/order-tracking"
+                className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+                onClick={() => setMobileMenu(false)}
+              >
+                <Package size={18} />
+                <span className="text-sm font-medium">Order History</span>
+              </Link>
+
+              <Link
+                to="/wishlist"
+                className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+                onClick={() => setMobileMenu(false)}
+              >
+                <Heart size={18} />
+                <span className="text-sm font-medium">My Wishlist</span>
+              </Link>
+
+              <Link
+                to="/setting"
+                className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+                onClick={() => setMobileMenu(false)}
+              >
+                <Settings size={18} />
+                <span className="text-sm font-medium">Settings</span>
+              </Link>
+
               <button
                 onClick={() => {
                   logout();
                   setMobileMenu(false);
                 }}
-                className="w-full text-left px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors duration-200"
               >
-                Logout
+                <LogOut size={18} />
+                <span className="text-sm font-medium">Sign Out</span>
               </button>
             </>
           ) : (

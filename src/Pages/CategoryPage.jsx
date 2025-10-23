@@ -137,7 +137,7 @@ const CategoryPage = () => {
           price: item.sale_price_inc_tax
             ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
             : "Price Unavailable",
-          category: item.category?.name || "Uncategorized",
+          category: item.category?.name || categoryName,
           badge: item.customize ? "Customizable" : null,
           image: item.images?.[0] || "/placeholder-image.jpg",
           customize: item.customize, // Store customize field

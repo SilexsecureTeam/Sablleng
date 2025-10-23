@@ -66,7 +66,6 @@ const SignUp = () => {
         },
         body: JSON.stringify({
           name: formData.name,
-          // username: formData.username,
           email: formData.email,
           phone: formData.mobile,
           password: formData.password,
@@ -77,20 +76,35 @@ const SignUp = () => {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Registration successful! Redirecting to sign-in...");
-        // Optionally handle newsletter enrollment logic here
-        console.log("Newsletter enrollment:", formData.newsletter);
+        toast.success(
+          "Registration successful! Redirecting to verification..."
+        );
         setTimeout(() => navigate("/otp"), 2000);
       } else {
-        toast.error(data.message || "Registration failed. Please try again.");
-        setErrors({
-          ...errors,
-          api: data.message || "An error occurred during registration.",
-        });
+        // 💥 Handle Laravel validation-style errors
+        if (data.errors) {
+          // Flatten all field errors into a single string
+          const errorMessages = Object.entries(data.errors)
+            .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
+            .join("\n");
+
+          toast.error(errorMessages);
+          setErrors({ ...errors, api: errorMessages });
+        } else if (data.message) {
+          // Show the message if it’s available
+          toast.error(data.message);
+          setErrors({ ...errors, api: data.message });
+        } else {
+          toast.error("Registration failed. Please try again.");
+          setErrors({
+            ...errors,
+            api: "An unexpected error occurred during registration.",
+          });
+        }
       }
     } catch (error) {
-      toast.error("Network error. Please check your connection and try again.");
       console.error(error);
+      toast.error("Network error. Please check your connection and try again.");
       setErrors({
         ...errors,
         api: "Network error. Please check your connection.",
@@ -142,9 +156,9 @@ const SignUp = () => {
           </p>
 
           {/* API Error */}
-          {errors.api && (
+          {/* {errors.api && (
             <p className="text-red-500 text-sm mb-4">{errors.api}</p>
-          )}
+          )} */}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="w-full space-y-2">
@@ -272,7 +286,7 @@ const SignUp = () => {
                 name="agree"
                 checked={formData.agree}
                 onChange={handleChange}
-                className="h-4 w-4 text-[#CB5B6A] focus:ring-[#CB5B6A]/80 border-gray-300 rounded"
+                className="h-4 w-4 accent-[#CB5B6A] focus:ring-[#CB5B6A]/80 border-gray-300 rounded"
                 required
                 disabled={isLoading}
               />
@@ -280,7 +294,7 @@ const SignUp = () => {
                 I agree with{" "}
                 <a
                   href="/privacy"
-                  className="text-[#141718] font-semibold hover:underline"
+                  className="accent-[#CB5B6A] font-semibold hover:underline"
                 >
                   Privacy Policy
                 </a>{" "}
@@ -303,7 +317,7 @@ const SignUp = () => {
                 name="newsletter"
                 checked={formData.newsletter}
                 onChange={handleChange}
-                className="h-4 w-4 text-[#CB5B6A] focus:ring-[#CB5B6A]/80 border-gray-300 rounded"
+                className="h-4 w-4 accent-[#CB5B6A] focus:ring-[#CB5B6A]/80 border-gray-300 rounded"
                 disabled={isLoading}
               />
               <label className="text-sm text-[#6C7275]">

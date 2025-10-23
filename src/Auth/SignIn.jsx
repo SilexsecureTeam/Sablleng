@@ -202,7 +202,7 @@ const SignIn = () => {
 
   const handleForgotPassword = () => {
     console.log("Forgot Password clicked");
-    // Implement forgot password logic here
+    navigate("/forgot-password");
   };
 
   return (
@@ -285,7 +285,7 @@ const SignIn = () => {
                   name="rememberMe"
                   checked={formData.rememberMe}
                   onChange={handleChange}
-                  className="h-4 w-4 text-[#CB5B6A] focus:ring-[#CB5B6A]/80 border-gray-300 rounded"
+                  className="h-4 w-4 accent-[#CB5B6A] focus:ring-[#CB5B6A]/80 border-gray-300 rounded"
                   disabled={isLoading}
                 />
                 <label className="text-sm text-[#6C7275]">Remember me</label>
