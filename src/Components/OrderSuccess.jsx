@@ -29,51 +29,36 @@ const OrderSuccess = () => {
     navigate("/order-tracking", { state: { orderId, address } });
   };
 
-  const generateReceiptPDF = () => {
+  const generateReceiptPDF = async () => {
     setIsDownloading(true);
     setError("");
     try {
-      const doc = new jsPDF();
-      doc.setFontSize(16);
-      doc.text("Sabilay Order Receipt", 20, 20);
-      doc.setFontSize(12);
-      doc.text(`Order ID: ${orderId || "SABIL-20250829-4194"}`, 20, 30);
-      doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 40);
-      doc.text("Items:", 20, 50);
-      let y = 60;
-      (
-        items || [
-          { name: "Ultra Aqua skincare set white", quantity: 1, price: 74000 },
-          {
-            name: "Acmella x 1 cream gel cleansing",
-            quantity: 1,
-            price: 10000,
-          },
-        ]
-      ).forEach((item, index) => {
-        doc.text(
-          `${index + 1}. ${item.name} x ${item.quantity} - ${formatCurrency(
-            item.price * item.quantity
-          )}`,
-          20,
-          y
-        );
-        y += 10;
+      const element = document.querySelector(".max-w-\\[800px\\]");
+      const buttons = element.querySelectorAll("button");
+      buttons.forEach((btn) => (btn.style.display = "none"));
+
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
       });
-      doc.text(`Subtotal: ${formatCurrency(subtotal || 74000)}`, 20, y + 10);
-      doc.text(`VAT (7.5%): ${formatCurrency(vat || 6550)}`, 20, y + 20);
-      doc.text(`Delivery: ${formatCurrency(delivery || 3000)}`, 20, y + 30);
-      doc.text(`Total: ${formatCurrency(total || 84000)}`, 20, y + 40);
-      doc.text("Delivery Address:", 20, y + 50);
-      doc.text(address ? address.name : "John O. - +2348037358599", 20, y + 60);
-      doc.text(
-        address
-          ? address.address
-          : "17 Adesola Odeku St, Victoria Island, Lagos",
-        20,
-        y + 70
-      );
-      doc.save(`Sabilay_Receipt_${orderId || "SABIL-20250829-4194"}.pdf`);
+
+      buttons.forEach((btn) => (btn.style.display = ""));
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      pdf.save(`Sabilay_Receipt_${orderId || "SABIL-20250829-4194"}.pdf`);
     } catch {
       setError("Failed to generate receipt. Please try again.");
     } finally {
