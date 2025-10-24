@@ -135,11 +135,11 @@ const PaymentComponent = () => {
         ],
       },
       onSuccess: (transaction) => {
-        console.log(
-          "Payment complete! Paystack Reference:",
-          transaction.reference
-        );
-        console.log("Order Reference:", orderReference);
+        // console.log(
+        //   "Payment complete! Paystack Reference:",
+        //   transaction.reference
+        // );
+        // console.log("Order Reference:", orderReference);
         verifyPayment(transaction.reference, orderReference);
       },
       onCancel: () => {
@@ -160,10 +160,10 @@ const PaymentComponent = () => {
   };
 
   const verifyPayment = async (paystackReference, orderReference) => {
-    console.log("Verifying payment:", {
-      paystackReference,
-      orderReference,
-    });
+    // console.log("Verifying payment:", {
+    //   paystackReference,
+    //   orderReference,
+    // });
 
     try {
       const response = await fetch(
@@ -178,7 +178,7 @@ const PaymentComponent = () => {
       );
 
       const data = await response.json();
-      console.log("Verification response:", data);
+      // console.log("Verification response:", data);
 
       if (!response.ok || data.error) {
         toast.error(

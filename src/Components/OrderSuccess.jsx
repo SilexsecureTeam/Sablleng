@@ -19,6 +19,7 @@ const OrderSuccess = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [error, setError] = useState("");
+  const API_BASE = "https://api.sablle.ng/api";
 
   // Check authentication and fetch order details
   useEffect(() => {
@@ -34,14 +35,16 @@ const OrderSuccess = () => {
     const fetchOrderDetails = async () => {
       const orderIdToFetch = urlOrderId || location.state?.orderId;
       if (!orderIdToFetch) {
-        setError("No order ID provided. Please access through a valid order.");
+        // No orderId; try fetching all orders and select the most recent
+        await fetchAllOrders();
         return;
       }
 
       setIsFetching(true);
       try {
+        // Try fetching specific order by order_reference
         const response = await fetch(
-          `https://api.sablle.ng/api/order/${orderIdToFetch}`,
+          `${API_BASE}/orders/${encodeURIComponent(orderIdToFetch)}`,
           {
             method: "GET",
             headers: {
@@ -53,44 +56,99 @@ const OrderSuccess = () => {
 
         const data = await response.json();
         console.log(
-          "OrderSuccess: Fetched order data:",
+          "OrderSuccess: Fetched specific order data:",
           JSON.stringify(data, null, 2)
         );
 
-        if (response.ok) {
+        if (response.ok && data) {
           setOrderData({
-            orderId: data.order?.order_reference,
-            items: data.order?.items || [],
-            subtotal: data.order?.subtotal || 0,
-            vat: data.order?.vat || 0,
-            delivery: data.order?.delivery_fee || 0,
-            total: data.order?.total || 0,
-            address: data.order?.shipping_address || null, // Handle null address
-            paymentMethod: data.order?.payment_method || "Unknown",
+            orderId: data.order_reference,
+            items: data.items || [],
+            subtotal: data.subtotal || 0,
+            vat: data.vat || 0,
+            delivery: data.delivery_fee || 0,
+            total: data.total || 0,
+            address: data.shipping_address
+              ? {
+                  name: auth.user?.name || "Customer",
+                  address: data.shipping_address,
+                }
+              : null,
+            paymentMethod: data.payment_method || "Unknown",
           });
         } else {
-          setError(data.message || "Failed to fetch order details.");
-          toast.error(data.message || "Failed to fetch order details.", {
+          // Fallback to fetching all orders
+          console.log("Specific order fetch failed, trying all orders...");
+          await fetchAllOrders();
+        }
+      } catch (error) {
+        console.error("OrderSuccess: Fetch specific order error:", error);
+        // Fallback to fetching all orders
+        await fetchAllOrders();
+      } finally {
+        setIsFetching(false);
+      }
+    };
+
+    const fetchAllOrders = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/orders`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${auth.token}`,
+          },
+        });
+
+        const data = await response.json();
+        console.log(
+          "OrderSuccess: Fetched all orders:",
+          JSON.stringify(data, null, 2)
+        );
+
+        if (response.ok && Array.isArray(data) && data.length > 0) {
+          // Sort by created_at (descending) and take the most recent order
+          const latestOrder = data.sort((a, b) =>
+            b.created_at && a.created_at
+              ? new Date(b.created_at) - new Date(a.created_at)
+              : 0
+          )[0];
+          setOrderData({
+            orderId: latestOrder.order_reference,
+            items: latestOrder.items || [],
+            subtotal: latestOrder.subtotal || 0,
+            vat: latestOrder.vat || 0,
+            delivery: latestOrder.delivery_fee || 0,
+            total: latestOrder.total || 0,
+            address: latestOrder.shipping_address
+              ? {
+                  name: auth.user?.name || "Customer",
+                  address: latestOrder.shipping_address,
+                }
+              : null,
+            paymentMethod: latestOrder.payment_method || "Unknown",
+          });
+        } else {
+          setError("No orders found or failed to fetch orders.");
+          toast.error("No orders found or failed to fetch orders.", {
             position: "top-right",
             autoClose: 4000,
           });
         }
       } catch (error) {
-        console.error("OrderSuccess: Fetch error:", error);
+        console.error("OrderSuccess: Fetch all orders error:", error);
         setError("Network error. Please check your connection.");
         toast.error("Network error. Please check your connection.", {
           position: "top-right",
           autoClose: 4000,
         });
-      } finally {
-        setIsFetching(false);
       }
     };
 
     if (!location.state?.orderId && urlOrderId) {
       fetchOrderDetails();
     } else if (!location.state && !urlOrderId) {
-      setError("No order data available. Please access through a valid order.");
+      fetchAllOrders();
     }
   }, [auth, navigate, location.state, urlOrderId]);
 
@@ -250,10 +308,10 @@ const OrderSuccess = () => {
               "No order data available. Please access through a valid order."}
           </p>
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/orders")}
             className="mt-4 inline-flex py-2 px-4 bg-[#CB5B6A] hover:bg-[#CB5B6A]/80 text-white text-sm font-medium rounded-md transition-colors"
           >
-            Return to Home
+            View All Orders
           </button>
         </div>
       </div>
