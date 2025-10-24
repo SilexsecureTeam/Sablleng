@@ -6,19 +6,151 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const DeliveryDetail = () => {
-  // ✅ CRITICAL FIX: Access auth object correctly
   const { auth } = useContext(AuthContext);
   const { items, total, cart_session_id } = useContext(CartContext);
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    shipping_address: "Abuja, Wuse 2",
-    delivery_fee: 200,
+    shipping_address: "",
+    delivery_fee: 0,
     tax_rate: 7.5,
   });
   const [errors, setErrors] = useState({});
 
-  // Debug logging on mount
+  // Dropdown states
+  const [states, setStates] = useState([]);
+  const [lgas, setLgas] = useState([]);
+  const [places, setPlaces] = useState([]);
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedLga, setSelectedLga] = useState("");
+  const [selectedPlace, setSelectedPlace] = useState("");
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [loadingLgas, setLoadingLgas] = useState(false);
+  const [loadingPlaces, setLoadingPlaces] = useState(false);
+
+  const API_BASE = "https://api.sablle.ng/api";
+
+  // Fetch states on mount
+  useEffect(() => {
+    fetchStates();
+  }, []);
+
+  // Fetch LGAs when state changes
+  useEffect(() => {
+    if (selectedState) {
+      fetchLgas(selectedState);
+    } else {
+      setLgas([]);
+      setSelectedLga("");
+      setPlaces([]);
+      setSelectedPlace("");
+      setFormData((prev) => ({
+        ...prev,
+        shipping_address: "",
+        delivery_fee: 0,
+      }));
+    }
+  }, [selectedState]);
+
+  // Fetch places when LGA changes
+  useEffect(() => {
+    if (selectedLga && selectedState) {
+      fetchPlaces(selectedState, selectedLga);
+    } else {
+      setPlaces([]);
+      setSelectedPlace("");
+      setFormData((prev) => ({
+        ...prev,
+        shipping_address: "",
+        delivery_fee: 0,
+      }));
+    }
+  }, [selectedLga, selectedState]);
+
+  // Update formData when place changes
+  useEffect(() => {
+    if (selectedPlace) {
+      const fullAddress = `${selectedPlace}, ${selectedLga}, ${selectedState}`;
+      const fee = places.find((p) => p.places === selectedPlace)?.fee || 0;
+      setFormData((prev) => ({
+        ...prev,
+        shipping_address: fullAddress,
+        delivery_fee: parseFloat(fee),
+      }));
+    }
+  }, [selectedPlace, selectedLga, selectedState, places]);
+
+  const fetchStates = async () => {
+    setLoadingStates(true);
+    try {
+      const response = await fetch(`${API_BASE}/states`);
+      const data = await response.json();
+      if (response.ok && Array.isArray(data)) {
+        setStates(data);
+        // Optional: Pre-select Abuja if in list
+        if (data.some((s) => s.state_name.toLowerCase() === "abuja")) {
+          setSelectedState("Abuja");
+        }
+      } else {
+        toast.error("Failed to load states");
+        setStates([]);
+      }
+    } catch (error) {
+      console.error("Error fetching states:", error);
+      toast.error("Network error loading states");
+      setStates([]);
+    } finally {
+      setLoadingStates(false);
+    }
+  };
+
+  const fetchLgas = async (state) => {
+    setLoadingLgas(true);
+    try {
+      const response = await fetch(
+        `${API_BASE}/lgas/${encodeURIComponent(state)}`
+      );
+      const data = await response.json();
+      if (response.ok && Array.isArray(data)) {
+        setLgas(data);
+      } else {
+        toast.error(`Failed to load LGAs for ${state}`);
+        setLgas([]);
+      }
+    } catch (error) {
+      console.error("Error fetching LGAs:", error);
+      toast.error("Network error loading LGAs");
+      setLgas([]);
+    } finally {
+      setLoadingLgas(false);
+    }
+  };
+
+  const fetchPlaces = async (state, lga) => {
+    setLoadingPlaces(true);
+    try {
+      const response = await fetch(
+        `${API_BASE}/places/${encodeURIComponent(state)}/${encodeURIComponent(
+          lga
+        )}`
+      );
+      const data = await response.json();
+      if (response.ok && Array.isArray(data)) {
+        setPlaces(data);
+      } else {
+        toast.error(`Failed to load places for ${lga}, ${state}`);
+        setPlaces([]);
+      }
+    } catch (error) {
+      console.error("Error fetching places:", error);
+      toast.error("Network error loading places");
+      setPlaces([]);
+    } finally {
+      setLoadingPlaces(false);
+    }
+  };
+
+  // Debug logging on mount (unchanged)
   useEffect(() => {
     console.log("\n=== CHECKOUT PAGE LOADED ===");
     console.log("Cart items:", items);
@@ -34,22 +166,22 @@ const DeliveryDetail = () => {
     console.log("=========================\n");
   }, [items, total, auth, cart_session_id]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.shipping_address.trim())
-      newErrors.shipping_address = "Shipping address is required";
-    if (!formData.delivery_fee || formData.delivery_fee < 0)
+    if (
+      !formData.shipping_address.trim() ||
+      !selectedState ||
+      !selectedLga ||
+      !selectedPlace
+    ) {
+      newErrors.shipping_address = "Please select State, LGA, and Place/City";
+    }
+    if (!formData.delivery_fee || formData.delivery_fee < 0) {
       newErrors.delivery_fee = "Delivery fee must be a valid number";
-    if (!formData.tax_rate || formData.tax_rate < 0)
+    }
+    if (!formData.tax_rate || formData.tax_rate < 0) {
       newErrors.tax_rate = "Tax rate must be a valid number";
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -58,6 +190,7 @@ const DeliveryDetail = () => {
     e.preventDefault();
 
     console.log("\n=== CHECKOUT SUBMISSION ===");
+    console.log("Form Data:", formData);
 
     if (!validateForm()) {
       console.log("❌ Form validation failed");
@@ -88,7 +221,7 @@ const DeliveryDetail = () => {
     try {
       const payload = {
         shipping_address: formData.shipping_address,
-        delivery_fee: parseFloat(formData.delivery_fee),
+        delivery_fee: formData.delivery_fee,
         tax_rate: parseFloat(formData.tax_rate),
       };
 
@@ -122,7 +255,7 @@ const DeliveryDetail = () => {
         navigate("/payment", {
           state: {
             selectedDelivery: {
-              value: parseFloat(formData.delivery_fee),
+              value: formData.delivery_fee,
               shipping_address: formData.shipping_address,
               tax_rate: parseFloat(formData.tax_rate),
               orderData: data.order,
@@ -169,6 +302,8 @@ const DeliveryDetail = () => {
     return `₦${numericPrice.toLocaleString()}`;
   };
 
+  const fullAddress = formData.shipping_address || "";
+
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">
       <ToastContainer position="top-right" autoClose={3000} />
@@ -207,20 +342,144 @@ const DeliveryDetail = () => {
                 </div>
               )}
 
-              <div>
+              {/* Chained Dropdowns for Address */}
+              <div className="space-y-4">
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
                   Shipping Address
                 </label>
-                <input
-                  type="text"
-                  name="shipping_address"
-                  value={formData.shipping_address}
-                  onChange={handleChange}
-                  placeholder="Enter your full shipping address"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
-                  required
-                  disabled={isLoading}
-                />
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {/* State Dropdown */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">
+                      State
+                    </label>
+                    <select
+                      value={selectedState}
+                      onChange={(e) => setSelectedState(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
+                      disabled={isLoading || loadingStates}
+                    >
+                      <option value="">Select State</option>
+                      {loadingStates ? (
+                        <option disabled>Loading states...</option>
+                      ) : (
+                        states.map((state) => (
+                          <option
+                            key={state.state_name}
+                            value={state.state_name}
+                          >
+                            {state.state_name}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+
+                  {/* LGA Dropdown */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">
+                      LGA
+                    </label>
+                    <select
+                      value={selectedLga}
+                      onChange={(e) => setSelectedLga(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
+                      disabled={isLoading || !selectedState || loadingLgas}
+                    >
+                      <option value="">Select LGA</option>
+                      {loadingLgas ? (
+                        <option disabled>Loading LGAs...</option>
+                      ) : (
+                        lgas.map((lga) => (
+                          <option key={lga.lga_name} value={lga.lga_name}>
+                            {lga.lga_name}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+
+                  {/* Place/City Dropdown */}
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">
+                      Place/City
+                    </label>
+                    <select
+                      value={selectedPlace}
+                      onChange={(e) => setSelectedPlace(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
+                      disabled={isLoading || !selectedLga || loadingPlaces}
+                    >
+                      <option value="">Select Place/City</option>
+                      {loadingPlaces ? (
+                        <option disabled>Loading places...</option>
+                      ) : (
+                        places.map((placeObj) => (
+                          <option key={placeObj.places} value={placeObj.places}>
+                            {placeObj.places}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-1">
+                      Delivery Fee (₦)
+                    </label>
+                    <input
+                      type="number"
+                      name="delivery_fee"
+                      value={formData.delivery_fee}
+                      readOnly
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
+                      min="0"
+                      step="0.01"
+                      disabled={isLoading}
+                    />
+                    {errors.delivery_fee && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {errors.delivery_fee}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Auto-updated based on location
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-1">
+                      Tax Rate (%)
+                    </label>
+                    <input
+                      type="number"
+                      name="tax_rate"
+                      value={formData.tax_rate}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          tax_rate: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="0.0"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
+                      min="0"
+                      step="0.01"
+                      required
+                      disabled={isLoading}
+                    />
+                    {errors.tax_rate && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {errors.tax_rate}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {fullAddress && (
+                  <p className="text-sm text-gray-600 mt-2 italic">
+                    Selected: {fullAddress}
+                  </p>
+                )}
                 {errors.shipping_address && (
                   <p className="text-red-500 text-sm mt-2 flex items-center">
                     <svg
@@ -239,58 +498,14 @@ const DeliveryDetail = () => {
                 )}
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Delivery Fee (₦)
-                  </label>
-                  <input
-                    type="number"
-                    name="delivery_fee"
-                    value={formData.delivery_fee}
-                    onChange={handleChange}
-                    placeholder="0.00"
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
-                    min="0"
-                    step="0.01"
-                    required
-                    disabled={isLoading}
-                  />
-                  {errors.delivery_fee && (
-                    <p className="text-red-500 text-sm mt-2">
-                      {errors.delivery_fee}
-                    </p>
-                  )}
-                </div>
+              {/* <div className="grid sm:grid-cols-2 gap-6">
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Tax Rate (%)
-                  </label>
-                  <input
-                    type="number"
-                    name="tax_rate"
-                    value={formData.tax_rate}
-                    onChange={handleChange}
-                    placeholder="0.0"
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
-                    min="0"
-                    step="0.01"
-                    required
-                    disabled={isLoading}
-                  />
-                  {errors.tax_rate && (
-                    <p className="text-red-500 text-sm mt-2">
-                      {errors.tax_rate}
-                    </p>
-                  )}
-                </div>
-              </div>
+              </div> */}
 
               <button
                 type="submit"
                 className="w-full bg-[#CB5B6A] text-white py-4 px-6 rounded-lg font-semibold text-base hover:bg-[#B54F5E] active:bg-[#A0444F] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl"
-                disabled={isLoading || items.length === 0}
+                disabled={isLoading || items.length === 0 || !fullAddress}
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
@@ -438,7 +653,7 @@ const DeliveryDetail = () => {
                     <span className="text-xl font-bold text-[#CB5B6A]">
                       {formatPrice(
                         total +
-                          parseFloat(formData.delivery_fee) +
+                          formData.delivery_fee +
                           (total * formData.tax_rate) / 100
                       )}
                     </span>
