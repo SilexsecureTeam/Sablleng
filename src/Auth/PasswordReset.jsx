@@ -8,7 +8,8 @@ import logo from "../assets/logo.png";
 
 const PasswordReset = () => {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token"); // Extract token from URL query params
+  const token = searchParams.get("token"); // Extract token from URL
+  const email = searchParams.get("email"); // Extract email from URL
   const [formData, setFormData] = useState({
     password: "",
     password_confirmation: "",
@@ -42,6 +43,9 @@ const PasswordReset = () => {
     if (!token) {
       newErrors.api = "Invalid or missing reset token";
     }
+    if (!email) {
+      newErrors.api = "Invalid or missing email address";
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -61,6 +65,7 @@ const PasswordReset = () => {
         },
         body: JSON.stringify({
           token,
+          email, // Include email in the request body
           password: formData.password,
           password_confirmation: formData.password_confirmation,
         }),
