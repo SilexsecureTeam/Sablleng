@@ -28,6 +28,7 @@ const SignIn = lazy(() => import("./Auth/SignIn"));
 const AdminSignIn = lazy(() => import("./Auth/AdminSignIn"));
 const SignUp = lazy(() => import("./Auth/SignUp"));
 const ForgotPassword = lazy(() => import("./Auth/ForgotPassword"));
+const PasswordReset = lazy(() => import("./Auth/PasswordReset"));
 const OtpPage = lazy(() => import("./Auth/OTP"));
 const AdminOtpPage = lazy(() => import("./Auth/AdminOTP"));
 const CustomizablePage = lazy(() => import("./Pages/Customizable"));
@@ -113,6 +114,7 @@ const App = () => {
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/admin/signin" element={<AdminSignIn />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<PasswordReset />} />
                 <Route path="/otp" element={<OtpPage />} />
                 <Route path="/admin/otp" element={<AdminOtpPage />} />
                 <Route path="/customize" element={<CustomizablePage />} />

@@ -234,9 +234,9 @@ const SignIn = () => {
               Sign Up
             </a>
           </p>
-          {errors.api && (
+          {/* {errors.api && (
             <p className="text-red-500 text-sm mb-4">{errors.api}</p>
-          )}
+          )} */}
           <form onSubmit={handleSubmit} className="w-full space-y-5">
             <input
               type="email"
