@@ -1,43 +1,148 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Bell, Settings, Zap } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { AuthContext } from "../context/AuthContextObject"; // Adjust path as needed
+import { useNavigate } from "react-router-dom";
 
 const Categories = () => {
+  const { auth } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch categories from API
+  // Fetch categories and product counts from API
   useEffect(() => {
     const fetchCategories = async () => {
+      if (!auth.token) {
+        toast.error("Please verify OTP to continue.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setTimeout(() => navigate("/admin/otp"), 2000);
+        return;
+      }
+
       setIsLoading(true);
+      setError(null);
+
       try {
+        // Fetch categories
         const response = await fetch("https://api.sablle.ng/api/categories", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${auth.token}`,
           },
         });
+
+        if (response.status === 401) {
+          throw new Error("Unauthorized. Please log in again.");
+        }
 
         if (!response.ok) {
           throw new Error(`Failed to fetch categories: ${response.statusText}`);
         }
 
         const data = await response.json();
-        console.log("API Response:", data);
+        console.log(
+          "GET /api/categories response:",
+          JSON.stringify(data, null, 2)
+        );
 
         // Handle potential nested data (e.g., { data: [...] })
         const categoriesArray = Array.isArray(data.data) ? data.data : data;
 
-        // Map API response to match expected format
-        const formattedCategories = categoriesArray.map((item) => ({
-          id: item.id,
-          name: item.name,
-          description: item.description || "No description available",
-          productCount: 0, // Placeholder; update if product count API is available
-          status: item.is_active ? "Active" : "Inactive",
-        }));
+        // Fetch cached product counts
+        const cachedCounts = JSON.parse(
+          localStorage.getItem("category_product_counts") || "{}"
+        );
+        const currentTime = Date.now();
+        const cacheTTL = 60 * 60 * 1000; // 1 hour in milliseconds
+
+        // Fetch product counts for each category
+        const formattedCategories = await Promise.all(
+          categoriesArray.map(async (item) => {
+            // Check cache
+            const cached = cachedCounts[item.id];
+            if (cached && currentTime - cached.timestamp < cacheTTL) {
+              return {
+                id: item.id,
+                name: item.name,
+                description: item.description || "No description available",
+                productCount: cached.productCount,
+                status: item.is_active ? "Active" : "Inactive",
+              };
+            }
+
+            // Fetch product count from GET /api/categories/:id
+            let productCount = 0;
+            try {
+              const productResponse = await fetch(
+                `https://api.sablle.ng/api/categories/${item.id}`,
+                {
+                  method: "GET",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${auth.token}`,
+                  },
+                }
+              );
+
+              if (productResponse.status === 401) {
+                throw new Error("Unauthorized. Please log in again.");
+              }
+
+              if (!productResponse.ok) {
+                console.warn(
+                  `Failed to fetch products for category ${item.id}: ${productResponse.statusText}`
+                );
+                productCount = 0;
+              } else {
+                const productData = await productResponse.json();
+                console.log(
+                  `GET /api/categories/${item.id} response:`,
+                  JSON.stringify(productData, null, 2)
+                );
+                productCount = Array.isArray(productData.products)
+                  ? productData.products.length
+                  : 0;
+              }
+
+              // Update cache
+              cachedCounts[item.id] = {
+                productCount,
+                timestamp: currentTime,
+              };
+              localStorage.setItem(
+                "category_product_counts",
+                JSON.stringify(cachedCounts)
+              );
+            } catch (err) {
+              console.error(
+                `Error fetching products for category ${item.id}:`,
+                err
+              );
+              productCount = 0;
+              toast.error(
+                `Error fetching product count for ${item.name}: ${err.message}`,
+                {
+                  position: "top-right",
+                  autoClose: 5000,
+                }
+              );
+            }
+
+            return {
+              id: item.id,
+              name: item.name,
+              description: item.description || "No description available",
+              productCount,
+              status: item.is_active ? "Active" : "Inactive",
+            };
+          })
+        );
 
         setCategories(formattedCategories);
         toast.success("Categories fetched successfully!", {
@@ -52,13 +157,16 @@ const Categories = () => {
           autoClose: 5000,
         });
         setCategories([]);
+        if (err.message.includes("Unauthorized")) {
+          setTimeout(() => navigate("/admin/signin"), 2000);
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCategories();
-  }, []);
+  }, [auth.token, navigate]);
 
   return (
     <div className="min-h-screen bg-[#FAF7F5] p-6">

@@ -17,10 +17,9 @@ const SignOutModal = ({ isOpen, onClose, onConfirm }) => {
   if (!isOpen) return null;
 
   const handleSignOut = () => {
-    // Clear authentication data from localStorage
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
-    onConfirm(); // Trigger navigation to /signin (handled in parent component)
+    onConfirm();
   };
 
   return (

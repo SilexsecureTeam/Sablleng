@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import auth from "../assets/auth3.png";
+import { AuthContext } from "../context/AuthContextObject";
+import auth3 from "../assets/auth3.png";
 import logo from "../assets/logo.png";
 
 const AdminOtpPage = () => {
   const navigate = useNavigate();
+  const { auth, login } = useContext(AuthContext);
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -17,8 +19,6 @@ const AdminOtpPage = () => {
       const newOtp = [...otp];
       newOtp[index] = value;
       setOtp(newOtp);
-
-      // Auto-focus next input
       if (value && index < 3) {
         document.getElementById(`otp-${index + 1}`).focus();
       }
@@ -38,33 +38,53 @@ const AdminOtpPage = () => {
     } else if (!otp.every((digit) => /^[0-9]$/.test(digit))) {
       newErrors.otp = "OTP must contain only digits";
     }
+    if (!auth.user?.email) {
+      newErrors.api = "User email is missing. Please log in again.";
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      if (errors.api) {
+        toast.error(errors.api);
+        navigate("/admin/signin");
+      }
+      return;
+    }
 
     setIsLoading(true);
 
     try {
-      const response = await fetch("https://api.sablle.ng/api/verify-code", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          code: otp.join(""),
-        }),
-      });
+      const response = await fetch(
+        "https://api.sablle.ng/api/admin/verify-otp",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            otp: otp.join(""),
+            email: auth.user.email, // Include email for OTP verification
+          }),
+        }
+      );
 
       const data = await response.json();
+      console.log(
+        "OTP: POST /api/admin/verify-otp response:",
+        JSON.stringify(data, null, 2)
+      );
 
       if (response.ok) {
+        login(data.token, data.user, "admin");
+        localStorage.setItem("otp_verified", "true");
         toast.success("Verification successful! Redirecting...");
         setTimeout(() => navigate("/dashboard"), 2000);
       } else {
+        console.error("OTP: Verification error:", data.message);
         toast.error(data.message || "Verification failed. Please try again.");
         setErrors({
           ...errors,
@@ -83,37 +103,66 @@ const AdminOtpPage = () => {
     }
   };
 
-  const handleResend = () => {
-    console.log("Resend OTP clicked");
-    // Implement resend OTP logic here
+  const handleResend = async () => {
+    if (!auth.user?.email) {
+      toast.error("User email is missing. Please log in again.");
+      navigate("/admin/signin");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        "https://api.sablle.ng/api/admin/resend-otp",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: auth.user.email, // Include email for resend
+          }),
+        }
+      );
+
+      const data = await response.json();
+      console.log(
+        "OTP: POST /api/admin/resend-otp response:",
+        JSON.stringify(data, null, 2)
+      );
+
+      if (response.ok) {
+        toast.success("New OTP sent to your email!");
+      } else {
+        console.error("OTP: Resend error:", data.message);
+        toast.error(data.message || "Failed to resend OTP. Please try again.");
+      }
+    } catch (error) {
+      console.error("OTP: Resend network error:", error.message);
+      toast.error("Network error while resending OTP.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen lg:h-screen h-fit flex flex-col md:flex-row font-poppins items-stretch">
-      {/* Toast Container */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
         hideProgressBar={false}
       />
-
-      {/* Left Side - Image */}
       <div className="hidden md:flex md:w-1/2 bg-gray-100">
         <img
-          src={auth}
+          src={auth3}
           alt="OTP verification background"
           className="w-full h-full object-fill"
           loading="lazy"
         />
       </div>
-
-      {/* Right Side - Form */}
       <div className="w-full md:w-1/2 bg-white flex flex-col items-center justify-center p-8">
         <div className="w-full max-w-md">
-          {/* Logo */}
           <img src={logo} alt="Logo" className="mb-16 w-32 h-auto mx-auto" />
-
-          {/* Title */}
           <h2 className="text-xl sm:text-2xl font-medium text-gray-800 mb-2 text-center md:text-start">
             Verify Your Account
           </h2>
@@ -122,15 +171,11 @@ const AdminOtpPage = () => {
             address or phone number. Please enter it below to complete your
             sign-up.
           </p>
-
-          {/* API Error */}
           {errors.api && (
             <p className="text-red-500 text-sm text-center mb-4">
               {errors.api}
             </p>
           )}
-
-          {/* Form */}
           <form onSubmit={handleSubmit} className="w-full space-y-6">
             <div className="flex justify-center md:justify-start space-x-4">
               {otp.map((digit, index) => (
@@ -151,7 +196,6 @@ const AdminOtpPage = () => {
             {errors.otp && (
               <p className="text-red-500 text-sm text-center">{errors.otp}</p>
             )}
-
             <p className="text-base text-[#6C7275] text-center md:text-start">
               Didn’t receive the code?{" "}
               <button
@@ -163,7 +207,6 @@ const AdminOtpPage = () => {
                 Resend Code
               </button>
             </p>
-
             <button
               type="submit"
               className="w-full p-3 bg-[#141718] text-white rounded-md hover:bg-[#141718]/80 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]/60 disabled:bg-[#141718]/50"

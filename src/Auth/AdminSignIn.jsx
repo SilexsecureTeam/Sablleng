@@ -1,19 +1,15 @@
-// src/Auth/SignIn.jsx
 import React, { useState, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthContext } from "../context/AuthContextObject";
-import { CartContext } from "../context/CartContextObject";
 import auth from "../assets/auth3.png";
 import logo from "../assets/logo.png";
 
 const AdminSignIn = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
-  const { cart_session_id, setCartSessionId, setItems, setTotal } =
-    useContext(CartContext);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -48,130 +44,29 @@ const AdminSignIn = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("https://api.sablle.ng/api/login", {
+      const response = await fetch("https://api.sablle.ng/api/admin/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          login: formData.email,
+          email: formData.email,
           password: formData.password,
         }),
       });
 
       const data = await response.json();
       console.log(
-        "SignIn: POST /api/login response:",
+        "SignIn: POST /api/admin/login response:",
         JSON.stringify(data, null, 2)
       );
 
       if (response.ok) {
-        const role = data.user?.role || "user";
-        if (role.toLowerCase() !== "admin") {
-          toast.error("Access denied. Please use the user login page.");
-          setErrors({
-            ...errors,
-            api: "Access denied. Please use the user login page.",
-          });
-          setIsLoading(false);
-          return;
-        }
-        toast.success("Login successful! Redirecting...");
-        login(data.token, data.user, role);
-
-        if (cart_session_id) {
-          try {
-            const mergeResponse = await fetch(
-              "https://api.sablle.ng/api/cart/merge",
-              {
-                method: "POST",
-                headers: {
-                  "X-Cart-Session": cart_session_id,
-                  Authorization: `Bearer ${data.token}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({}),
-              }
-            );
-            const mergeData = await mergeResponse.json();
-            console.log(
-              "SignIn: POST /api/cart/merge response:",
-              JSON.stringify(mergeData, null, 2)
-            );
-
-            if (mergeResponse.ok) {
-              toast.success("Guest cart merged successfully");
-              setCartSessionId(null);
-              localStorage.removeItem("cart_session_id");
-              localStorage.setItem(
-                "cart_items",
-                JSON.stringify(mergeData.data?.items || [])
-              );
-              localStorage.setItem("cart_total", mergeData.data?.total || 0);
-            } else {
-              toast.error(mergeData.message || "Failed to merge cart");
-            }
-          } catch (error) {
-            console.error("SignIn: Merge cart error:", error.message);
-            toast.error("Network error while merging cart");
-          }
-        }
-
-        try {
-          const cartResponse = await fetch("https://api.sablle.ng/api/cart", {
-            method: "GET",
-            headers: { Authorization: `Bearer ${data.token}` },
-          });
-          const cartData = await cartResponse.json();
-          console.log(
-            "SignIn: GET /api/cart after login response:",
-            JSON.stringify(cartData, null, 2)
-          );
-          console.log("SignIn: Items to set:", cartData.data?.items || []);
-
-          if (cartResponse.ok) {
-            setItems(cartData.data?.items || []);
-            setTotal(cartData.data?.total || 0);
-            localStorage.setItem(
-              "cart_items",
-              JSON.stringify(cartData.data?.items || [])
-            );
-            localStorage.setItem("cart_total", cartData.data?.total || 0);
-            console.log(
-              "SignIn: Updated items state:",
-              cartData.data?.items || []
-            );
-            toast.success("Cart updated successfully");
-          } else {
-            toast.error(cartData.message || "Failed to fetch cart");
-            const cachedItems = JSON.parse(
-              localStorage.getItem("cart_items") || "[]"
-            );
-            const cachedTotal = parseFloat(
-              localStorage.getItem("cart_total") || "0"
-            );
-            setItems(cachedItems);
-            setTotal(cachedTotal);
-          }
-        } catch (error) {
-          console.error("SignIn: Fetch cart error:", error.message);
-          toast.error("Network error while fetching cart");
-          const cachedItems = JSON.parse(
-            localStorage.getItem("cart_items") || "[]"
-          );
-          const cachedTotal = parseFloat(
-            localStorage.getItem("cart_total") || "0"
-          );
-          setItems(cachedItems);
-          setTotal(cachedTotal);
-        }
-
+        toast.success("OTP sent to your email. Please verify.");
+        // Store user data without token, as token comes after OTP
+        login(null, data.data, "admin");
         setTimeout(() => {
-          console.log(
-            "SignIn: Navigating to:",
-            role.toLowerCase() === "admin" ? "/dashboard" : "/"
-          );
-          navigate(role.toLowerCase() === "admin" ? "/dashboard" : "/");
+          navigate("/admin/otp");
         }, 2000);
       } else {
         console.error("SignIn: Login error:", data.message);
@@ -188,7 +83,7 @@ const AdminSignIn = () => {
       toast.error("Network error. Please check your connection and try again.");
       setErrors({
         ...errors,
-        api: "Network error. Please check your connection.",
+        api: error.message || "Network error. Please check your connection.",
       });
     } finally {
       setIsLoading(false);

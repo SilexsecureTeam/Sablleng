@@ -1,9 +1,7 @@
-// src/context/AuthContext.jsx
 import React, { useState, useEffect } from "react";
 import { AuthContext } from "./AuthContextObject";
 
 export const AuthProvider = ({ children }) => {
-  // ✅ CRITICAL FIX: Initialize with loading state
   const [auth, setAuth] = useState({
     isAuthenticated: false,
     token: null,
@@ -11,9 +9,8 @@ export const AuthProvider = ({ children }) => {
     role: null,
   });
 
-  const [isLoading, setIsLoading] = useState(true); // Track initialization
+  const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ Initialize auth from localStorage on mount
   useEffect(() => {
     console.log("🔐 AuthProvider: Initializing...");
 
@@ -21,25 +18,26 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem("authToken");
       const storedUser = localStorage.getItem("user");
       const role = localStorage.getItem("role");
+      const otpVerified = localStorage.getItem("otp_verified");
 
       console.log("📦 AuthProvider: Found in localStorage:", {
         hasToken: !!token,
         hasUser: !!storedUser,
         role: role || "none",
+        otpVerified: !!otpVerified,
       });
 
-      if (token && storedUser) {
+      if (storedUser && role) {
         const user = JSON.parse(storedUser);
-
         setAuth({
           isAuthenticated: true,
-          token,
+          token: token || null,
           user,
           role,
         });
 
         console.log("✅ AuthProvider: Auth restored successfully", {
-          tokenPreview: token.substring(0, 20) + "...",
+          tokenPreview: token ? token.substring(0, 20) + "..." : "none",
           userName: user.name || user.email,
           role,
         });
@@ -48,10 +46,10 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("❌ AuthProvider: Error restoring auth:", error);
-      // Clear potentially corrupted data
       localStorage.removeItem("authToken");
       localStorage.removeItem("user");
       localStorage.removeItem("role");
+      localStorage.removeItem("otp_verified");
     } finally {
       setIsLoading(false);
       console.log("🎯 AuthProvider: Initialization complete");
@@ -62,19 +60,19 @@ export const AuthProvider = ({ children }) => {
     console.log("🔑 AuthProvider: Login called");
 
     try {
-      localStorage.setItem("authToken", token);
+      if (token) localStorage.setItem("authToken", token);
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("role", role);
 
       setAuth({
         isAuthenticated: true,
-        token,
+        token: token || null,
         user,
         role,
       });
 
       console.log("✅ AuthProvider: Login successful", {
-        tokenPreview: token.substring(0, 20) + "...",
+        tokenPreview: token ? token.substring(0, 20) + "..." : "none",
         userName: user.name || user.email,
         role,
       });
@@ -93,7 +91,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem("authToken");
       localStorage.removeItem("user");
       localStorage.removeItem("role");
-      localStorage.removeItem("cart_session_id"); // Also clear cart session
+      localStorage.removeItem("otp_verified");
+      localStorage.removeItem("cart_session_id");
       localStorage.removeItem("cart_items");
       localStorage.removeItem("cart_total");
 
@@ -105,7 +104,6 @@ export const AuthProvider = ({ children }) => {
       });
 
       console.log("✅ AuthProvider: Logout successful");
-
       return true;
     } catch (error) {
       console.error("❌ AuthProvider: Logout failed:", error);
@@ -113,7 +111,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Show loading state while initializing
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50">

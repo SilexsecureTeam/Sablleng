@@ -16,7 +16,7 @@ import {
   Settings,
   UserCog,
   Archive,
-  LogOut, // Import LogOut from lucide-react
+  LogOut,
 } from "lucide-react";
 import { AuthContext } from "../../context/AuthContextObject";
 import SignOutModal from "./SignOutModal";

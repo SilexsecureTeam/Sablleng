@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Search, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ProductForm from "./ProductForm";
 import EditProductForm from "./EditProductForm";
+import { AuthContext } from "../../context/AuthContextObject"; // Adjust path as needed
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const ProductList = () => {
+  const { auth } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -17,67 +20,82 @@ const ProductList = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
-  const productsPerPage = 10; // Matches API's per_page value
+  const productsPerPage = 10;
+  const fetchProducts = async () => {
+    if (!auth.token) {
+      toast.error("Please verify OTP to continue.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      setTimeout(() => navigate("/admin/otp"), 2000);
+      return;
+    }
 
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `https://api.sablle.ng/api/products?page=${currentPage}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${auth.token}`,
+          },
+        }
+      );
+
+      if (response.status === 401) {
+        throw new Error("Unauthorized. Please log in again.");
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch products: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("GET /api/products response:", JSON.stringify(data, null, 2));
+
+      // Extract the products from the 'data' array in the response
+      const productsArray = Array.isArray(data.data) ? data.data : [];
+
+      // Map the API response to the expected format with fallbacks
+      const formattedProducts = productsArray.map((item) => ({
+        id: item.id || 0,
+        sku: item.product_code || "N/A",
+        product: item.name || "Unknown Product",
+        category: item.category?.name || "N/A",
+        type: item.customize ? "Customizable" : "Non-custom",
+        price: item.sale_price_inc_tax
+          ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+          : "N/A",
+        stock: item.stock_quantity ?? 0, // Use stock_quantity to match API
+      }));
+
+      setProducts(formattedProducts);
+      setTotalPages(data.last_page || 1); // Use API's last_page for total pages
+      toast.success("Products fetched successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError(err.message);
+      toast.error(`Error: ${err.message}`, {
+        position: "top-right",
+        autoClose: 5000,
+      });
+      setProducts([]);
+      if (err.message.includes("Unauthorized")) {
+        setTimeout(() => navigate("/admin/signin"), 2000);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
   // Fetch products from API with pagination
   useEffect(() => {
-    const fetchProducts = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(
-          `https://api.sablle.ng/api/products?page=${currentPage}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch products: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log("API Response:", data);
-
-        // Extract the products from the 'data' array in the response
-        const productsArray = Array.isArray(data.data) ? data.data : [];
-
-        // Map the API response to the expected format
-        const formattedProducts = productsArray.map((item) => ({
-          id: item.id,
-          sku: item.product_code || "",
-          product: item.name || "",
-          category: item.category?.name || "",
-          type: item.customize ? "Customizable" : "Non-custom",
-          price: item.sale_price_inc_tax
-            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-            : "",
-          stock: item.stock || 0,
-        }));
-
-        setProducts(formattedProducts);
-        setTotalPages(data.last_page || 1); // Use API's last_page for total pages
-        toast.success("Products fetched successfully!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      } catch (err) {
-        console.error("Fetch error:", err);
-        setError(err.message);
-        toast.error(`Error: ${err.message}`, {
-          position: "top-right",
-          autoClose: 5000,
-        });
-        setProducts([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchProducts();
-  }, [currentPage]); // Re-fetch when currentPage changes
+  }, [currentPage, auth.token]); // Re-fetch when currentPage or auth.token changes
 
   const handleEdit = (index) => {
     setSelectedProduct(products[index]);
@@ -98,13 +116,17 @@ const ProductList = () => {
 
   const handleSaveProduct = (formData) => {
     const newProduct = {
-      id: Date.now(), // Temporary ID for client-side addition
-      sku: formData.skuNumber,
-      product: formData.productName,
-      category: formData.category,
-      type: formData.allowCustomization ? "Customizable" : "Non-custom",
-      price: `₦${parseFloat(formData.price).toLocaleString()}`,
-      stock: parseInt(formData.availableStock, 10),
+      id: formData.id || Date.now(), // Use server ID if available, else temporary
+      sku: formData.sku || formData.skuNumber,
+      product: formData.product || formData.productName,
+      category: formData.category || "N/A",
+      type:
+        formData.type ||
+        (formData.allowCustomization ? "Customizable" : "Non-custom"),
+      price:
+        formData.price ||
+        `₦${parseFloat(formData.price || 0).toLocaleString()}`,
+      stock: parseInt(formData.stock || formData.availableStock || 0, 10),
     };
     setProducts((prev) => [newProduct, ...prev].slice(0, productsPerPage)); // Keep only productsPerPage
     setIsModalOpen(false);
@@ -112,6 +134,7 @@ const ProductList = () => {
       position: "top-right",
       autoClose: 3000,
     });
+    fetchProducts(); // Refetch to sync with server
   };
 
   const handleUpdateProduct = (formData, index) => {
@@ -136,11 +159,10 @@ const ProductList = () => {
     });
   };
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProducts = products.filter((product) =>
+    [product.product || "", product.sku || "", product.category || ""].some(
+      (field) => field.toLowerCase().includes(searchQuery.toLowerCase())
+    )
   );
 
   const handleNextPage = () => {
@@ -253,7 +275,7 @@ const ProductList = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <Link
                             to={`/dashboard/product/${product.id}`}
-                            className="text-blue-700 hover:text-blue-900 hover:underline"
+                            className="text-blue-700 hover:text-blue-900 hover:underline max-w-[160px] inline-block break-words whitespace-normal"
                           >
                             {product.product}
                           </Link>

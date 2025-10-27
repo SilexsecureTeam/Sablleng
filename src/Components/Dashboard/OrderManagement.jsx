@@ -1,56 +1,106 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Search, Zap, Bell, Settings } from "lucide-react";
+import { AuthContext } from "../../context/AuthContextObject";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const OrderManagement = () => {
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const ordersPerPage = 8;
+  const [orders, setOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const ordersPerPage = 10;
 
-  const orders = [
-    {
-      id: "#1001",
-      customer: "Jane Doe",
-      items: 3,
-      total: "N120.00",
-      status: "Shipped",
-      date: "2025-10-05",
-    },
-    {
-      id: "#1002",
-      customer: "Jane Doe",
-      items: 3,
-      total: "N120.00",
-      status: "Processing",
-      date: "2025-10-05",
-    },
-    {
-      id: "#1003",
-      customer: "Jane Doe",
-      items: 3,
-      total: "N120.00",
-      status: "Pending",
-      date: "2025-10-05",
-    },
-    {
-      id: "#1004",
-      customer: "Jane Doe",
-      items: 3,
-      total: "N120.00",
-      status: "Delivered",
-      date: "2025-10-05",
-    },
-    {
-      id: "#1005",
-      customer: "Jane Doe",
-      items: 3,
-      total: "N120.00",
-      status: "Processing",
-      date: "2025-10-05",
-    },
-  ];
+  const { auth } = useContext(AuthContext);
 
   const filters = ["All", "Pending", "Delivered", "Processing", "Shipped"];
+
+  // Fetch orders from API
+  const fetchOrders = async () => {
+    if (!auth?.isAuthenticated) {
+      toast.error("Please log in to view orders");
+      // setTimeout(() => navigate("/admin/signin"), 2000);
+      setIsLoading(false);
+      return;
+    }
+    if (!auth?.token) {
+      toast.error("Please verify OTP to continue.");
+      setError("OTP verification required");
+      // setTimeout(() => navigate("/admin/otp"), 2000);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.log(
+        "🛒 Fetching orders with token:",
+        auth.token.substring(0, 20) + "..."
+      );
+      const response = await fetch("https://api.sablle.ng/api/admin/orders", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+          Accept: "application/json",
+        },
+      });
+
+      console.log("🛒 Response status:", response.status);
+      console.log("🛒 Response headers:", response.headers.get("Content-Type"));
+
+      const contentType = response.headers.get("Content-Type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("🛒 Non-JSON response received:", text.substring(0, 100));
+        throw new Error(
+          "Server returned non-JSON response, likely an error page"
+        );
+      }
+
+      const data = await response.json();
+      console.log("🛒 Orders fetch response:", data);
+
+      if (response.ok) {
+        const mappedOrders = data.data.map((order) => ({
+          id: order.order_reference,
+          customer: order.user?.name || "Unknown",
+          items: "N/A", // API doesn't provide item count
+          total: `N${parseFloat(order.total).toFixed(2)}`,
+          status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
+          date: new Date(order.created_at).toISOString().split("T")[0],
+        }));
+        setOrders(mappedOrders);
+        console.log("🛒 Orders set:", mappedOrders);
+      } else {
+        if (response.status === 401) {
+          setError(
+            "Unauthorized: Invalid or expired token. Please log in again."
+          );
+          toast.error("Unauthorized: Please log in again");
+        } else if (response.status === 403) {
+          setError("Forbidden: You lack permission to view orders.");
+          toast.error("Forbidden: You lack permission to view orders");
+        } else {
+          setError(data.message || `Server error: ${response.status}`);
+          toast.error(data.message || `Server error: ${response.status}`);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Orders fetch error:", error.message);
+      setError(error.message || "Network error while fetching orders");
+      toast.error(error.message || "Network error while fetching orders");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [auth?.isAuthenticated, auth?.token]);
 
   const getStatusStyle = (status) => {
     const styles = {
@@ -97,12 +147,18 @@ const OrderManagement = () => {
   return (
     <div className="min-h-screen bg-[#FAF7F5] p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        <ToastContainer position="top-right" autoClose={3000} />
+
         <div className="flex items-start justify-between text-[#414245] mb-4">
           <div>
             <h1 className="text-2xl font-medium">Orders</h1>
             <p className="text-sm md:text-base mt-1">
-              Wednesday, October 6, 2025
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -119,20 +175,17 @@ const OrderManagement = () => {
           </div>
         </div>
 
-        {/* Main Card */}
         <div className="bg-white rounded-xl">
-          {/* Card Header */}
           <div className="px-6 py-5">
             <h2 className="text-lg font-semibold text-gray-900">Orders</h2>
           </div>
 
-          {/* Search Bar */}
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by Products ID or Customer's Name"
+                placeholder="Search by Order Reference or Customer's Name"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -140,7 +193,6 @@ const OrderManagement = () => {
             </div>
           </div>
 
-          {/* Filters */}
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex gap-2">
               {filters.map((filter) => (
@@ -159,75 +211,94 @@ const OrderManagement = () => {
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Items
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {paginatedOrders.map((order, index) => (
-                  <tr
-                    key={startIndex + index}
-                    className="hover:bg-gray-50 transition-colors text-[#414245]"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {order.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {order.customer}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {order.items}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {order.total}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
-                          order.status
-                        )}`}
-                      >
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {order.date}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button className="text-sm text-[#0B36B5] hover:text-blue-800 font-medium">
-                        Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5F1327] mx-auto"></div>
+              <p className="text-gray-600 mt-4">Loading orders...</p>
+            </div>
+          )}
 
-          {/* Empty State */}
-          {paginatedOrders.length === 0 && (
+          {error && !isLoading && (
+            <div className="px-6 py-12 text-center">
+              <p className="text-red-500 text-sm">{error}</p>
+              <button
+                onClick={fetchOrders} // Changed from () => fetchOrders()
+                className="mt-4 px-4 py-2 bg-[#5F1327] text-white rounded-md hover:bg-[#4A0F1F] transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {!isLoading && !error && (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Order ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Customer
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Items
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {paginatedOrders.map((order, index) => (
+                    <tr
+                      key={startIndex + index}
+                      className="hover:bg-gray-50 transition-colors text-[#414245]"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {order.id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {order.customer}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {order.items}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {order.total}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
+                            order.status
+                          )}`}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {order.date}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <button className="text-sm text-[#0B36B5] hover:text-blue-800 font-medium">
+                          Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {!isLoading && !error && paginatedOrders.length === 0 && (
             <div className="px-6 py-12 text-center">
               <p className="text-gray-500 text-sm">
                 No orders found matching your criteria.
@@ -235,8 +306,7 @@ const OrderManagement = () => {
             </div>
           )}
 
-          {/* Pagination Controls */}
-          {filteredOrders.length > 0 && (
+          {!isLoading && !error && filteredOrders.length > 0 && (
             <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
               <p className="text-sm text-gray-700">
                 Page {currentPage} of {totalPages}
