@@ -1,7 +1,6 @@
-// src/Components/Dashboard/ProductList.jsx
 import React, { useState, useEffect } from "react";
 import { Search, Plus } from "lucide-react";
-import { Link } from "react-router-dom"; // Add Link for navigation
+import { Link } from "react-router-dom";
 import ProductForm from "./ProductForm";
 import EditProductForm from "./EditProductForm";
 import { toast, ToastContainer } from "react-toastify";
@@ -17,19 +16,23 @@ const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const productsPerPage = 8;
+  const [totalPages, setTotalPages] = useState(1);
+  const productsPerPage = 10; // Matches API's per_page value
 
-  // Fetch products from API
+  // Fetch products from API with pagination
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("https://api.sablle.ng/api/products", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        const response = await fetch(
+          `https://api.sablle.ng/api/products?page=${currentPage}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`Failed to fetch products: ${response.statusText}`);
@@ -43,18 +46,19 @@ const ProductList = () => {
 
         // Map the API response to the expected format
         const formattedProducts = productsArray.map((item) => ({
-          id: item.id, // Add id for navigation
+          id: item.id,
           sku: item.product_code || "",
           product: item.name || "",
           category: item.category?.name || "",
-          type: item.is_variable_price ? "Customizable" : "Non-custom",
+          type: item.customize ? "Customizable" : "Non-custom",
           price: item.sale_price_inc_tax
-            ? `N${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
             : "",
           stock: item.stock || 0,
         }));
 
         setProducts(formattedProducts);
+        setTotalPages(data.last_page || 1); // Use API's last_page for total pages
         toast.success("Products fetched successfully!", {
           position: "top-right",
           autoClose: 3000,
@@ -73,7 +77,7 @@ const ProductList = () => {
     };
 
     fetchProducts();
-  }, []);
+  }, [currentPage]); // Re-fetch when currentPage changes
 
   const handleEdit = (index) => {
     setSelectedProduct(products[index]);
@@ -94,16 +98,16 @@ const ProductList = () => {
 
   const handleSaveProduct = (formData) => {
     const newProduct = {
+      id: Date.now(), // Temporary ID for client-side addition
       sku: formData.skuNumber,
       product: formData.productName,
       category: formData.category,
       type: formData.allowCustomization ? "Customizable" : "Non-custom",
-      price: `N${parseFloat(formData.price).toLocaleString()}`,
+      price: `₦${parseFloat(formData.price).toLocaleString()}`,
       stock: parseInt(formData.availableStock, 10),
     };
-    setProducts((prev) => [newProduct, ...prev]);
+    setProducts((prev) => [newProduct, ...prev].slice(0, productsPerPage)); // Keep only productsPerPage
     setIsModalOpen(false);
-    setCurrentPage(1);
     toast.success("Product added successfully!", {
       position: "top-right",
       autoClose: 3000,
@@ -112,11 +116,12 @@ const ProductList = () => {
 
   const handleUpdateProduct = (formData, index) => {
     const updatedProduct = {
+      id: products[index].id,
       sku: formData.skuNumber,
       product: formData.productName,
       category: formData.category,
       type: formData.allowCustomization ? "Customizable" : "Non-custom",
-      price: `N${parseFloat(formData.price).toLocaleString()}`,
+      price: `₦${parseFloat(formData.price).toLocaleString()}`,
       stock: parseInt(formData.availableStock, 10),
     };
     setProducts((prev) =>
@@ -138,15 +143,6 @@ const ProductList = () => {
       product.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-  const startIndex = (currentPage - 1) * productsPerPage;
-  const endIndex = startIndex + productsPerPage;
-  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
-
   const handleNextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage((prev) => prev + 1);
@@ -157,6 +153,24 @@ const ProductList = () => {
     if (currentPage > 1) {
       setCurrentPage((prev) => prev - 1);
     }
+  };
+
+  // Generate page numbers for pagination (e.g., show 5 pages around current page)
+  const getPageNumbers = () => {
+    const maxPagesToShow = 5;
+    const pageNumbers = [];
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    return pageNumbers;
   };
 
   return (
@@ -228,9 +242,9 @@ const ProductList = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {paginatedProducts.map((product, index) => (
+                    {filteredProducts.map((product, index) => (
                       <tr
-                        key={startIndex + index}
+                        key={product.id}
                         className="hover:bg-gray-50 transition-colors text-[#414245]"
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -266,7 +280,7 @@ const ProductList = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <button
-                            onClick={() => handleEdit(startIndex + index)}
+                            onClick={() => handleEdit(index)}
                             className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
                           >
                             Edit
@@ -277,14 +291,14 @@ const ProductList = () => {
                   </tbody>
                 </table>
               </div>
-              {paginatedProducts.length === 0 && (
+              {filteredProducts.length === 0 && (
                 <div className="px-6 py-12 text-center">
                   <p className="text-sm text-gray-500">
                     No products found matching your search.
                   </p>
                 </div>
               )}
-              {filteredProducts.length > 0 && (
+              {products.length > 0 && (
                 <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
                   <p className="text-sm text-gray-700">
                     Page {currentPage} of {totalPages}
@@ -301,6 +315,19 @@ const ProductList = () => {
                     >
                       Previous
                     </button>
+                    {getPageNumbers().map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-4 py-2 border border-gray-300 rounded-md text-sm font-medium ${
+                          currentPage === page
+                            ? "bg-blue-500 text-white"
+                            : "bg-white text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
                     <button
                       onClick={handleNextPage}
                       disabled={currentPage === totalPages}

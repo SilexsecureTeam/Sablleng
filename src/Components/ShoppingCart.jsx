@@ -106,6 +106,9 @@ export default function ShoppingCart() {
                       <p className="text-xs sm:text-sm text-gray-500">
                         Color: {item.color || "N/A"}
                       </p>
+                      <p className="text-xs sm:text-sm text-gray-500">
+                        Size: {item.size || "N/A"} {/* Display size */}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2 sm:gap-3 mt-2 md:mt-0">
                       <button

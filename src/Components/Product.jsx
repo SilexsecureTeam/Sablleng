@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Heart } from "lucide-react";
+import { CartContext } from "../context/CartContextObject";
 
 const Product = () => {
   const [filter, setFilter] = useState("All");
@@ -10,6 +12,7 @@ const Product = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const { addToWishlist, isInWishlist } = useContext(CartContext);
 
   useEffect(() => {
     const fetchProducts = async (page = 1) => {
@@ -39,7 +42,7 @@ const Product = () => {
           category: item.category?.name,
           badge: item.customize ? "Customizable" : null,
           image: item.images?.[0] || "/placeholder-image.jpg",
-          customize: item.customize, // Store customize field
+          customize: item.customize,
         }));
 
         setProducts(formattedProducts);
@@ -64,14 +67,12 @@ const Product = () => {
     fetchProducts(currentPage);
   }, [currentPage]);
 
-  // Handle page change
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
   };
 
-  // Filter products
   const filteredProducts = products.filter((product) => {
     if (filter === "All") return true;
     if (filter === "Customizable") return product.customize === true;
@@ -116,27 +117,50 @@ const Product = () => {
             </div>
           ) : filteredProducts.length > 0 ? (
             filteredProducts.map((product) => (
-              <Link
+              <div
                 key={product.id}
-                to={`/product/${product.id}`}
                 className="bg-white overflow-hidden block hover:shadow-lg transition-shadow duration-200 animate-fade-in"
               >
-                <div className="relative bg-[#F4F2F2] p-4 h-48 md:h-80 flex items-center justify-center">
-                  {product.badge && (
-                    <div className="absolute top-6 left-0 bg-[#CB5B6A] text-white px-8 py-2 rounded text-sm font-medium">
-                      {product.badge}
-                    </div>
-                  )}
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="max-h-full max-w-full object-contain"
-                  />
-                </div>
+                <Link to={`/product/${product.id}`} className="block relative">
+                  <div className="relative bg-[#F4F2F2] p-4 h-48 md:h-80 flex items-center justify-center">
+                    {product.badge && (
+                      <div className="absolute top-6 left-0 bg-[#CB5B6A] text-white px-8 py-2 rounded text-sm font-medium">
+                        {product.badge}
+                      </div>
+                    )}
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                </Link>
                 <div className="p-4">
-                  <h3 className="font-medium text-gray-900 text-sm">
-                    {product.name}
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <Link to={`/product/${product.id}`}>
+                      <h3 className="font-medium text-gray-900 text-sm">
+                        {product.name}
+                      </h3>
+                    </Link>
+                    <button
+                      onClick={() => addToWishlist(product)}
+                      className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+                      aria-label={
+                        isInWishlist(product.id)
+                          ? "Remove from wishlist"
+                          : "Add to wishlist"
+                      }
+                    >
+                      <Heart
+                        size={20}
+                        className={
+                          isInWishlist(product.id)
+                            ? "text-[#CB5B6A] fill-[#CB5B6A]"
+                            : "text-gray-400"
+                        }
+                      />
+                    </button>
+                  </div>
                   <span className="text-lg font-semibold text-gray-900">
                     {product.price}
                   </span>
@@ -146,7 +170,7 @@ const Product = () => {
                     </span>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))
           ) : (
             <div className="col-span-full text-center text-gray-600">

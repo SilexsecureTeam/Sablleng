@@ -173,7 +173,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   const handleSignOutConfirm = () => {
     logout();
-    navigate("/signin");
+    navigate("/admin/signin");
   };
 
   return (

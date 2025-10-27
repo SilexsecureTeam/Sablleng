@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Heart } from "lucide-react";
+import { CartContext } from "../context/CartContextObject";
 import Noti from "../Components/Noti";
 import Header from "../Components/Header";
-import Phero from "../Components/Phero";
+import Cahero from "../Components/Cahero";
 import Footer from "../Components/Footer";
 
 const CategoryPage = () => {
@@ -17,8 +19,8 @@ const CategoryPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const productsPerPage = 10;
+  const { addToWishlist, isInWishlist } = useContext(CartContext);
 
-  // Fetch and cache categories
   useEffect(() => {
     const cachedCategories = localStorage.getItem("categories");
     if (cachedCategories) {
@@ -66,7 +68,6 @@ const CategoryPage = () => {
     fetchCategories();
   }, []);
 
-  // Memoize category ID and name
   const { categoryId, categoryName } = useMemo(() => {
     const category =
       categories.find((cat) => cat.slug === categorySlug) || null;
@@ -76,7 +77,6 @@ const CategoryPage = () => {
     };
   }, [categorySlug, categories]);
 
-  // Fetch products for this specific category
   useEffect(() => {
     const controller = new AbortController();
     let isMounted = true;
@@ -92,7 +92,6 @@ const CategoryPage = () => {
         return;
       }
 
-      // Check cache first
       const cacheKey = `products_${categoryId}`;
       const cachedProducts = localStorage.getItem(cacheKey);
       if (cachedProducts) {
@@ -140,7 +139,7 @@ const CategoryPage = () => {
           category: item.category?.name || categoryName,
           badge: item.customize ? "Customizable" : null,
           image: item.images?.[0] || "/placeholder-image.jpg",
-          customize: item.customize, // Store customize field
+          customize: item.customize,
         }));
 
         if (isMounted) {
@@ -190,7 +189,6 @@ const CategoryPage = () => {
     };
   }, [categorySlug, categoryId, categoryName, categories]);
 
-  // Handle page change for client-side pagination
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -198,14 +196,12 @@ const CategoryPage = () => {
     }
   };
 
-  // Client-side pagination
   const startIndex = (currentPage - 1) * productsPerPage;
   const paginatedProducts = products.slice(
     startIndex,
     startIndex + productsPerPage
   );
 
-  // Filter products by customizable status
   const filteredProducts = paginatedProducts.filter((product) => {
     if (filter === "All") return true;
     if (filter === "Customizable") return product.customize === true;
@@ -213,7 +209,6 @@ const CategoryPage = () => {
     return true;
   });
 
-  // Generate page numbers for pagination
   const getPageNumbers = () => {
     const maxPagesToShow = 5;
     const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
@@ -230,13 +225,13 @@ const CategoryPage = () => {
       <ToastContainer />
       <Noti />
       <Header />
-      <Phero />
-      <div className="py-12 md:py-16">
+      <Cahero />
+      <div className="py-12 md:py-8">
         <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 mx-auto">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">
             {categoryName}
           </h2>
-          <div className="mb-8">
+          <div className="mb-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Filter Products
             </h3>
@@ -269,37 +264,58 @@ const CategoryPage = () => {
               </div>
             ) : filteredProducts.length > 0 ? (
               filteredProducts.map((product) => (
-                <Link
+                <div
                   key={product.id}
-                  to={`/product/${product.id}`}
                   className="bg-white overflow-hidden block hover:shadow-lg transition-shadow duration-200 animate-fade-in"
                 >
-                  <div className="relative bg-[#F4F2F2] p-4 h-48 md:h-80 flex items-center justify-center">
-                    {product.badge && (
-                      <div className="absolute top-6 left-0 bg-[#CB5B6A] text-white px-8 py-2 rounded text-sm font-medium">
-                        {product.badge}
-                      </div>
-                    )}
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  </div>
+                  <Link
+                    to={`/product/${product.id}`}
+                    className="block relative"
+                  >
+                    <div className="relative bg-[#F4F2F2] p-4 h-48 md:h-80 flex items-center justify-center">
+                      {product.badge && (
+                        <div className="absolute top-6 left-0 bg-[#CB5B6A] text-white px-8 py-2 rounded text-sm font-medium">
+                          {product.badge}
+                        </div>
+                      )}
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
+                  </Link>
                   <div className="p-4">
-                    <h3 className="font-medium text-gray-900 text-sm">
-                      {product.name}
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <Link to={`/product/${product.id}`}>
+                        <h3 className="font-medium text-gray-900 text-sm">
+                          {product.name}
+                        </h3>
+                      </Link>
+                      <button
+                        onClick={() => addToWishlist(product)}
+                        className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+                        aria-label={
+                          isInWishlist(product.id)
+                            ? "Remove from wishlist"
+                            : "Add to wishlist"
+                        }
+                      >
+                        <Heart
+                          size={20}
+                          className={
+                            isInWishlist(product.id)
+                              ? "text-[#CB5B6A] fill-[#CB5B6A]"
+                              : "text-gray-400"
+                          }
+                        />
+                      </button>
+                    </div>
                     <span className="text-lg font-semibold text-gray-900">
                       {product.price}
                     </span>
-                    <div className="flex items-center justify-between">
-                      <span className="text-base font-bold text-[#CB5B6A] py-1 rounded">
-                        {product.category}
-                      </span>
-                    </div>
                   </div>
-                </Link>
+                </div>
               ))
             ) : (
               <div className="col-span-full text-center text-gray-600">

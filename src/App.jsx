@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
-import ProtectedRoute from "./Components/ProtectedRoute"; // Add ProtectedRoute
+import ProtectedRoute from "./Components/ProtectedRoute";
 import "./App.css";
 import logo from "./assets/logo.png";
 import { ToastContainer } from "react-toastify";
@@ -33,6 +33,9 @@ const OtpPage = lazy(() => import("./Auth/OTP"));
 const AdminOtpPage = lazy(() => import("./Auth/AdminOTP"));
 const CustomizablePage = lazy(() => import("./Pages/Customizable"));
 const DashboardLayout = lazy(() => import("./Pages/DashboardLayout"));
+const MyProfilePage = lazy(() => import("./Pages/MyProfilePage"));
+const OrdersPage = lazy(() => import("./Pages/OrdersPage"));
+const WishListPage = lazy(() => import("./Pages/WishListPage"));
 
 const LoadingSpinner = () => {
   return (
@@ -89,8 +92,6 @@ const App = () => {
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
-          {" "}
-          {/* Wrap with AuthProvider */}
           <div className="min-h-screen">
             <ToastContainer position="top-right" autoClose={3000} />
             <ScrollToTop />
@@ -108,7 +109,14 @@ const App = () => {
                 <Route path="/delivery" element={<DeliveryPage />} />
                 <Route path="/payment" element={<PaymentPage />} />
                 <Route path="/order-success" element={<OrderSuccessPage />} />
+                <Route
+                  path="/order-success/:orderId"
+                  element={<OrderSuccessPage />}
+                />
                 <Route path="/order-tracking" element={<OrderTrackingPage />} />
+                <Route path="/profile" element={<MyProfilePage />} />
+                <Route path="/orders" element={<OrdersPage />} />
+                <Route path="/wishlist" element={<WishListPage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/signin" element={<SignIn />} />

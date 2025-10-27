@@ -1,23 +1,26 @@
 import React, { useState, useContext, useEffect } from "react";
-import { CartContext } from "./CartContextObject";
+import { CartContext } from "./CartContextObject"; // Import context
 import { AuthContext } from "./AuthContextObject";
 import { toast } from "react-toastify";
 
 export const CartProvider = ({ children }) => {
-  // Initialize state from localStorage
+  // Initialize cart state from localStorage
   const [items, setItems] = useState(() =>
     JSON.parse(localStorage.getItem("cart_items") || "[]")
   );
   const [total, setTotal] = useState(() =>
     parseFloat(localStorage.getItem("cart_total") || "0")
   );
-
-  const [selectedAddress, setSelectedAddress] = useState(null);
   const [cart_session_id, setCartSessionId] = useState(
     localStorage.getItem("cart_session_id") || null
   );
+  const [selectedAddress, setSelectedAddress] = useState(null);
 
-  // Access auth object
+  // Initialize wishlist state from localStorage
+  const [wishlist, setWishlist] = useState(() =>
+    JSON.parse(localStorage.getItem("wishlist") || "[]")
+  );
+
   const { auth } = useContext(AuthContext);
 
   // Debug auth state
@@ -29,19 +32,56 @@ export const CartProvider = ({ children }) => {
     });
   }, [auth]);
 
-  // Sync state with localStorage
+  // Sync cart and wishlist with localStorage
   useEffect(() => {
     localStorage.setItem("cart_items", JSON.stringify(items));
     localStorage.setItem("cart_total", String(total));
+    localStorage.setItem("wishlist", JSON.stringify(wishlist));
     if (cart_session_id) {
       localStorage.setItem("cart_session_id", cart_session_id);
     }
-  }, [items, total, cart_session_id]);
+  }, [items, total, cart_session_id, wishlist]);
 
-  // Fetch cart for auth'd users or guests with session
+  // Wishlist functions
+  const addToWishlist = (product) => {
+    setWishlist((prev) => {
+      if (prev.some((item) => item.id === product.id)) {
+        toast.info(`${product.name} is already in your wishlist`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return prev;
+      }
+      const updatedWishlist = [...prev, product];
+      toast.success(`${product.name} added to wishlist`, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return updatedWishlist;
+    });
+  };
+
+  const removeFromWishlist = (itemId) => {
+    setWishlist((prev) => {
+      const item = prev.find((item) => item.id === itemId);
+      const updatedWishlist = prev.filter((item) => item.id !== itemId);
+      if (item) {
+        toast.success(`${item.name} removed from wishlist`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+      return updatedWishlist;
+    });
+  };
+
+  const isInWishlist = (itemId) => {
+    return wishlist.some((item) => item.id === itemId);
+  };
+
+  // Existing cart fetch logic
   useEffect(() => {
     const fetchCart = async () => {
-      // Only fetch if we have auth or a session ID
       if (!auth?.isAuthenticated && !cart_session_id) {
         console.log("🛒 CartContext: No auth or session, skipping fetch.");
         return;
@@ -96,7 +136,6 @@ export const CartProvider = ({ children }) => {
           setItems(newItemsWithDetails);
           setTotal(data.data?.total || 0);
 
-          // Update session ID for guests if provided
           if (!auth?.isAuthenticated && data.data?.session_id) {
             const newSessionId = data.data.session_id;
             if (newSessionId !== cart_session_id) {
@@ -120,7 +159,7 @@ export const CartProvider = ({ children }) => {
     fetchCart();
   }, [auth?.isAuthenticated, auth?.token, cart_session_id]);
 
-  // Handle cart merge on login
+  // Existing cart merge logic
   useEffect(() => {
     const handleMergeOnLogin = async () => {
       if (
@@ -175,7 +214,6 @@ export const CartProvider = ({ children }) => {
             setItems(newItemsWithDetails);
             setTotal(data.data?.total || 0);
 
-            // Clear old session
             setCartSessionId(null);
             localStorage.removeItem("cart_session_id");
             localStorage.setItem("cart_merged", "true");
@@ -221,6 +259,7 @@ export const CartProvider = ({ children }) => {
         price: product.price,
         quantity: product.quantity,
         color: product.color,
+        size: product.size, // Log size
       });
       console.log("Auth state:", {
         isAuthenticated: auth?.isAuthenticated,
@@ -234,6 +273,7 @@ export const CartProvider = ({ children }) => {
       formData.append("quantity", String(product.quantity));
       formData.append("price", String(product.price));
       formData.append("color", product.color || "default");
+      formData.append("size", product.size || "N/A"); // Add size to FormData
 
       console.log("FormData contents:");
       for (let [key, value] of formData.entries()) {
@@ -276,6 +316,8 @@ export const CartProvider = ({ children }) => {
               ...apiItem,
               name: product.name || product.product_name,
               image: product.image || "/placeholder-image.jpg",
+              color: product.color || "default", // Include color
+              size: product.size || "N/A", // Include size
             };
           }
           return {
@@ -286,6 +328,8 @@ export const CartProvider = ({ children }) => {
               existingItem?.image ||
               apiItem.product?.image ||
               "/placeholder-image.jpg",
+            color: existingItem?.color || apiItem.color || "default", // Preserve color
+            size: existingItem?.size || apiItem.size || "N/A", // Preserve size
           };
         });
 
@@ -299,7 +343,6 @@ export const CartProvider = ({ children }) => {
         setItems(newItemsWithDetails);
         setTotal(data.data?.cart?.total || 0);
 
-        // Capture session ID for guests if provided
         if (!auth?.isAuthenticated && data.cart_session_id) {
           console.log("✅ Storing new session ID:", data.cart_session_id);
           setCartSessionId(data.cart_session_id);
@@ -458,6 +501,10 @@ export const CartProvider = ({ children }) => {
         setSelectedAddress,
         setItems,
         setTotal,
+        wishlist,
+        addToWishlist,
+        removeFromWishlist,
+        isInWishlist,
       }}
     >
       {children}

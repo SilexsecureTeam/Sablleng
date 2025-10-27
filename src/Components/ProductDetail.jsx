@@ -16,7 +16,8 @@ const ProductDetail = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedColor, setSelectedColor] = useState("white");
+  const [selectedColor, setSelectedColor] = useState("black");
+  const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [selectedThumbnail, setSelectedThumbnail] = useState({
@@ -33,13 +34,19 @@ const ProductDetail = () => {
     { name: "yellow", color: "bg-yellow-400" },
   ];
 
-  useEffect(() => {
-    console.log("ProductDetail: Auth state:", {
-      isAuthenticated: auth?.isAuthenticated,
-      hasToken: !!auth?.token,
-      tokenPreview: auth?.token ? auth.token.substring(0, 20) + "..." : null,
-    });
-  }, [auth]);
+  // Define thumbnails based on product image
+  const thumbnails = product
+    ? [
+        { bgColor: "bg-blue-100", image: product.image },
+        { bgColor: "bg-green-100", image: product.image },
+        { bgColor: "bg-red-100", image: product.image },
+        { bgColor: "bg-yellow-100", image: product.image },
+      ]
+    : [];
+
+  // Sample sizes (replace with dynamic sizes from API)
+  const sizes =
+    product?.sizes?.length > 0 ? product.sizes : ["S", "M", "L", "XL"];
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -48,8 +55,6 @@ const ProductDetail = () => {
 
       try {
         const productId = parseInt(id);
-        console.log(`Fetching product ID ${productId} via single-ID endpoint`);
-
         const response = await fetch(
           `https://api.sablle.ng/api/products/${productId}`,
           {
@@ -73,13 +78,6 @@ const ProductDetail = () => {
         }
 
         data = await response.json();
-        console.log(`API response for product ID ${productId}:`, data);
-
-        if (!data || data.status === false) {
-          throw new Error("Product not found");
-        }
-
-        // Format the single product
         const formattedProduct = {
           id: data.id,
           name: data.name || "",
@@ -94,11 +92,12 @@ const ProductDetail = () => {
           image: data.images?.[0] || "/placeholder-image.jpg",
           model: data.product_code || "N/A",
           customize: data.customize,
+          sizes: data.size || [],
         };
 
         setProduct(formattedProduct);
+        setSelectedSize(formattedProduct.sizes[0] || "N/A");
 
-        // Fetch related products from general products endpoint (first page, filter by category)
         if (formattedProduct.category !== "Uncategorized") {
           const relatedResponse = await fetch(
             `https://api.sablle.ng/api/products`,
@@ -130,10 +129,7 @@ const ProductDetail = () => {
                   p.id !== formattedProduct.id
               );
 
-            setRelatedProducts(formattedRelated.slice(0, 10)); // Limit to 10 for performance
-            console.log(
-              `Found ${formattedRelated.length} related products for category "${formattedProduct.category}"`
-            );
+            setRelatedProducts(formattedRelated.slice(0, 10));
           }
         }
 
@@ -143,15 +139,10 @@ const ProductDetail = () => {
           image: formattedProduct.image,
         });
       } catch (err) {
-        console.error("Fetch error:", err);
         setError(err.message);
         toast.error(`Error: ${err.message}`, {
           position: "top-right",
           autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
         });
       } finally {
         setIsLoading(false);
@@ -162,15 +153,6 @@ const ProductDetail = () => {
       fetchProduct();
     }
   }, [id]);
-
-  const thumbnails = product
-    ? [
-        { bgColor: "bg-blue-100", image: product.image },
-        { bgColor: "bg-green-100", image: product.image },
-        { bgColor: "bg-red-100", image: product.image },
-        { bgColor: "bg-yellow-100", image: product.image },
-      ]
-    : [];
 
   const scrollLeft = () => {
     if (sliderRef.current) {
@@ -184,23 +166,37 @@ const ProductDetail = () => {
     }
   };
 
+  const handleThumbnailClick = (index, thumbnail) => {
+    setSelectedThumbnail({
+      index,
+      bgColor: thumbnail.bgColor,
+      image: thumbnail.image,
+    });
+  };
+
+  const handleQuantityChange = (newQuantity) => {
+    if (newQuantity >= 1 && newQuantity <= 99) {
+      setQuantity(newQuantity);
+    }
+  };
+
+  const handleCustomize = () => {
+    setIsCustomizing(true);
+  };
+
+  const handleOrderNow = () => {
+    toast.info("Order now feature coming soon!", {
+      position: "top-right",
+      autoClose: 3000,
+    });
+    console.log("Order Now clicked for", product?.name);
+  };
+
   const handleAddToCart = async () => {
     if (!product) {
       toast.error("Product information not available");
       return;
     }
-
-    console.log("\n=== PRODUCT DETAIL: ADD TO CART ===");
-    console.log("Product:", {
-      id: product.id,
-      name: product.name,
-      rawPrice: product.rawPrice,
-      quantity,
-      color: selectedColor,
-    });
-    console.log("Auth context available:", !!auth);
-    console.log("Auth authenticated:", auth?.isAuthenticated);
-    console.log("Auth token exists:", !!auth?.token);
 
     setIsAddingToCart(true);
 
@@ -220,6 +216,7 @@ const ProductDetail = () => {
         image: selectedThumbnail.image,
         quantity: quantity,
         color: selectedColor,
+        size: selectedSize,
         customized: false,
       });
 
@@ -236,34 +233,7 @@ const ProductDetail = () => {
       });
     } finally {
       setIsAddingToCart(false);
-      console.log("===================================\n");
     }
-  };
-
-  const handleQuantityChange = (newQuantity) => {
-    if (newQuantity >= 1 && newQuantity <= 99) {
-      setQuantity(newQuantity);
-    }
-  };
-
-  const handleOrderNow = () => {
-    toast.info("Order now feature coming soon!", {
-      position: "top-right",
-      autoClose: 3000,
-    });
-    console.log("Order Now clicked for", product?.name);
-  };
-
-  const handleCustomize = () => {
-    setIsCustomizing(true);
-  };
-
-  const handleThumbnailClick = (index, thumbnail) => {
-    setSelectedThumbnail({
-      index,
-      bgColor: thumbnail.bgColor,
-      image: thumbnail.image,
-    });
   };
 
   if (isLoading) {
@@ -354,6 +324,12 @@ const ProductDetail = () => {
                     <span className="text-gray-500 w-24">Color:</span>
                     <span className="text-gray-900">{selectedColor}</span>
                   </div>
+                  {/* <div className="flex">
+                    <span className="text-gray-500 w-24">Size:</span>
+                    <span className="text-gray-900">
+                      {selectedSize || "N/A"}
+                    </span>
+                  </div> */}
                   <div className="flex">
                     <span className="text-gray-500 w-24">Brand:</span>
                     <span className="text-gray-900">ACMELL</span>
@@ -388,6 +364,27 @@ const ProductDetail = () => {
                             : "border-gray-300"
                         }`}
                       />
+                    ))}
+                  </div>
+                </div>
+                <div className="space-x-3 flex items-center">
+                  <label className="text-gray-900 font-medium">
+                    Select size:
+                  </label>
+                  <div className="flex space-x-3">
+                    {sizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        className={`px-3 py-1 rounded border ${
+                          selectedSize === size
+                            ? "bg-[#CB5B6A] text-white border-[#CB5B6A]"
+                            : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                        } transition-colors`}
+                        disabled={sizes.length === 1 && size === "N/A"}
+                      >
+                        {size}
+                      </button>
                     ))}
                   </div>
                 </div>
