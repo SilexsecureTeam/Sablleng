@@ -291,7 +291,7 @@ const PaymentComponent = () => {
                 key={method.id}
                 className={`flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
                   selectedPayment === method.id
-                    ? "border-[#CB5B6A] bg-[#CB5B6A]/10"
+                    ? "border-[#5F1327] bg-[#5F1327]/10"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
               >
@@ -301,14 +301,14 @@ const PaymentComponent = () => {
                   value={method.id}
                   checked={selectedPayment === method.id}
                   onChange={(e) => setSelectedPayment(e.target.value)}
-                  className="text-[#CB5B6A] focus:ring-[#CB5B6A]"
+                  className="text-[#5F1327] focus:ring-[#5F1327]"
                   disabled={isProcessingPayment}
                 />
                 <div className="flex items-center gap-3">
                   <div
                     className={`p-2 rounded-lg ${
                       selectedPayment === method.id
-                        ? "bg-[#CB5B6A]/20"
+                        ? "bg-[#5F1327]/20"
                         : "bg-gray-100"
                     }`}
                   >
@@ -368,10 +368,10 @@ const PaymentComponent = () => {
           <button
             onClick={handlePayment}
             disabled={isProcessingPayment || items.length === 0}
-            className={`w-full bg-[#CB5B6A] text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+            className={`w-full bg-[#5F1327] text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 ${
               isProcessingPayment || items.length === 0
                 ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-[#CB5B6A]/70"
+                : "hover:bg-[#5F1327]/70"
             }`}
           >
             {isProcessingPayment ? (

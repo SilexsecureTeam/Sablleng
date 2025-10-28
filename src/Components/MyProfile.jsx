@@ -112,9 +112,9 @@ const MyProfile = () => {
         {/* Profile Card */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Profile Header */}
-          <div className="bg-gradient-to-r from-[#CB5B6A] to-[#b34f5c] p-8">
+          <div className="bg-gradient-to-r from-[#5F1327] to-[#b34f5c] p-8">
             <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center text-[#CB5B6A] font-bold text-3xl flex-shrink-0 shadow-lg">
+              <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center text-[#5F1327] font-bold text-3xl flex-shrink-0 shadow-lg">
                 {getInitials(profileData.name)}
               </div>
               <div className="text-white">
@@ -189,9 +189,9 @@ const MyProfile = () => {
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <h4 className="font-semibold text-gray-900 mb-2">Total Orders</h4>
-            <p className="text-[#CB5B6A] font-medium text-2xl">
+            <p className="text-[#5F1327] font-medium text-2xl">
               {isLoading ? (
-                <Loader2 size={24} className="animate-spin text-[#CB5B6A]" />
+                <Loader2 size={24} className="animate-spin text-[#5F1327]" />
               ) : error ? (
                 "Error"
               ) : (
@@ -200,19 +200,19 @@ const MyProfile = () => {
             </p>
             <a
               href="/orders"
-              className="text-[#CB5B6A] hover:underline text-sm mt-2 inline-block"
+              className="text-[#5F1327] hover:underline text-sm mt-2 inline-block"
             >
               View Orders
             </a>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm">
             <h4 className="font-semibold text-gray-900 mb-2">Wishlist Items</h4>
-            <p className="text-[#CB5B6A] font-medium text-2xl">
+            <p className="text-[#5F1327] font-medium text-2xl">
               {wishlist.length}
             </p>
             <a
               href="/wishlist"
-              className="text-[#CB5B6A] hover:underline text-sm mt-2 inline-block"
+              className="text-[#5F1327] hover:underline text-sm mt-2 inline-block"
             >
               View Wishlist
             </a>

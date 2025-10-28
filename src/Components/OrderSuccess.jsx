@@ -194,7 +194,7 @@ const OrderSuccess = () => {
 
     if (color.startsWith("oklch")) {
       const colorMap = {
-        "oklch(65.92% 0.185 28.07)": "#CB5B6A",
+        "oklch(65.92% 0.185 28.07)": "#5F1327",
         "oklch(51.01% 0.043 252.99)": "#4B5563",
         "oklch(97.14% 0.013 252.99)": "#F9FAFB",
         "oklch(52.95% 0.143 142.5)": "#15803D",
@@ -248,7 +248,7 @@ const OrderSuccess = () => {
     return (
       <div className="min-h-screen flex justify-center items-center">
         <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#CB5B6A]"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5F1327]"></div>
           <p className="mt-2 text-gray-600">Loading order details...</p>
         </div>
       </div>
@@ -269,7 +269,7 @@ const OrderSuccess = () => {
           </p>
           <button
             onClick={() => navigate("/orders")}
-            className="mt-4 inline-flex py-2 px-4 bg-[#CB5B6A] hover:bg-[#CB5B6A]/80 text-white text-sm font-medium rounded-md transition-colors"
+            className="mt-4 inline-flex py-2 px-4 bg-[#5F1327] hover:bg-[#5F1327]/80 text-white text-sm font-medium rounded-md transition-colors"
           >
             View All Orders
           </button>
@@ -338,7 +338,7 @@ const OrderSuccess = () => {
                       {item.product?.name || "Unknown Product"} x{" "}
                       {item.quantity}
                       {item.customization_id && (
-                        <span className="ml-2 inline-block bg-[#CB5B6A] text-white text-xs px-2 py-1 rounded">
+                        <span className="ml-2 inline-block bg-[#5F1327] text-white text-xs px-2 py-1 rounded">
                           Customized
                         </span>
                       )}
@@ -437,7 +437,7 @@ const OrderSuccess = () => {
           <button
             onClick={handleTrackOrder}
             disabled={isFetching}
-            className={`flex-1 py-2 px-4 bg-[#CB5B6A] hover:bg-[#CB5B6A]/80 text-white text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-2 ${
+            className={`flex-1 py-2 px-4 bg-[#5F1327] hover:bg-[#5F1327]/80 text-white text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-2 ${
               isFetching ? "opacity-50 cursor-not-allowed" : ""
             }`}
             aria-label="Track your order"

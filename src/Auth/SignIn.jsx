@@ -230,7 +230,7 @@ const SignIn = () => {
           </h2>
           <p className="text-base text-[#141718] mb-6">
             Don’t have an account yet?{" "}
-            <a href="/signup" className="text-[#CB5B6A] hover:underline">
+            <a href="/signup" className="text-[#5F1327] hover:underline">
               Sign Up
             </a>
           </p>
@@ -244,7 +244,7 @@ const SignIn = () => {
               placeholder="Your email address"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-3 py-2 rounded-sm border-b focus:outline-none focus:ring-1 focus:ring-[#CB5B6A]"
+              className="w-full px-3 py-2 rounded-sm border-b focus:outline-none focus:ring-1 focus:ring-[#5F1327]"
               required
               disabled={isLoading}
             />
@@ -258,14 +258,14 @@ const SignIn = () => {
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full px-3 py-2 rounded-sm border-b focus:outline-none focus:ring-1 focus:ring-[#CB5B6A]"
+                className="w-full px-3 py-2 rounded-sm border-b focus:outline-none focus:ring-1 focus:ring-[#5F1327]"
                 required
                 disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#CB5B6A] hover:text-[#CB5B6A]/80"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#5F1327] hover:text-[#5F1327]/80"
                 disabled={isLoading}
               >
                 {showPassword ? (
@@ -285,7 +285,7 @@ const SignIn = () => {
                   name="rememberMe"
                   checked={formData.rememberMe}
                   onChange={handleChange}
-                  className="h-4 w-4 accent-[#CB5B6A] focus:ring-[#CB5B6A]/80 border-gray-300 rounded"
+                  className="h-4 w-4 accent-[#5F1327] focus:ring-[#5F1327]/80 border-gray-300 rounded"
                   disabled={isLoading}
                 />
                 <label className="text-sm text-[#6C7275]">Remember me</label>
@@ -293,7 +293,7 @@ const SignIn = () => {
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                className="text-[#CB5B6A] text-sm hover:underline"
+                className="text-[#5F1327] text-sm hover:underline"
                 disabled={isLoading}
               >
                 Forgotten Password
@@ -301,7 +301,7 @@ const SignIn = () => {
             </div>
             <button
               type="submit"
-              className="w-full p-3 bg-[#141718] text-white rounded-md hover:bg-[#141718]/80 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]/60 disabled:bg-[#141718]/50"
+              className="w-full p-3 bg-[#141718] text-white rounded-md hover:bg-[#141718]/80 focus:outline-none focus:ring-2 focus:ring-[#5F1327]/60 disabled:bg-[#141718]/50"
               disabled={isLoading}
             >
               {isLoading ? "Signing In..." : "Sign In"}

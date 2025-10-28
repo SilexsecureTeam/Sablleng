@@ -31,13 +31,13 @@ const Ahero = () => {
           <div className="flex flex-col sm:justify-center sm:flex-row gap-8 mb-8">
             <a
               href="/shop"
-              className="bg-[#CB5B6A] text-white px-6 py-3 rounded-full font-light text-sm text-center hover:bg-[#b34f5c] transition-colors duration-200"
+              className="bg-[#5F1327] text-white px-6 py-3 rounded-full font-light text-sm text-center hover:bg-[#b34f5c] transition-colors duration-200"
             >
               Explore Our Collections
             </a>
             <a
               href="/customize"
-              className="border border-[#CB5B6A] text-white px-6 py-3 rounded-full font-light text-sm text-center hover:bg-white hover:text-[#CB5B6A] transition-colors duration-200"
+              className="border border-[#5F1327] text-white px-6 py-3 rounded-full font-light text-sm text-center hover:bg-white hover:text-[#5F1327] transition-colors duration-200"
             >
               Get in Touch
             </a>

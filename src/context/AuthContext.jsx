@@ -119,7 +119,7 @@ export const AuthProvider = ({ children }) => {
             <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full blur-xl opacity-30 animate-pulse"></div>
             <div className="relative bg-white rounded-2xl shadow-2xl p-8">
               <svg
-                className="w-16 h-16 text-[#CB5B6A] animate-spin"
+                className="w-16 h-16 text-[#5F1327] animate-spin"
                 fill="none"
                 viewBox="0 0 24 24"
               >

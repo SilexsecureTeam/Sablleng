@@ -102,10 +102,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       path: "/dashboard/customization",
     },
     {
-      id: "transaction",
-      label: "Transaction",
+      id: "DeliveryFeeManager",
+      label: "Delivery Fee Manager",
       icon: CreditCard,
-      path: "/dashboard/transaction",
+      path: "/dashboard/delivery-fee-manager",
     },
     {
       id: "add-products",

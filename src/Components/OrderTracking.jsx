@@ -157,7 +157,7 @@ const OrderTracking = () => {
                     step.status === "completed"
                       ? "bg-green-500 text-white"
                       : step.status === "current"
-                      ? "bg-[#CB5B6A] text-white"
+                      ? "bg-[#5F1327] text-white"
                       : "bg-gray-300 text-gray-500"
                   }`}
                 >
@@ -207,7 +207,7 @@ const OrderTracking = () => {
       {/* Contact Support Button */}
       <button
         onClick={() => setShowContactModal(true)}
-        className="w-full mt-6 bg-[#CB5B6A] hover:bg-[#CB5B6A]/80 text-white font-medium py-3 px-4 rounded-md transition-colors flex items-center justify-center gap-2"
+        className="w-full mt-6 bg-[#5F1327] hover:bg-[#5F1327]/80 text-white font-medium py-3 px-4 rounded-md transition-colors flex items-center justify-center gap-2"
         aria-label="Contact support"
       >
         <Mail size={16} />
@@ -252,7 +252,7 @@ const OrderTracking = () => {
                   name="name"
                   value={contactForm.name}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
                   placeholder="Your name"
                 />
               </div>
@@ -265,7 +265,7 @@ const OrderTracking = () => {
                   name="email"
                   value={contactForm.email}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
                   placeholder="your.email@example.com"
                   required
                 />
@@ -278,7 +278,7 @@ const OrderTracking = () => {
                   name="message"
                   value={contactForm.message}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
                   rows="4"
                   placeholder="Describe your issue or question"
                   required
@@ -304,7 +304,7 @@ System: sm"
                 className={`w-full py-2 px-4 rounded-md text-white font-medium transition-colors ${
                   formStatus === "submitting"
                     ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-[#CB5B6A] hover:bg-[#CB5B6A]/80"
+                    : "bg-[#5F1327] hover:bg-[#5F1327]/80"
                 }`}
               >
                 {formStatus === "submitting" ? "Submitting..." : "Submit"}

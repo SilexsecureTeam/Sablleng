@@ -242,7 +242,7 @@ const CategoryPage = () => {
                   onClick={() => setFilter(option)}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                     filter === option
-                      ? "bg-[#CB5B6A] text-white"
+                      ? "bg-[#5F1327] text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                   aria-label={`Filter by ${option} products`}
@@ -274,7 +274,7 @@ const CategoryPage = () => {
                   >
                     <div className="relative bg-[#F4F2F2] p-4 h-48 md:h-80 flex items-center justify-center">
                       {product.badge && (
-                        <div className="absolute top-6 left-0 bg-[#CB5B6A] text-white px-8 py-2 rounded text-sm font-medium">
+                        <div className="absolute top-6 left-0 bg-[#5F1327] text-white px-8 py-2 rounded text-sm font-medium">
                           {product.badge}
                         </div>
                       )}
@@ -305,7 +305,7 @@ const CategoryPage = () => {
                           size={20}
                           className={
                             isInWishlist(product.id)
-                              ? "text-[#CB5B6A] fill-[#CB5B6A]"
+                              ? "text-[#5F1327] fill-[#5F1327]"
                               : "text-gray-400"
                           }
                         />
@@ -332,7 +332,7 @@ const CategoryPage = () => {
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                     currentPage === 1
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-gray-100 text-gray-700 hover:bg-[#CB5B6A] hover:text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-[#5F1327] hover:text-white"
                   }`}
                   aria-label="Previous page"
                 >
@@ -344,8 +344,8 @@ const CategoryPage = () => {
                     onClick={() => handlePageChange(page)}
                     className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                       currentPage === page
-                        ? "bg-[#CB5B6A] text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-[#CB5B6A] hover:text-white"
+                        ? "bg-[#5F1327] text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-[#5F1327] hover:text-white"
                     }`}
                     aria-label={`Page ${page}`}
                     aria-current={currentPage === page ? "page" : undefined}
@@ -359,7 +359,7 @@ const CategoryPage = () => {
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                     currentPage === totalPages
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-gray-100 text-gray-700 hover:bg-[#CB5B6A] hover:text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-[#5F1327] hover:text-white"
                   }`}
                   aria-label="Next page"
                 >

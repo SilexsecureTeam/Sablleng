@@ -15,7 +15,9 @@ const OrderManagement = lazy(() =>
 const Customers = lazy(() => import("../Components/Dashboard/Customers"));
 const CouponCode = lazy(() => import("../Components/Dashboard/CouponCode"));
 const Categories = lazy(() => import("../Components/Dashboard/Categories"));
-const Transaction = lazy(() => import("../Components/Dashboard/Transaction"));
+const DeliveryFeeManager = lazy(() =>
+  import("../Components/Dashboard/DeliveryFeeManager")
+);
 const Customization = lazy(() =>
   import("../Components/Dashboard/Customization")
 );
@@ -33,7 +35,7 @@ const Sidebar = lazy(() => import("../Components/Dashboard/Sidebar"));
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-100">
-    <div className="text-[#CB5B6A] font-semibold">Loading...</div>
+    <div className="text-[#5F1327] font-semibold">Loading...</div>
   </div>
 );
 
@@ -95,10 +97,10 @@ const DashboardLayout = () => {
                 }
               />
               <Route
-                path="/transaction"
+                path="/delivery-fee-manager"
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
-                    <Transaction />
+                    <DeliveryFeeManager />
                   </MainContent>
                 }
               />

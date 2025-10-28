@@ -6,7 +6,7 @@ const Story = () => {
     <div className="bg-[#C7969D4D] min-h-screen">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12  flex flex-col md:flex-row justify-between space-x-10">
         <div className="w-full md:w-1/2">
-          <h2 className="text-[#CB5B6A] text-2xl md:text-4xl">Our Story</h2>
+          <h2 className="text-[#5F1327] text-2xl md:text-4xl">Our Story</h2>
           <p className="text-base mt-4 leading-7 text-[#414245] ">
             Our founder and Chief Curator, Simisolu Soyombo is a lawyer with
             keen interest in providing practical and actionable solutions. One
@@ -38,7 +38,7 @@ const Story = () => {
             />
           </div>
           <div className="flex md:justify-end justify-center w-full">
-            <h2 className="text-[#CB5B6A] md:max-w-70 w-full text-center md:text-start leading-8 mt-4 text-xl">
+            <h2 className="text-[#5F1327] md:max-w-70 w-full text-center md:text-start leading-8 mt-4 text-xl">
               Simisolu Soyombo <br />
               Founder/Chief Curator
             </h2>

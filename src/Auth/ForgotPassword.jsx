@@ -117,7 +117,7 @@ const ForgotPassword = () => {
                   placeholder="Your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-sm border-b focus:outline-none focus:ring-1 focus:ring-[#CB5B6A]"
+                  className="w-full px-3 py-2 rounded-sm border-b focus:outline-none focus:ring-1 focus:ring-[#5F1327]"
                   required
                   disabled={isLoading}
                 />
@@ -128,7 +128,7 @@ const ForgotPassword = () => {
 
               <button
                 type="submit"
-                className="w-full p-3 bg-[#141718] text-white rounded-md hover:bg-[#141718]/80 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]/60 disabled:bg-[#141718]/50"
+                className="w-full p-3 bg-[#141718] text-white rounded-md hover:bg-[#141718]/80 focus:outline-none focus:ring-2 focus:ring-[#5F1327]/60 disabled:bg-[#141718]/50"
                 disabled={isLoading}
               >
                 {isLoading ? "Sending..." : "Send Reset Link"}
@@ -137,7 +137,7 @@ const ForgotPassword = () => {
               <div className="text-center mt-4">
                 <Link
                   to="/signin"
-                  className="text-[#CB5B6A] text-sm hover:underline"
+                  className="text-[#5F1327] text-sm hover:underline"
                 >
                   Back to Sign In
                 </Link>
@@ -157,7 +157,7 @@ const ForgotPassword = () => {
                   setIsSuccess(false);
                   setEmail("");
                 }}
-                className="w-full p-3 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]/60"
+                className="w-full p-3 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-[#5F1327]/60"
               >
                 Send Another Link
               </button>
@@ -165,7 +165,7 @@ const ForgotPassword = () => {
               <div className="text-center">
                 <Link
                   to="/signin"
-                  className="text-[#CB5B6A] text-sm hover:underline"
+                  className="text-[#5F1327] text-sm hover:underline"
                 >
                   Back to Sign In
                 </Link>

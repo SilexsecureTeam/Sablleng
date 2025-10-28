@@ -6,7 +6,7 @@ const MainContent = ({ children, toggleSidebar }) => {
     <div className=" rounded-lg shadow-md  relative">
       {/* Hamburger Menu (Mobile) */}
       <button
-        className="md:hidden text-[#CB5B6A] focus:outline-none absolute top-4 left-4 z-10"
+        className="md:hidden text-[#5F1327] focus:outline-none absolute top-4 left-4 z-10"
         onClick={toggleSidebar}
         aria-label="Toggle sidebar"
       >

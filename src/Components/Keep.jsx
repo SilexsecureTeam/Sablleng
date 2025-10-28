@@ -79,7 +79,7 @@ const Product = () => {
                 onClick={() => setFilter(option)}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                   filter === option
-                    ? "bg-[#CB5B6A] text-white"
+                    ? "bg-[#5F1327] text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
                 aria-label={`Filter by ${option} products`}
@@ -108,7 +108,7 @@ const Product = () => {
               >
                 <div className="relative bg-[#F4F2F2] p-4 h-48 md:h-80 flex items-center justify-center">
                   {product.badge && (
-                    <div className="absolute top-6 left-0 bg-[#CB5B6A] text-white px-8 py-2 rounded text-sm font-medium">
+                    <div className="absolute top-6 left-0 bg-[#5F1327] text-white px-8 py-2 rounded text-sm font-medium">
                       {product.badge}
                     </div>
                   )}
@@ -126,7 +126,7 @@ const Product = () => {
                     {product.price}
                   </span>
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-bold text-[#CB5B6A] py-1 rounded">
+                    <span className="text-base font-bold text-[#5F1327] py-1 rounded">
                       {product.category}
                     </span>
                   </div>

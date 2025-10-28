@@ -356,7 +356,7 @@ const DeliveryDetail = () => {
                     <select
                       value={selectedState}
                       onChange={(e) => setSelectedState(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent transition-all"
                       disabled={isLoading || loadingStates}
                     >
                       <option value="">Select State</option>
@@ -383,7 +383,7 @@ const DeliveryDetail = () => {
                     <select
                       value={selectedLga}
                       onChange={(e) => setSelectedLga(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent transition-all"
                       disabled={isLoading || !selectedState || loadingLgas}
                     >
                       <option value="">Select LGA</option>
@@ -407,7 +407,7 @@ const DeliveryDetail = () => {
                     <select
                       value={selectedPlace}
                       onChange={(e) => setSelectedPlace(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent transition-all"
                       disabled={isLoading || !selectedLga || loadingPlaces}
                     >
                       <option value="">Select Place/City</option>
@@ -432,7 +432,7 @@ const DeliveryDetail = () => {
                       name="delivery_fee"
                       value={formData.delivery_fee}
                       readOnly
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-transparent transition-all"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent transition-all"
                       min="0"
                       step="0.01"
                       disabled={isLoading}
@@ -476,7 +476,7 @@ const DeliveryDetail = () => {
 
               <button
                 type="submit"
-                className="w-full bg-[#CB5B6A] text-white py-4 px-6 rounded-lg font-semibold text-base hover:bg-[#B54F5E] active:bg-[#A0444F] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl"
+                className="w-full bg-[#5F1327] text-white py-4 px-6 rounded-lg font-semibold text-base hover:bg-[#B54F5E] active:bg-[#A0444F] transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl"
                 disabled={isLoading || items.length === 0 || !fullAddress}
               >
                 {isLoading ? (
@@ -523,7 +523,7 @@ const DeliveryDetail = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-8">
             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
               <svg
-                className="w-6 h-6 mr-2 text-[#CB5B6A]"
+                className="w-6 h-6 mr-2 text-[#5F1327]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -558,7 +558,7 @@ const DeliveryDetail = () => {
                 <p className="text-gray-600 text-sm mb-4">Your cart is empty</p>
                 <button
                   onClick={() => navigate("/product")}
-                  className="text-[#CB5B6A] hover:text-[#B54F5E] text-sm font-semibold hover:underline transition-colors"
+                  className="text-[#5F1327] hover:text-[#B54F5E] text-sm font-semibold hover:underline transition-colors"
                 >
                   Continue Shopping →
                 </button>
@@ -622,7 +622,7 @@ const DeliveryDetail = () => {
                     <span className="text-base font-bold text-gray-900">
                       Total
                     </span>
-                    <span className="text-xl font-bold text-[#CB5B6A]">
+                    <span className="text-xl font-bold text-[#5F1327]">
                       {formatPrice(
                         total +
                           formData.delivery_fee +

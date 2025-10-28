@@ -41,7 +41,7 @@ const Discount = () => {
           />
           <button
             type="submit"
-            className="flex items-center gap-2 bg-[#CB5B6A] hover:bg-[#a84a4a] text-white px-6 py-3 rounded-full text-sm transition"
+            className="flex items-center gap-2 bg-[#5F1327] hover:bg-[#a84a4a] text-white px-6 py-3 rounded-full text-sm transition"
           >
             Join our gift list
             <ArrowRight className="w-4 h-4" />

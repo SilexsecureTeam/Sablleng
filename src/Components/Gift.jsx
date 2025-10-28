@@ -21,7 +21,7 @@ const Gift = () => {
                 Elevate Your
               </h1>
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[42px] font-normal leading-tight">
-                <span className="text-[#CB5B6A]">Corporate</span>{" "}
+                <span className="text-[#5F1327]">Corporate</span>{" "}
                 <span className="text-[#1E1E1E]">Relationships</span>
               </h1>
             </div>

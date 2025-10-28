@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { Bell, Settings, Zap } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { AuthContext } from "../context/AuthContextObject"; // Adjust path as needed
+import { AuthContext } from "../../context/AuthContextObject";
 import { useNavigate } from "react-router-dom";
 
 const Categories = () => {

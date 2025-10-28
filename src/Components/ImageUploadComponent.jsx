@@ -83,7 +83,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
 
       if (isDragging === "image" && uploadedImage) {
         const logoSize = canvas.width * imageSize;
-        ctx.strokeStyle = "#CB5B6A";
+        ctx.strokeStyle = "#5F1327";
         ctx.lineWidth = 2;
         ctx.strokeRect(
           imageCoordinates.x - logoSize / 2,
@@ -92,7 +92,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
           logoSize
         );
       } else if (isDragging === "text" && text) {
-        ctx.strokeStyle = "#CB5B6A";
+        ctx.strokeStyle = "#5F1327";
         ctx.lineWidth = 2;
         ctx.strokeRect(
           textCoordinates.x - 50,
@@ -418,7 +418,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
             <div className="flex gap-2 mt-4">
               <button
                 onClick={openModal}
-                className="flex-1 bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+                className="flex-1 bg-[#5F1327] hover:bg-[#5F1327]/70 text-white font-medium py-3 px-6 rounded-lg transition-colors"
                 disabled={isSubmitting}
               >
                 Upload Logo
@@ -444,7 +444,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder="Enter text (e.g., Happy Birthday)"
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                  className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
                   disabled={isSubmitting}
                 />
               </div>
@@ -457,7 +457,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
                   value={instruction}
                   onChange={(e) => setInstruction(e.target.value)}
                   placeholder="Enter instructions (e.g., Place at the top)"
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                  className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
                   rows={3}
                   disabled={isSubmitting}
                 />
@@ -472,7 +472,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
                 <select
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                  className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
                   disabled={isSubmitting}
                 >
                   {[
@@ -534,7 +534,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
                 <select
                   value={fontSize}
                   onChange={(e) => setFontSize(parseInt(e.target.value))}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                  className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
                   disabled={isSubmitting}
                 >
                   {[16, 24, 32, 40].map((size) => (
@@ -582,7 +582,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
           <div className="space-y-3 mt-4">
             <button
               onClick={handleSubmitCustomization}
-              className="w-full bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+              className="w-full bg-[#5F1327] hover:bg-[#5F1327]/70 text-white font-medium py-3 px-6 rounded-lg transition-colors"
               disabled={isSubmitting || (!uploadedImage && !text)}
             >
               {isSubmitting ? "Submitting..." : "Submit Customization"}
@@ -618,7 +618,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
                 <div
                   className={`border-2 bg-[#6B3838] border-dashed rounded-lg p-12 text-center transition-colors ${
                     dragOver
-                      ? "border-[#CB5B6A] bg-[#CB5B6A]/10"
+                      ? "border-[#5F1327] bg-[#5F1327]/10"
                       : "border-gray-300"
                   }`}
                   onDrop={handleDrop}
@@ -650,7 +650,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
                   </button>
                   <label
                     htmlFor="file-input"
-                    className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-2 px-6 rounded-lg cursor-pointer transition-colors"
+                    className="bg-[#5F1327] hover:bg-[#5F1327]/70 text-white font-medium py-2 px-6 rounded-lg cursor-pointer transition-colors"
                   >
                     Upload
                   </label>

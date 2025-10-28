@@ -142,7 +142,7 @@ const OtpPage = () => {
                   value={digit}
                   onChange={(e) => handleChange(e, index)}
                   onKeyDown={(e) => handleKeyDown(e, index)}
-                  className="w-12 h-12 text-center text-lg border rounded-sm focus:outline-none focus:ring-1 focus:ring-[#CB5B6A]"
+                  className="w-12 h-12 text-center text-lg border rounded-sm focus:outline-none focus:ring-1 focus:ring-[#5F1327]"
                   required
                   disabled={isLoading}
                 />
@@ -157,7 +157,7 @@ const OtpPage = () => {
               <button
                 type="button"
                 onClick={handleResend}
-                className="text-[#CB5B6A] hover:underline"
+                className="text-[#5F1327] hover:underline"
                 disabled={isLoading}
               >
                 Resend Code
@@ -166,7 +166,7 @@ const OtpPage = () => {
 
             <button
               type="submit"
-              className="w-full p-3 bg-[#141718] text-white rounded-md hover:bg-[#141718]/80 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]/60 disabled:bg-[#141718]/50"
+              className="w-full p-3 bg-[#141718] text-white rounded-md hover:bg-[#141718]/80 focus:outline-none focus:ring-2 focus:ring-[#5F1327]/60 disabled:bg-[#141718]/50"
               disabled={isLoading}
             >
               {isLoading ? "Verifying..." : "Verify and Continue"}

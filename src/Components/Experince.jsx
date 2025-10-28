@@ -22,13 +22,13 @@ const Experince = () => {
           <div className="flex flex-col sm:flex-row gap-8 mt-10 justify-center">
             <a
               href="/shop"
-              className="bg-[#CB5B6A] text-white flex space-x-4 items-center px-6 py-3 rounded-full font-light text-sm text-center hover:bg-[#b34f5c] transition-colors duration-200"
+              className="bg-[#5F1327] text-white flex space-x-4 items-center px-6 py-3 rounded-full font-light text-sm text-center hover:bg-[#b34f5c] transition-colors duration-200"
             >
               Start Your Gift Journey <ArrowRight className="w-4 h-4 ml-2" />
             </a>
             <a
               href="/customize"
-              className="border border-[#CB5B6A] text-[#1E1E1E] px-6 py-3 rounded-full font-light text-sm text-center hover:bg-white hover:text-[#CB5B6A] transition-colors duration-200"
+              className="border border-[#5F1327] text-[#1E1E1E] px-6 py-3 rounded-full font-light text-sm text-center hover:bg-white hover:text-[#5F1327] transition-colors duration-200"
             >
               Learn More About Us
             </a>

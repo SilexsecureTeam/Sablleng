@@ -8,7 +8,7 @@ const Features = () => {
       icon: <Truck className="w-10 h-10 text-white mb-4" />,
       title: "Free Shipping",
       text: "Order above $200",
-      bgColor: "bg-[#CB5B6A]",
+      bgColor: "bg-[#5F1327]",
     },
     {
       icon: <CreditCard className="w-10 h-10 text-white mb-4" />,

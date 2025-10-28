@@ -69,7 +69,7 @@ export default function ShoppingCart() {
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#CB5B6A]"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5F1327]"></div>
             <p className="mt-2 text-gray-600">Loading cart...</p>
           </div>
         </div>
@@ -98,7 +98,7 @@ export default function ShoppingCart() {
                       <h3 className="font-medium text-gray-900 text-sm sm:text-base mb-1">
                         {item.name || "Unknown Product"}
                         {item.customization_id && (
-                          <span className="ml-2 inline-block bg-[#CB5B6A] text-white text-xs px-2 py-1 rounded">
+                          <span className="ml-2 inline-block bg-[#5F1327] text-white text-xs px-2 py-1 rounded">
                             Customized
                           </span>
                         )}
@@ -163,7 +163,7 @@ export default function ShoppingCart() {
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
                   placeholder="Code"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-[#CB5B6A]"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-[#5F1327]"
                 />
               </div>
               <div className="mb-4 sm:mb-6">
@@ -174,7 +174,7 @@ export default function ShoppingCart() {
                   type="text"
                   value={bonusCard}
                   onChange={(e) => setBonusCard(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#CB5B6A] focus:border-[#CB5B6A]"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-[#5F1327]"
                 />
               </div>
               <div className="flex justify-between items-center mb-2 sm:mb-4">
@@ -190,7 +190,7 @@ export default function ShoppingCart() {
               </p>
               <button
                 onClick={handleCheckout}
-                className="w-full bg-[#CB5B6A] text-white py-2 sm:py-3 px-4 rounded-md font-medium text-sm sm:text-base hover:bg-[#CB5B6A]/70 transition-colors disabled:opacity-50"
+                className="w-full bg-[#5F1327] text-white py-2 sm:py-3 px-4 rounded-md font-medium text-sm sm:text-base hover:bg-[#5F1327]/70 transition-colors disabled:opacity-50"
                 disabled={items.length === 0}
               >
                 Checkout

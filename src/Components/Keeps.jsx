@@ -215,7 +215,7 @@ const ProductDetail = () => {
   if (isLoading) {
     return (
       <div className="max-w-[1200px] mx-auto p-8 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#CB5B6A] mx-auto"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5F1327] mx-auto"></div>
         <p className="text-gray-600 mt-4">Loading product...</p>
       </div>
     );
@@ -229,7 +229,7 @@ const ProductDetail = () => {
         </h2>
         <Link
           to="/product"
-          className="text-[#CB5B6A] underline mt-4 inline-block"
+          className="text-[#5F1327] underline mt-4 inline-block"
         >
           Back to Products
         </Link>
@@ -364,7 +364,7 @@ const ProductDetail = () => {
                       onChange={(e) =>
                         handleQuantityChange(parseInt(e.target.value) || 1)
                       }
-                      className="w-16 text-center border border-gray-300 rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-[#CB5B6A]"
+                      className="w-16 text-center border border-gray-300 rounded-md py-1 focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
                       min="1"
                       max="99"
                       disabled={isAddingToCart}
@@ -392,7 +392,7 @@ const ProductDetail = () => {
                 </div>
                 <div className="space-x-3 space-y-3">
                   <button
-                    className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
+                    className="bg-[#5F1327] hover:bg-[#5F1327]/70 text-white font-medium py-3 px-8 rounded transition-colors"
                     onClick={handleAddToCart}
                     disabled={isAddingToCart}
                   >
@@ -400,7 +400,7 @@ const ProductDetail = () => {
                   </button>
                   {product.badge === "Customizable" ? (
                     <button
-                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
+                      className="bg-[#5F1327] hover:bg-[#5F1327]/70 text-white font-medium py-3 px-8 rounded transition-colors"
                       onClick={handleCustomize}
                       disabled={isAddingToCart}
                     >
@@ -408,7 +408,7 @@ const ProductDetail = () => {
                     </button>
                   ) : (
                     <button
-                      className="bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-8 rounded transition-colors"
+                      className="bg-[#5F1327] hover:bg-[#5F1327]/70 text-white font-medium py-3 px-8 rounded transition-colors"
                       onClick={handleOrderNow}
                       disabled={isAddingToCart}
                     >
@@ -521,7 +521,7 @@ const ProductDetail = () => {
                   >
                     <div className="relative bg-[#F4F2F2] p-4 h-48 flex items-center justify-center">
                       {relatedProduct.badge && (
-                        <div className="absolute top-6 left-0 bg-[#CB5B6A] text-white px-8 py-2 rounded text-sm font-medium">
+                        <div className="absolute top-6 left-0 bg-[#5F1327] text-white px-8 py-2 rounded text-sm font-medium">
                           {relatedProduct.badge}
                         </div>
                       )}
@@ -539,7 +539,7 @@ const ProductDetail = () => {
                         {relatedProduct.price}
                       </span>
                       <div className="flex items-center justify-between">
-                        <span className="text-base text-[#CB5B6A] py-1 rounded">
+                        <span className="text-base text-[#5F1327] py-1 rounded">
                           {relatedProduct.category}
                         </span>
                       </div>

@@ -155,7 +155,7 @@ const Header = () => {
         <nav className="hidden md:flex font-medium items-center gap-6">
           <Link
             to="/"
-            className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+            className="text-gray-700 hover:text-[#5F1327] transition-colors duration-200"
           >
             Home
           </Link>
@@ -164,7 +164,7 @@ const Header = () => {
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
-            <button className="flex items-center gap-1 text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200">
+            <button className="flex items-center gap-1 text-gray-700 hover:text-[#5F1327] transition-colors duration-200">
               Categories{" "}
               <ChevronDown
                 size={18}
@@ -193,7 +193,7 @@ const Header = () => {
                     <Link
                       key={category.slug}
                       to={`/categories/${category.slug}`}
-                      className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                      className="block px-4 py-2 text-gray-700 hover:bg-[#5F1327] hover:text-white transition-colors duration-200"
                       onClick={() => setCategoryOpen(false)}
                     >
                       {category.name}
@@ -205,19 +205,19 @@ const Header = () => {
           </div>
           <Link
             to="/about"
-            className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+            className="text-gray-700 hover:text-[#5F1327] transition-colors duration-200"
           >
             About Us
           </Link>
           <Link
             to="/product"
-            className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+            className="text-gray-700 hover:text-[#5F1327] transition-colors duration-200"
           >
             Product
           </Link>
           <Link
             to="/contact"
-            className="text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+            className="text-gray-700 hover:text-[#5F1327] transition-colors duration-200"
           >
             Contact Us
           </Link>
@@ -226,7 +226,7 @@ const Header = () => {
         {/* Right Section */}
         <div className="flex items-center gap-3 sm:gap-4">
           <button
-            className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200"
+            className="text-gray-700 cursor-pointer hover:text-[#5F1327] transition-colors duration-200"
             aria-label="Search"
           >
             <Search size={22} />
@@ -236,10 +236,10 @@ const Header = () => {
             {auth.isAuthenticated ? (
               <button
                 onClick={toggleProfileDropdown}
-                className="flex items-center gap-2 text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+                className="flex items-center gap-2 text-gray-700 hover:text-[#5F1327] transition-colors duration-200"
                 aria-label="User Profile"
               >
-                <div className="w-8 h-8 rounded-full bg-[#CB5B6A] flex items-center justify-center text-white font-semibold text-sm">
+                <div className="w-8 h-8 rounded-full bg-[#5F1327] flex items-center justify-center text-white font-semibold text-sm">
                   {getInitials(auth.user?.name)}
                 </div>
                 <span className="hidden sm:inline-block text-sm font-medium">
@@ -255,7 +255,7 @@ const Header = () => {
             ) : (
               <Link
                 to="/signin"
-                className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200"
+                className="text-gray-700 cursor-pointer hover:text-[#5F1327] transition-colors duration-200"
                 aria-label="User Profile"
               >
                 <User size={22} />
@@ -265,7 +265,7 @@ const Header = () => {
               <div className="absolute right-0 top-full mt-2 w-64 bg-white shadow-lg rounded-lg py-2 border border-gray-100 transition-all duration-300 ease-in-out">
                 {/* User Info Section */}
                 <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-[#CB5B6A] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-[#5F1327] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                     {getInitials(auth.user?.name)}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -282,7 +282,7 @@ const Header = () => {
                 <div className="py-1">
                   <Link
                     to="/profile"
-                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#CB5B6A] transition-colors duration-200"
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
                     onClick={() => setProfileOpen(false)}
                   >
                     <UserCircle size={18} />
@@ -291,7 +291,7 @@ const Header = () => {
 
                   <Link
                     to="/orders"
-                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#CB5B6A] transition-colors duration-200"
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
                     onClick={() => setProfileOpen(false)}
                   >
                     <Package size={18} />
@@ -300,7 +300,7 @@ const Header = () => {
 
                   <Link
                     to="/wishlist"
-                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#CB5B6A] transition-colors duration-200"
+                    className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
                     onClick={() => setProfileOpen(false)}
                   >
                     <Heart size={18} />
@@ -326,12 +326,12 @@ const Header = () => {
           </div>
           <Link
             to="/cart"
-            className="text-gray-700 cursor-pointer hover:text-[#CB5B6A] transition-colors duration-200 relative"
+            className="text-gray-700 cursor-pointer hover:text-[#5F1327] transition-colors duration-200 relative"
             aria-label="Shopping Cart"
           >
             <ShoppingCart size={22} />
             {cartItemCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[#CB5B6A] text-white text-xs px-1.5 py-0.5 rounded-full">
+              <span className="absolute -top-2 -right-2 bg-[#5F1327] text-white text-xs px-1.5 py-0.5 rounded-full">
                 {cartItemCount}
               </span>
             )}
@@ -339,12 +339,12 @@ const Header = () => {
           <Link
             to="#"
             onClick={(e) => e.preventDefault()}
-            className="hidden md:inline-block ml-6 bg-[#CB5B6A] text-white px-4 py-2 rounded-full shadow hover:bg-[#b34f5c] transition-colors duration-200"
+            className="hidden md:inline-block ml-6 bg-[#5F1327] text-white px-4 py-2 rounded-full shadow hover:bg-[#b34f5c] transition-colors duration-200"
           >
             Customize Item
           </Link>
           <button
-            className="md:hidden text-gray-700 hover:text-[#CB5B6A] transition-colors duration-200"
+            className="md:hidden text-gray-700 hover:text-[#5F1327] transition-colors duration-200"
             onClick={() => setMobileMenu(!mobileMenu)}
             aria-label={mobileMenu ? "Close Menu" : "Open Menu"}
           >
@@ -361,14 +361,14 @@ const Header = () => {
         >
           <Link
             to="/"
-            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#5F1327] transition-colors duration-200"
             onClick={() => setMobileMenu(false)}
           >
             Home
           </Link>
           <div className="">
             <button
-              className="w-full flex items-center justify-between px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+              className="w-full flex items-center justify-between px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#5F1327] transition-colors duration-200"
               onClick={() => setCategoryOpen(!categoryOpen)}
             >
               Categories{" "}
@@ -399,7 +399,7 @@ const Header = () => {
                     <Link
                       key={category.slug}
                       to={`/categories/${category.slug}`}
-                      className="block px-4 py-2 text-gray-700 hover:bg-[#CB5B6A] hover:text-white transition-colors duration-200"
+                      className="block px-4 py-2 text-gray-700 hover:bg-[#5F1327] hover:text-white transition-colors duration-200"
                       onClick={() => {
                         setMobileMenu(false);
                         setCategoryOpen(false);
@@ -414,28 +414,28 @@ const Header = () => {
           </div>
           <Link
             to="/about"
-            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#5F1327] transition-colors duration-200"
             onClick={() => setMobileMenu(false)}
           >
             About Us
           </Link>
           <Link
             to="/product"
-            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#5F1327] transition-colors duration-200"
             onClick={() => setMobileMenu(false)}
           >
             Product
           </Link>
           <Link
             to="/contact"
-            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#5F1327] transition-colors duration-200"
             onClick={() => setMobileMenu(false)}
           >
             Contact Us
           </Link>
           <Link
             to="/cart"
-            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#5F1327] transition-colors duration-200"
             onClick={() => setMobileMenu(false)}
           >
             Cart
@@ -444,7 +444,7 @@ const Header = () => {
             <>
               {/* Mobile User Info */}
               <div className="px-4 py-3 border-t border-gray-100 flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#CB5B6A] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-[#5F1327] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                   {getInitials(auth.user?.name)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -460,7 +460,7 @@ const Header = () => {
               {/* Mobile Menu Items */}
               <Link
                 to="/profile"
-                className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+                className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100 hover:text-[#5F1327] transition-colors duration-200"
                 onClick={() => setMobileMenu(false)}
               >
                 <UserCircle size={18} />
@@ -469,7 +469,7 @@ const Header = () => {
 
               <Link
                 to="/orders"
-                className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+                className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100 hover:text-[#5F1327] transition-colors duration-200"
                 onClick={() => setMobileMenu(false)}
               >
                 <Package size={18} />
@@ -478,7 +478,7 @@ const Header = () => {
 
               <Link
                 to="/wishlist"
-                className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+                className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-100 hover:text-[#5F1327] transition-colors duration-200"
                 onClick={() => setMobileMenu(false)}
               >
                 <Heart size={18} />
@@ -499,7 +499,7 @@ const Header = () => {
           ) : (
             <Link
               to="/signin"
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#CB5B6A] transition-colors duration-200"
+              className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#5F1327] transition-colors duration-200"
               onClick={() => setMobileMenu(false)}
             >
               Sign In
@@ -507,7 +507,7 @@ const Header = () => {
           )}
           <Link
             to="#"
-            className="block bg-[#CB5B6A] text-white text-center mx-3 my-2 py-2 rounded-lg hover:bg-[#b34f5c] transition-colors duration-200"
+            className="block bg-[#5F1327] text-white text-center mx-3 my-2 py-2 rounded-lg hover:bg-[#b34f5c] transition-colors duration-200"
             onClick={() => setMobileMenu(false)}
           >
             Customize Item

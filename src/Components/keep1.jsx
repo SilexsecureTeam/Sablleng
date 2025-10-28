@@ -123,7 +123,7 @@ const ImageUploadComponent = ({ productId, onBack }) => {
           </div>
           <button
             onClick={openModal}
-            className="w-full bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-6 rounded-lg transition-colors mt-4"
+            className="w-full bg-[#5F1327] hover:bg-[#5F1327]/70 text-white font-medium py-3 px-6 rounded-lg transition-colors mt-4"
           >
             Upload Logo
           </button>
@@ -161,7 +161,7 @@ const ImageUploadComponent = ({ productId, onBack }) => {
           <div className="space-y-3 mt-4">
             <button
               onClick={handleAddToCart}
-              className="w-full bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+              className="w-full bg-[#5F1327] hover:bg-[#5F1327]/70 text-white font-medium py-3 px-6 rounded-lg transition-colors"
             >
               Add to Cart
             </button>
@@ -197,7 +197,7 @@ const ImageUploadComponent = ({ productId, onBack }) => {
               <div
                 className={`border-2 bg-[#6B3838] border-dashed rounded-lg p-12 text-center transition-colors ${
                   dragOver
-                    ? "border-[#CB5B6A] bg-[#CB5B6A]/10"
+                    ? "border-[#5F1327] bg-[#5F1327]/10"
                     : "border-gray-300 "
                 }`}
                 onDrop={handleDrop}
@@ -223,7 +223,7 @@ const ImageUploadComponent = ({ productId, onBack }) => {
               <div className="mt-4 w-full flex justify-end">
                 <label
                   htmlFor="file-input"
-                  className="inline-block bg-[#CB5B6A] hover:bg-[#CB5B6A]/70 text-end text-white font-medium py-2 px-6 rounded-lg cursor-pointer transition-colors"
+                  className="inline-block bg-[#5F1327] hover:bg-[#5F1327]/70 text-end text-white font-medium py-2 px-6 rounded-lg cursor-pointer transition-colors"
                 >
                   Upload
                 </label>

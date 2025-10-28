@@ -33,7 +33,7 @@ const Choose = () => {
   /* eslint-disable no-unused-vars */
   const Feature = ({ Icon, title, text }) => (
     <article
-      className="flex items-start gap-3 py-6 group focus-within:ring-2 focus-within:ring-[#CB5B6A]/40 rounded-lg outline-none"
+      className="flex items-start gap-3 py-6 group focus-within:ring-2 focus-within:ring-[#5F1327]/40 rounded-lg outline-none"
       tabIndex={-1}
       aria-label={title}
     >

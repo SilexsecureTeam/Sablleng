@@ -7,7 +7,7 @@ const Header = ({ toggleSidebar }) => {
     <header className="bg-white shadow-md p-4 flex items-center">
       {/* Hamburger Menu (Mobile) */}
       <button
-        className="md:hidden text-[#CB5B6A] focus:outline-none"
+        className="md:hidden text-[#5F1327] focus:outline-none"
         onClick={toggleSidebar}
         aria-label="Toggle sidebar"
       >
