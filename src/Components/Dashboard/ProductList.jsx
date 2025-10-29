@@ -3,7 +3,7 @@ import { Search, Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import ProductForm from "./ProductForm";
 import EditProductForm from "./EditProductForm";
-import { AuthContext } from "../../context/AuthContextObject"; // Adjust path as needed
+import { AuthContext } from "../../context/AuthContextObject";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 

@@ -7,19 +7,22 @@ import { CartContext } from "../context/CartContextObject";
 
 const Product = () => {
   const [filter, setFilter] = useState("All");
-  const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]); // Store all products
+  const [filteredProducts, setFilteredProducts] = useState([]); // Filtered subset
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const productsPerPage = 12; // Fixed number for client-side pagination
   const { addToWishlist, isInWishlist } = useContext(CartContext);
 
+  // Fetch all products once
   useEffect(() => {
-    const fetchProducts = async (page = 1) => {
+    const fetchAllProducts = async () => {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `https://api.sablle.ng/api/products?page=${page}`,
+          "https://api.sablle.ng/api/products", // Fetch all without page param
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -31,7 +34,16 @@ const Product = () => {
         }
 
         const data = await response.json();
-        const productsArray = Array.isArray(data.data) ? data.data : [];
+
+        // Handle different response structures
+        let productsArray;
+        if (data.data && Array.isArray(data.data)) {
+          productsArray = data.data;
+        } else if (Array.isArray(data)) {
+          productsArray = data;
+        } else {
+          productsArray = [];
+        }
 
         const formattedProducts = productsArray.map((item) => ({
           id: item.id,
@@ -42,15 +54,29 @@ const Product = () => {
           category: item.category?.name,
           badge: item.customize ? "Customizable" : null,
           image: item.images?.[0] || "/placeholder-image.jpg",
-          customize: item.customize,
+          customize: item.meta?.customizable ?? item.customize ?? false,
         }));
 
-        setProducts(formattedProducts);
-        setTotalPages(data.last_page || 1);
-        toast.success(`Products fetched successfully for page ${page}`, {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        setAllProducts(formattedProducts);
+
+        // Apply initial filter
+        const initialFiltered = applyFilter(formattedProducts, filter);
+        setFilteredProducts(initialFiltered);
+
+        // Calculate total pages
+        const totalPagesCount = Math.ceil(
+          initialFiltered.length / productsPerPage
+        );
+        setTotalPages(totalPagesCount);
+        setCurrentPage(1);
+
+        toast.success(
+          `Loaded ${formattedProducts.length} products successfully!`,
+          {
+            position: "top-right",
+            autoClose: 3000,
+          }
+        );
       } catch (err) {
         console.error("Fetch error:", err);
         setError(err.message);
@@ -58,27 +84,77 @@ const Product = () => {
           position: "top-right",
           autoClose: 5000,
         });
-        setProducts([]);
+        setAllProducts([]);
+        setFilteredProducts([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProducts(currentPage);
-  }, [currentPage]);
+    fetchAllProducts();
+  }, []); // Only run once on mount
+
+  // Filter function
+  const applyFilter = (products, currentFilter) => {
+    if (currentFilter === "All") return products;
+    if (currentFilter === "Customizable") {
+      return products.filter((product) => product.customize === true);
+    }
+    if (currentFilter === "Non-Customizable") {
+      return products.filter((product) => product.customize === false);
+    }
+    return products;
+  };
+
+  // Update filtered products when filter changes
+  useEffect(() => {
+    const filtered = applyFilter(allProducts, filter);
+    setFilteredProducts(filtered);
+
+    // Reset to page 1 and calculate new total pages
+    const newTotalPages = Math.ceil(filtered.length / productsPerPage);
+    setTotalPages(newTotalPages || 1);
+    setCurrentPage(1);
+
+    // Show toast for filtered results
+    if (filter !== "All") {
+      toast.info(`${filter}: ${filtered.length} products found`, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  }, [filter, allProducts, productsPerPage]);
+
+  // Paginate filtered products
+  const startIndex = (currentPage - 1) * productsPerPage;
+  const paginatedProducts = filteredProducts.slice(
+    startIndex,
+    startIndex + productsPerPage
+  );
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
+      window.scrollTo(0, 0);
     }
   };
 
-  const filteredProducts = products.filter((product) => {
-    if (filter === "All") return true;
-    if (filter === "Customizable") return product.customize === true;
-    if (filter === "Non-Customizable") return product.customize === false;
-    return true;
-  });
+  const getPageNumbers = () => {
+    if (totalPages <= 5) {
+      return [...Array(totalPages).keys()].map((i) => i + 1);
+    }
+
+    const maxPagesToShow = 5;
+    const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    const pages = [];
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  };
 
   return (
     <div className="py-12 md:py-16">
@@ -86,7 +162,7 @@ const Product = () => {
       <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 mx-auto">
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Filter Products
+            Filter Products ({filteredProducts.length} of {allProducts.length})
           </h3>
           <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
             {["All", "Customizable", "Non-Customizable"].map((option) => (
@@ -106,6 +182,7 @@ const Product = () => {
             ))}
           </div>
         </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading ? (
             <div className="col-span-full text-center text-gray-600">
@@ -115,8 +192,8 @@ const Product = () => {
             <div className="col-span-full text-center text-red-500">
               {error}
             </div>
-          ) : filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
+          ) : paginatedProducts.length > 0 ? (
+            paginatedProducts.map((product) => (
               <div
                 key={product.id}
                 className="bg-white overflow-hidden block hover:shadow-lg transition-shadow duration-200 animate-fade-in"
@@ -173,15 +250,25 @@ const Product = () => {
               </div>
             ))
           ) : (
-            <div className="col-span-full text-center text-gray-600">
-              No products available.
+            <div className="col-span-full text-center text-gray-600 py-12">
+              <div className="text-lg mb-2">
+                No {filter.toLowerCase()} products found.
+              </div>
+              <button
+                onClick={() => setFilter("All")}
+                className="text-[#5F1327] hover:underline"
+              >
+                Show all products
+              </button>
             </div>
           )}
         </div>
+
         {totalPages > 1 && (
           <div className="mt-8 flex flex-col items-center space-y-4">
             <div className="text-gray-600">
-              Page {currentPage} of {totalPages}
+              Page {currentPage} of {totalPages} ({filteredProducts.length}{" "}
+              products)
             </div>
             <div className="flex space-x-2">
               <button
@@ -196,30 +283,21 @@ const Product = () => {
               >
                 &laquo; Previous
               </button>
-              {[...Array(totalPages).keys()]
-                .filter((page) =>
-                  totalPages <= 10
-                    ? true
-                    : page + 1 === 1 ||
-                      page + 1 === totalPages ||
-                      (page + 1 >= currentPage - 2 &&
-                        page + 1 <= currentPage + 2)
-                )
-                .map((page) => (
-                  <button
-                    key={page + 1}
-                    onClick={() => handlePageChange(page + 1)}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                      currentPage === page + 1
-                        ? "bg-[#5F1327] text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                    aria-label={`Page ${page + 1}`}
-                    aria-current={currentPage === page + 1 ? "page" : undefined}
-                  >
-                    {page + 1}
-                  </button>
-                ))}
+              {getPageNumbers().map((page) => (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                    currentPage === page
+                      ? "bg-[#5F1327] text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                  aria-label={`Page ${page}`}
+                  aria-current={currentPage === page ? "page" : undefined}
+                >
+                  {page}
+                </button>
+              ))}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}

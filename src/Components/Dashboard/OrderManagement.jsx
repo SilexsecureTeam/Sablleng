@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Search, Zap, Bell, Settings } from "lucide-react";
+import { Search, Zap, Bell, Settings, X } from "lucide-react";
 import { AuthContext } from "../../context/AuthContextObject";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -13,22 +13,19 @@ const OrderManagement = () => {
   const [error, setError] = useState(null);
   const ordersPerPage = 10;
 
+  // MODAL
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
   const { auth } = useContext(AuthContext);
 
-  const filters = ["All", "Pending", "Delivered", "Processing", "Shipped"];
+  // ONLY THESE FILTERS
+  const filters = ["All", "Paid", "Pending"];
 
-  // Fetch orders from API
+  // Fetch orders
   const fetchOrders = async () => {
-    if (!auth?.isAuthenticated) {
+    if (!auth?.isAuthenticated || !auth?.token) {
       toast.error("Please log in to view orders");
-      // setTimeout(() => navigate("/admin/signin"), 2000);
-      setIsLoading(false);
-      return;
-    }
-    if (!auth?.token) {
-      toast.error("Please verify OTP to continue.");
-      setError("OTP verification required");
-      // setTimeout(() => navigate("/admin/otp"), 2000);
       setIsLoading(false);
       return;
     }
@@ -37,10 +34,6 @@ const OrderManagement = () => {
     setError(null);
 
     try {
-      console.log(
-        "🛒 Fetching orders with token:",
-        auth.token.substring(0, 20) + "..."
-      );
       const response = await fetch("https://api.sablle.ng/api/admin/orders", {
         method: "GET",
         headers: {
@@ -49,50 +42,36 @@ const OrderManagement = () => {
         },
       });
 
-      console.log("🛒 Response status:", response.status);
-      console.log("🛒 Response headers:", response.headers.get("Content-Type"));
-
       const contentType = response.headers.get("Content-Type");
       if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text();
-        console.error("🛒 Non-JSON response received:", text.substring(0, 100));
-        throw new Error(
-          "Server returned non-JSON response, likely an error page"
-        );
+        throw new Error("Server returned non-JSON response");
       }
 
       const data = await response.json();
-      console.log("🛒 Orders fetch response:", data);
 
       if (response.ok) {
-        const mappedOrders = data.data.map((order) => ({
-          id: order.order_reference,
-          customer: order.user?.name || "Unknown",
-          items: "N/A", // API doesn't provide item count
-          total: `N${parseFloat(order.total).toFixed(2)}`,
-          status: order.status.charAt(0).toUpperCase() + order.status.slice(1),
-          date: new Date(order.created_at).toISOString().split("T")[0],
-        }));
+        const mappedOrders = data.data.map((order) => {
+          const status = order.status.toLowerCase();
+          const displayStatus = status === "paid" ? "Paid" : "Pending";
+
+          return {
+            id: order.order_reference,
+            customer: order.user?.name || "Unknown",
+            items: "N/A",
+            total: `₦${parseFloat(order.total).toLocaleString()}`,
+            status: displayStatus,
+            date: new Date(order.created_at).toLocaleDateString("en-GB"),
+            raw: order,
+          };
+        });
         setOrders(mappedOrders);
-        console.log("🛒 Orders set:", mappedOrders);
       } else {
-        if (response.status === 401) {
-          setError(
-            "Unauthorized: Invalid or expired token. Please log in again."
-          );
-          toast.error("Unauthorized: Please log in again");
-        } else if (response.status === 403) {
-          setError("Forbidden: You lack permission to view orders.");
-          toast.error("Forbidden: You lack permission to view orders");
-        } else {
-          setError(data.message || `Server error: ${response.status}`);
-          toast.error(data.message || `Server error: ${response.status}`);
-        }
+        throw new Error(data.message || `Error ${response.status}`);
       }
     } catch (error) {
-      console.error("❌ Orders fetch error:", error.message);
-      setError(error.message || "Network error while fetching orders");
-      toast.error(error.message || "Network error while fetching orders");
+      setError(error.message);
+      toast.error(error.message);
     } finally {
       setIsLoading(false);
     }
@@ -102,16 +81,25 @@ const OrderManagement = () => {
     fetchOrders();
   }, [auth?.isAuthenticated, auth?.token]);
 
-  const getStatusStyle = (status) => {
-    const styles = {
-      Shipped: "bg-[#DBE8FF] text-[#001D76]",
-      Processing: "bg-[#F4E8C0] text-[#414245]",
-      Pending: "bg-[#DAD3BC] text-[#414245]",
-      Delivered: "bg-[#E8FAE7] text-[#01993C]",
-    };
-    return styles[status] || "bg-gray-100 text-gray-700";
+  // Open Modal
+  const openDetails = (order) => {
+    setSelectedOrder(order);
+    setIsModalOpen(true);
   };
 
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedOrder(null);
+  };
+
+  // Status Style
+  const getStatusStyle = (status) => {
+    return status === "Paid"
+      ? "bg-[#E8FAE7] text-[#01993C]"
+      : "bg-[#DAD3BC] text-[#414245]";
+  };
+
+  // Filter Logic
   const filteredOrders = orders.filter((order) => {
     const matchesFilter =
       activeFilter === "All" || order.status === activeFilter;
@@ -121,34 +109,26 @@ const OrderManagement = () => {
     return matchesFilter && matchesSearch;
   });
 
-  // Pagination logic
+  // Pagination
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
   const startIndex = (currentPage - 1) * ordersPerPage;
   const endIndex = startIndex + ordersPerPage;
   const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
 
-  // Reset to page 1 when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, activeFilter]);
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage((prev) => prev + 1);
-    }
-  };
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
-    }
-  };
+  const handleNextPage = () =>
+    setCurrentPage((p) => Math.min(totalPages, p + 1));
+  const handlePrevPage = () => setCurrentPage((p) => Math.max(1, p - 1));
 
   return (
     <div className="min-h-screen bg-[#FAF7F5] p-6">
       <div className="max-w-7xl mx-auto">
         <ToastContainer position="top-right" autoClose={3000} />
 
+        {/* HEADER */}
         <div className="flex items-start justify-between text-[#414245] mb-4">
           <div>
             <h1 className="text-2xl font-medium">Orders</h1>
@@ -162,24 +142,26 @@ const OrderManagement = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-[#C3B7B9] text-gray-700 rounded-md hover:bg-[#C3B7B9]/80 cursor-pointer transition-colors text-sm font-medium">
+            <button className="flex items-center gap-2 px-4 py-2 bg-[#C3B7B9] text-gray-700 rounded-md hover:bg-[#C3B7B9]/80 text-sm font-medium">
               <Zap className="w-4 h-4" />
               Quick Action
             </button>
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <button className="p-2 hover:bg-gray-100 rounded-lg">
               <Bell className="w-5 h-5 text-gray-600" />
             </button>
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <button className="p-2 hover:bg-gray-100 rounded-lg">
               <Settings className="w-5 h-5 text-gray-600" />
             </button>
           </div>
         </div>
 
         <div className="bg-white rounded-xl">
+          {/* TITLE */}
           <div className="px-6 py-5">
             <h2 className="text-lg font-semibold text-gray-900">Orders</h2>
           </div>
 
+          {/* SEARCH */}
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -188,11 +170,12 @@ const OrderManagement = () => {
                 placeholder="Search by Order Reference or Customer's Name"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
               />
             </div>
           </div>
 
+          {/* FILTERS: All, Paid, Pending */}
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex gap-2">
               {filters.map((filter) => (
@@ -211,56 +194,59 @@ const OrderManagement = () => {
             </div>
           </div>
 
+          {/* LOADING */}
           {isLoading && (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5F1327] mx-auto"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5F1327]"></div>
               <p className="text-gray-600 mt-4">Loading orders...</p>
             </div>
           )}
 
+          {/* ERROR */}
           {error && !isLoading && (
             <div className="px-6 py-12 text-center">
               <p className="text-red-500 text-sm">{error}</p>
               <button
-                onClick={fetchOrders} // Changed from () => fetchOrders()
-                className="mt-4 px-4 py-2 bg-[#5F1327] text-white rounded-md hover:bg-[#4A0F1F] transition-colors"
+                onClick={fetchOrders}
+                className="mt-4 px-4 py-2 bg-[#5F1327] text-white rounded-md hover:bg-[#4A0F1F]"
               >
                 Retry
               </button>
             </div>
           )}
 
+          {/* TABLE */}
           {!isLoading && !error && (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Order ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Customer
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Items
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Total
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {paginatedOrders.map((order, index) => (
                     <tr
                       key={startIndex + index}
-                      className="hover:bg-gray-50 transition-colors text-[#414245]"
+                      className="hover:bg-gray-50 text-[#414245]"
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {order.id}
@@ -287,7 +273,10 @@ const OrderManagement = () => {
                         {order.date}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <button className="text-sm text-[#0B36B5] hover:text-blue-800 font-medium">
+                        <button
+                          onClick={() => openDetails(order)}
+                          className="text-sm text-[#0B36B5] hover:text-blue-800 font-medium"
+                        >
                           Details
                         </button>
                       </td>
@@ -298,14 +287,14 @@ const OrderManagement = () => {
             </div>
           )}
 
+          {/* EMPTY */}
           {!isLoading && !error && paginatedOrders.length === 0 && (
             <div className="px-6 py-12 text-center">
-              <p className="text-gray-500 text-sm">
-                No orders found matching your criteria.
-              </p>
+              <p className="text-gray-500 text-sm">No orders found.</p>
             </div>
           )}
 
+          {/* PAGINATION */}
           {!isLoading && !error && filteredOrders.length > 0 && (
             <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
               <p className="text-sm text-gray-700">
@@ -315,7 +304,7 @@ const OrderManagement = () => {
                 <button
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
-                  className={`px-4 py-2 border border-gray-300 rounded-md text-sm font-medium ${
+                  className={`px-4 py-2 border rounded-md text-sm font-medium ${
                     currentPage === 1
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : "bg-white text-gray-700 hover:bg-gray-50"
@@ -326,7 +315,7 @@ const OrderManagement = () => {
                 <button
                   onClick={handleNextPage}
                   disabled={currentPage === totalPages}
-                  className={`px-4 py-2 border border-gray-300 rounded-md text-sm font-medium ${
+                  className={`px-4 py-2 border rounded-md text-sm font-medium ${
                     currentPage === totalPages
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : "bg-white text-gray-700 hover:bg-gray-50"
@@ -339,6 +328,58 @@ const OrderManagement = () => {
           )}
         </div>
       </div>
+
+      {/* DETAILS MODAL — READ-ONLY */}
+      {isModalOpen && selectedOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Order Details</h3>
+              <button
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Order ID</p>
+                  <p className="font-medium">{selectedOrder.id}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Customer</p>
+                  <p className="font-medium">{selectedOrder.customer}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Total</p>
+                  <p className="font-medium">{selectedOrder.total}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Date</p>
+                  <p className="font-medium">{selectedOrder.date}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Status</p>
+                <span
+                  className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
+                    selectedOrder.status
+                  )}`}
+                >
+                  {selectedOrder.status}
+                </span>
+                <p className="text-xs text-gray-500 mt-2">
+                  Status update will be enabled when backend API is ready.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

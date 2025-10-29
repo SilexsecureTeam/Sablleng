@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 // import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -6,13 +6,7 @@ import { Heart, Trash2 } from "lucide-react";
 import { CartContext } from "../context/CartContextObject";
 
 const Wishlist = () => {
-  const { wishlist, removeFromWishlist } = useContext(CartContext);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Load wishlist from context (already synced with localStorage)
-  useEffect(() => {
-    setIsLoading(false);
-  }, []);
+  const { wishlist, removeFromWishlist, isLoading } = useContext(CartContext);
 
   return (
     <div className="py-12 md:py-16 min-h-screen bg-[#FFF2F2]">

@@ -9,7 +9,7 @@ import {
   Grid,
   CreditCard,
   Box,
-  Plus,
+  Percent,
   List,
   Star,
   FileText,
@@ -72,6 +72,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       path: "/dashboard/orders",
     },
     {
+      id: "tax-management",
+      label: "Tax Management",
+      icon: Percent,
+      path: "/dashboard/tax-management",
+    },
+    {
+      id: "DeliveryFeeManager",
+      label: "Delivery Fee Manager",
+      icon: CreditCard,
+      path: "/dashboard/delivery-fee-manager",
+    },
+    {
       id: "customers",
       label: "Customers",
       icon: Users,
@@ -100,18 +112,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: "Customization",
       icon: Box,
       path: "/dashboard/customization",
-    },
-    {
-      id: "DeliveryFeeManager",
-      label: "Delivery Fee Manager",
-      icon: CreditCard,
-      path: "/dashboard/delivery-fee-manager",
-    },
-    {
-      id: "add-products",
-      label: "Add Products",
-      icon: Plus,
-      path: "/dashboard/add-products",
     },
     {
       id: "product-reviews",

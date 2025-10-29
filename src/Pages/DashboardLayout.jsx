@@ -21,7 +21,9 @@ const DeliveryFeeManager = lazy(() =>
 const Customization = lazy(() =>
   import("../Components/Dashboard/Customization")
 );
-const AddProducts = lazy(() => import("../Components/Dashboard/AddProducts"));
+const TaxManagement = lazy(() =>
+  import("../Components/Dashboard/TaxManagement")
+);
 const Inventory = lazy(() => import("../Components/Dashboard/Inventory"));
 const ProductList = lazy(() => import("../Components/Dashboard/ProductList"));
 const ProductReviews = lazy(() =>
@@ -113,10 +115,10 @@ const DashboardLayout = () => {
                 }
               />
               <Route
-                path="/add-products"
+                path="/tax-management"
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
-                    <AddProducts />
+                    <TaxManagement />
                   </MainContent>
                 }
               />

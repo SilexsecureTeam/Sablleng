@@ -98,7 +98,7 @@ const CategoryPage = () => {
         const parsedProducts = JSON.parse(cachedProducts);
         if (isMounted) {
           setProducts(parsedProducts);
-          setTotalPages(Math.ceil(parsedProducts.length / productsPerPage));
+          // Total pages will be set after filtering
           setCurrentPage(1);
           setIsLoading(false);
         }
@@ -139,13 +139,13 @@ const CategoryPage = () => {
           category: item.category?.name || categoryName,
           badge: item.customize ? "Customizable" : null,
           image: item.images?.[0] || "/placeholder-image.jpg",
-          customize: item.customize,
+          customize: item.meta?.customizable ?? item.customize ?? false,
         }));
 
         if (isMounted) {
           setProducts(formattedProducts);
           localStorage.setItem(cacheKey, JSON.stringify(formattedProducts));
-          setTotalPages(Math.ceil(formattedProducts.length / productsPerPage));
+          // Total pages will be set after filtering
           setCurrentPage(1);
 
           if (formattedProducts.length > 0) {
@@ -189,25 +189,39 @@ const CategoryPage = () => {
     };
   }, [categorySlug, categoryId, categoryName, categories]);
 
+  // Filter products first, then paginate
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      if (filter === "All") return true;
+      if (filter === "Customizable") return product.customize === true;
+      if (filter === "Non-Customizable") return product.customize === false;
+      return true;
+    });
+  }, [products, filter]);
+
+  // Calculate total pages based on filtered products
+  useEffect(() => {
+    const newTotalPages = Math.ceil(filteredProducts.length / productsPerPage);
+    setTotalPages(newTotalPages || 1);
+    // Reset to page 1 when filter changes to ensure valid page
+    if (currentPage > newTotalPages && newTotalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [filteredProducts, productsPerPage, currentPage]);
+
+  // Paginate the filtered products
+  const startIndex = (currentPage - 1) * productsPerPage;
+  const paginatedProducts = filteredProducts.slice(
+    startIndex,
+    startIndex + productsPerPage
+  );
+
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
       window.scrollTo(0, 0);
     }
   };
-
-  const startIndex = (currentPage - 1) * productsPerPage;
-  const paginatedProducts = products.slice(
-    startIndex,
-    startIndex + productsPerPage
-  );
-
-  const filteredProducts = paginatedProducts.filter((product) => {
-    if (filter === "All") return true;
-    if (filter === "Customizable") return product.customize === true;
-    if (filter === "Non-Customizable") return product.customize === false;
-    return true;
-  });
 
   const getPageNumbers = () => {
     const maxPagesToShow = 5;
@@ -262,8 +276,8 @@ const CategoryPage = () => {
               <div className="col-span-full text-center text-red-500">
                 {error}
               </div>
-            ) : filteredProducts.length > 0 ? (
-              filteredProducts.map((product) => (
+            ) : paginatedProducts.length > 0 ? (
+              paginatedProducts.map((product) => (
                 <div
                   key={product.id}
                   className="bg-white overflow-hidden block hover:shadow-lg transition-shadow duration-200 animate-fade-in"

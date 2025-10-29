@@ -1,10 +1,10 @@
 import React, { useState, useContext, useEffect } from "react";
-import { CartContext } from "./CartContextObject"; // Import context
-import { AuthContext } from "./AuthContextObject";
 import { toast } from "react-toastify";
+import { CartContext } from "./CartContextObject";
+import { AuthContext } from "./AuthContextObject";
 
 export const CartProvider = ({ children }) => {
-  // Initialize cart state from localStorage
+  // Cart state
   const [items, setItems] = useState(() =>
     JSON.parse(localStorage.getItem("cart_items") || "[]")
   );
@@ -16,10 +16,14 @@ export const CartProvider = ({ children }) => {
   );
   const [selectedAddress, setSelectedAddress] = useState(null);
 
-  // Initialize wishlist state from localStorage
+  // Wishlist state
   const [wishlist, setWishlist] = useState(() =>
     JSON.parse(localStorage.getItem("wishlist") || "[]")
   );
+  const [wishlist_session_id, setWishlistSessionId] = useState(
+    localStorage.getItem("wishlist_session_id") || null
+  );
+  const [isLoading, setIsLoading] = useState(true);
 
   const { auth } = useContext(AuthContext);
 
@@ -40,50 +44,370 @@ export const CartProvider = ({ children }) => {
     if (cart_session_id) {
       localStorage.setItem("cart_session_id", cart_session_id);
     }
-  }, [items, total, cart_session_id, wishlist]);
+    if (wishlist_session_id) {
+      localStorage.setItem("wishlist_session_id", wishlist_session_id);
+    }
+  }, [items, total, cart_session_id, wishlist, wishlist_session_id]);
+
+  // Fetch wishlist from API
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (!auth?.isAuthenticated && !wishlist_session_id) {
+        console.log(
+          "🛒 CartContext: No auth or wishlist session, skipping fetch."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        console.log("🛒 CartContext: Fetching wishlist...");
+        console.log("  Authenticated:", auth?.isAuthenticated);
+        console.log("  Token exists:", !!auth?.token);
+        console.log("  Wishlist Session ID:", wishlist_session_id);
+
+        const headers = {};
+        if (auth?.isAuthenticated && auth?.token) {
+          headers["Authorization"] = `Bearer ${auth.token}`;
+          console.log("  Using Bearer token authentication");
+        } else if (wishlist_session_id) {
+          headers["X-Cart-Session"] = wishlist_session_id;
+          console.log("  Using wishlist session authentication");
+        }
+
+        const response = await fetch("https://api.sablle.ng/api/wishlist", {
+          method: "GET",
+          headers,
+        });
+
+        const data = await response.json();
+        console.log("🛒 Wishlist fetch response status:", response.status);
+        console.log("🛒 Wishlist fetch response data:", data);
+
+        if (response.ok) {
+          const wishlistItems = Array.isArray(data.data) ? data.data : [];
+          const formattedWishlist = wishlistItems.map((item) => ({
+            id: item.product_id,
+            name: item.product?.name || item.name || "Unknown Product",
+            price: item.product?.sale_price_inc_tax
+              ? `₦${parseFloat(
+                  item.product.sale_price_inc_tax
+                ).toLocaleString()}`
+              : item.price || "Price Unavailable",
+            category:
+              item.product?.category?.name ||
+              item.category ||
+              "Unknown Category",
+            badge: item.product?.customize
+              ? "Customizable"
+              : item.badge || null,
+            image:
+              item.product?.images?.[0] ||
+              item.image ||
+              "/placeholder-image.jpg",
+            customize:
+              item.product?.meta?.customizable ??
+              item.product?.customize ??
+              item.customize ??
+              false,
+          }));
+
+          setWishlist(formattedWishlist);
+          if (!auth?.isAuthenticated && data.session_id) {
+            setWishlistSessionId(data.session_id);
+            localStorage.setItem("wishlist_session_id", data.session_id);
+          }
+          toast.success(
+            `Wishlist loaded with ${formattedWishlist.length} items`,
+            {
+              position: "top-right",
+              autoClose: 3000,
+            }
+          );
+        } else {
+          console.error("❌ CartContext: Wishlist API error:", data.message);
+          if (response.status === 401) {
+            toast.error("Wishlist session expired, please add items again");
+            setWishlistSessionId(null);
+            localStorage.removeItem("wishlist_session_id");
+          }
+        }
+      } catch (error) {
+        console.error("❌ CartContext: Fetch wishlist error:", error);
+        toast.error("Network error while fetching wishlist");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchWishlist();
+  }, [auth?.isAuthenticated, auth?.token, wishlist_session_id]);
+
+  // Wishlist merge on login
+  useEffect(() => {
+    const handleWishlistMergeOnLogin = async () => {
+      if (
+        auth?.isAuthenticated &&
+        auth?.token &&
+        wishlist_session_id &&
+        !localStorage.getItem("wishlist_merged")
+      ) {
+        console.log("🛒 CartContext: Merging wishlist on login...");
+        try {
+          const formData = new FormData();
+          formData.append("session_id", wishlist_session_id);
+
+          const response = await fetch(
+            "https://api.sablle.ng/api/wishlist/merge",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${auth.token}`,
+              },
+              body: formData,
+            }
+          );
+
+          const data = await response.json();
+          if (response.ok) {
+            toast.success("Wishlist merged successfully!");
+            const wishlistItems = Array.isArray(data.data) ? data.data : [];
+            const formattedWishlist = wishlistItems.map((item) => ({
+              id: item.product_id,
+              name: item.product?.name || item.name || "Unknown Product",
+              price: item.product?.sale_price_inc_tax
+                ? `₦${parseFloat(
+                    item.product.sale_price_inc_tax
+                  ).toLocaleString()}`
+                : item.price || "Price Unavailable",
+              category:
+                item.product?.category?.name ||
+                item.category ||
+                "Unknown Category",
+              badge: item.product?.customize
+                ? "Customizable"
+                : item.badge || null,
+              image:
+                item.product?.images?.[0] ||
+                item.image ||
+                "/placeholder-image.jpg",
+              customize:
+                item.product?.meta?.customizable ??
+                item.product?.customize ??
+                item.customize ??
+                false,
+            }));
+
+            setWishlist(formattedWishlist);
+            setWishlistSessionId(null);
+            localStorage.removeItem("wishlist_session_id");
+            localStorage.setItem("wishlist_merged", "true");
+          } else {
+            console.error("❌ Wishlist merge failed:", data);
+            toast.error(data.message || "Failed to merge wishlist");
+          }
+        } catch (error) {
+          console.error("❌ Wishlist merge error:", error);
+          toast.error("Network error during wishlist merge");
+        }
+      } else if (auth?.isAuthenticated) {
+        localStorage.removeItem("wishlist_merged");
+      }
+    };
+
+    handleWishlistMergeOnLogin();
+  }, [auth?.isAuthenticated, auth?.token, wishlist_session_id, items]);
 
   // Wishlist functions
-  const addToWishlist = (product) => {
-    setWishlist((prev) => {
-      if (prev.some((item) => item.id === product.id)) {
-        toast.info(`${product.name} is already in your wishlist`, {
+  const addToWishlist = async (product) => {
+    try {
+      console.log("🛒 Adding to wishlist:", product);
+      const formData = new FormData();
+      formData.append("product_id", String(product.id));
+
+      const headers = {};
+      if (auth?.isAuthenticated && auth?.token) {
+        headers["Authorization"] = `Bearer ${auth.token}`;
+      } else if (wishlist_session_id) {
+        headers["X-Cart-Session"] = wishlist_session_id;
+      }
+
+      const response = await fetch("https://api.sablle.ng/api/wishlist", {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+
+      const data = await response.json();
+      console.log("🛒 Wishlist add response:", data);
+
+      if (response.ok) {
+        toast.success(data.message || `${product.name} added to wishlist`, {
           position: "top-right",
           autoClose: 3000,
         });
-        return prev;
+
+        // Fetch updated wishlist
+        const wishlistResponse = await fetch(
+          "https://api.sablle.ng/api/wishlist",
+          {
+            method: "GET",
+            headers,
+          }
+        );
+        const wishlistData = await wishlistResponse.json();
+
+        if (wishlistResponse.ok) {
+          const wishlistItems = Array.isArray(wishlistData.data)
+            ? wishlistData.data
+            : [];
+          const formattedWishlist = wishlistItems.map((item) => ({
+            id: item.product_id,
+            name: item.product?.name || product.name || "Unknown Product",
+            price: item.product?.sale_price_inc_tax
+              ? `₦${parseFloat(
+                  item.product.sale_price_inc_tax
+                ).toLocaleString()}`
+              : product.price || "Price Unavailable",
+            category:
+              item.product?.category?.name ||
+              product.category ||
+              "Unknown Category",
+            badge: item.product?.customize
+              ? "Customizable"
+              : product.badge || null,
+            image:
+              item.product?.images?.[0] ||
+              product.image ||
+              "/placeholder-image.jpg",
+            customize:
+              item.product?.meta?.customizable ??
+              item.product?.customize ??
+              product.customize ??
+              false,
+          }));
+
+          setWishlist(formattedWishlist);
+          if (!auth?.isAuthenticated && data.session_id) {
+            setWishlistSessionId(data.session_id);
+            localStorage.setItem("wishlist_session_id", data.session_id);
+          }
+        } else {
+          toast.error("Failed to fetch updated wishlist");
+        }
+      } else {
+        if (response.status === 401) {
+          toast.error("Session expired, please log in or try again");
+          setWishlistSessionId(null);
+          localStorage.removeItem("wishlist_session_id");
+        } else {
+          toast.error(data.message || "Failed to add to wishlist");
+        }
       }
-      const updatedWishlist = [...prev, product];
-      toast.success(`${product.name} added to wishlist`, {
-        position: "top-right",
-        autoClose: 3000,
-      });
-      return updatedWishlist;
-    });
+    } catch (error) {
+      console.error("❌ Wishlist add error:", error);
+      toast.error("Network error while adding to wishlist");
+    }
   };
 
-  const removeFromWishlist = (itemId) => {
-    setWishlist((prev) => {
-      const item = prev.find((item) => item.id === itemId);
-      const updatedWishlist = prev.filter((item) => item.id !== itemId);
-      if (item) {
-        toast.success(`${item.name} removed from wishlist`, {
+  const removeFromWishlist = async (productId) => {
+    try {
+      const headers = {};
+      if (auth?.isAuthenticated && auth?.token) {
+        headers["Authorization"] = `Bearer ${auth.token}`;
+      } else if (wishlist_session_id) {
+        headers["X-Cart-Session"] = wishlist_session_id;
+      } else {
+        toast.error("No active wishlist session. Please try again.");
+        return;
+      }
+
+      const response = await fetch(
+        `https://api.sablle.ng/api/wishlist/${productId}`,
+        {
+          method: "DELETE",
+          headers,
+        }
+      );
+
+      const data = await response.json();
+      console.log("🛒 Wishlist remove response:", data);
+
+      if (response.ok) {
+        toast.success(data.message || "Item removed from wishlist", {
           position: "top-right",
           autoClose: 3000,
         });
+
+        // Fetch updated wishlist
+        const wishlistResponse = await fetch(
+          "https://api.sablle.ng/api/wishlist",
+          {
+            method: "GET",
+            headers,
+          }
+        );
+        const wishlistData = await wishlistResponse.json();
+
+        if (wishlistResponse.ok) {
+          const wishlistItems = Array.isArray(wishlistData.data)
+            ? wishlistData.data
+            : [];
+          const formattedWishlist = wishlistItems.map((item) => ({
+            id: item.product_id,
+            name: item.product?.name || item.name || "Unknown Product",
+            price: item.product?.sale_price_inc_tax
+              ? `₦${parseFloat(
+                  item.product.sale_price_inc_tax
+                ).toLocaleString()}`
+              : item.price || "Price Unavailable",
+            category:
+              item.product?.category?.name ||
+              item.category ||
+              "Unknown Category",
+            badge: item.product?.customize
+              ? "Customizable"
+              : item.badge || null,
+            image:
+              item.product?.images?.[0] ||
+              item.image ||
+              "/placeholder-image.jpg",
+            customize:
+              item.product?.meta?.customizable ??
+              item.product?.customize ??
+              item.customize ??
+              false,
+          }));
+
+          setWishlist(formattedWishlist);
+        } else {
+          toast.error("Failed to fetch updated wishlist");
+        }
+      } else {
+        if (response.status === 401) {
+          toast.error("Session expired, please log in or try again");
+          setWishlistSessionId(null);
+          localStorage.removeItem("wishlist_session_id");
+        } else {
+          toast.error(data.message || "Failed to remove from wishlist");
+        }
       }
-      return updatedWishlist;
-    });
+    } catch (error) {
+      console.error("❌ Wishlist remove error:", error);
+      toast.error("Network error while removing from wishlist");
+    }
   };
 
   const isInWishlist = (itemId) => {
     return wishlist.some((item) => item.id === itemId);
   };
 
-  // Existing cart fetch logic
+  // Fetch cart from API
   useEffect(() => {
     const fetchCart = async () => {
       if (!auth?.isAuthenticated && !cart_session_id) {
         console.log("🛒 CartContext: No auth or session, skipping fetch.");
+        setIsLoading(false);
         return;
       }
 
@@ -153,13 +477,15 @@ export const CartProvider = ({ children }) => {
       } catch (error) {
         console.error("❌ CartContext: Fetch cart error:", error);
         toast.error("Network error while fetching cart");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchCart();
-  }, [auth?.isAuthenticated, auth?.token, cart_session_id]);
+  }, [auth?.isAuthenticated, auth?.token, cart_session_id, items]);
 
-  // Existing cart merge logic
+  // Cart merge on login
   useEffect(() => {
     const handleMergeOnLogin = async () => {
       if (
@@ -248,8 +574,9 @@ export const CartProvider = ({ children }) => {
     };
 
     handleMergeOnLogin();
-  }, [auth?.isAuthenticated, auth?.token, cart_session_id]);
+  }, [auth?.isAuthenticated, auth?.token, cart_session_id, items]);
 
+  // Cart functions (unchanged)
   const addItem = async (product) => {
     try {
       console.log("\n=== ADD TO CART REQUEST ===");
@@ -259,7 +586,7 @@ export const CartProvider = ({ children }) => {
         price: product.price,
         quantity: product.quantity,
         color: product.color,
-        size: product.size, // Log size
+        size: product.size,
       });
       console.log("Auth state:", {
         isAuthenticated: auth?.isAuthenticated,
@@ -273,7 +600,7 @@ export const CartProvider = ({ children }) => {
       formData.append("quantity", String(product.quantity));
       formData.append("price", String(product.price));
       formData.append("color", product.color || "default");
-      formData.append("size", product.size || "N/A"); // Add size to FormData
+      formData.append("size", product.size || "N/A");
 
       console.log("FormData contents:");
       for (let [key, value] of formData.entries()) {
@@ -316,8 +643,8 @@ export const CartProvider = ({ children }) => {
               ...apiItem,
               name: product.name || product.product_name,
               image: product.image || "/placeholder-image.jpg",
-              color: product.color || "default", // Include color
-              size: product.size || "N/A", // Include size
+              color: product.color || "default",
+              size: product.size || "N/A",
             };
           }
           return {
@@ -328,8 +655,8 @@ export const CartProvider = ({ children }) => {
               existingItem?.image ||
               apiItem.product?.image ||
               "/placeholder-image.jpg",
-            color: existingItem?.color || apiItem.color || "default", // Preserve color
-            size: existingItem?.size || apiItem.size || "N/A", // Preserve size
+            color: existingItem?.color || apiItem.color || "default",
+            size: existingItem?.size || apiItem.size || "N/A",
           };
         });
 
@@ -505,6 +832,9 @@ export const CartProvider = ({ children }) => {
         addToWishlist,
         removeFromWishlist,
         isInWishlist,
+        wishlist_session_id,
+        setWishlistSessionId,
+        isLoading,
       }}
     >
       {children}
