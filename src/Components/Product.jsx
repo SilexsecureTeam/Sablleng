@@ -7,19 +7,16 @@ import { CartContext } from "../context/CartContextObject";
 
 const Product = () => {
   const [filter, setFilter] = useState("All");
-  const [allProducts, setAllProducts] = useState([]); // Store all products
-  const [filteredProducts, setFilteredProducts] = useState([]); // Filtered subset
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [allProducts, setAllProducts] = useState([]);
+  const [customizedProducts, setCustomizedProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const productsPerPage = 12; // Fixed number for client-side pagination
   const { addToWishlist, isInWishlist } = useContext(CartContext);
 
-  // Fetch all products once
-  useEffect(() => {
-    const fetchAllProducts = async () => {
-      setIsLoading(true);
+  // FETCH ALL PRODUCTS (SERVER-SIDE PAGINATION)
+  const fetchAllProducts = async (page = 1, filterType = "All") => {
+    setIsLoadingAll(true);
       try {
         const response = await fetch(
           "https://api.sablle.ng/api/products", // Fetch all without page param
