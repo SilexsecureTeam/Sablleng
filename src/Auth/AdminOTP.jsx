@@ -126,10 +126,10 @@ const AdminOtpPage = () => {
       );
 
       const data = await response.json();
-      console.log(
-        "OTP: POST /api/admin/resend-otp response:",
-        JSON.stringify(data, null, 2)
-      );
+      // console.log(
+      //   "OTP: POST /api/admin/resend-otp response:",
+      //   JSON.stringify(data, null, 2)
+      // );
 
       if (response.ok) {
         toast.success("New OTP sent to your email!");

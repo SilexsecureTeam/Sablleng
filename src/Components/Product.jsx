@@ -7,72 +7,97 @@ import { CartContext } from "../context/CartContextObject";
 
 const Product = () => {
   const [filter, setFilter] = useState("All");
-  const [allProducts, setAllProducts] = useState([]);
-  const [customizedProducts, setCustomizedProducts] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const productsPerPage = 12; // Fixed number for client-side pagination
   const { addToWishlist, isInWishlist } = useContext(CartContext);
 
-  // FETCH ALL PRODUCTS (SERVER-SIDE PAGINATION)
-  const fetchAllProducts = async (page = 1, filterType = "All") => {
-    setIsLoadingAll(true);
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      setError(null);
+
       try {
-        const response = await fetch(
-          "https://api.sablle.ng/api/products", // Fetch all without page param
-          {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
+        let formattedProducts = [];
+        let newTotalPages = 1;
+
+        if (filter === "Customizable") {
+          // USE CUSTOM ENDPOINT FOR "Customizable" FILTER
+          const response = await fetch(
+            "https://api.sablle.ng/api/product/customized"
+          );
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch customized products`);
           }
-        );
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch products: ${response.statusText}`);
-        }
+          const data = await response.json();
+          const productsArray = Array.isArray(data.products)
+            ? data.products
+            : [];
 
-        const data = await response.json();
+          formattedProducts = productsArray.map((item) => {
+            const latestCust = item.customization?.[0] || {};
 
-        // Handle different response structures
-        let productsArray;
-        if (data.data && Array.isArray(data.data)) {
-          productsArray = data.data;
-        } else if (Array.isArray(data)) {
-          productsArray = data;
+            return {
+              id: item.id,
+              name: item.name || "",
+              price: item.price
+                ? `₦${parseFloat(item.price).toLocaleString()}`
+                : "₦0", // or item.price if available
+              category: item.category || "Customized",
+              badge: "Customizable",
+              image: latestCust.image_path
+                ? `https://api.sablle.ng/storage/${latestCust.image_path}`
+                : "/placeholder-image.jpg",
+              customize: true,
+            };
+          });
+
+          // Client-side pagination for customized products
+          newTotalPages = Math.ceil(formattedProducts.length / 12) || 1;
         } else {
-          productsArray = [];
+          // ALL OTHER FILTERS: Use original /api/products
+          const response = await fetch(
+            `https://api.sablle.ng/api/products?page=${currentPage}`,
+            {
+              method: "GET",
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch products: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          const productsArray = Array.isArray(data.data) ? data.data : [];
+
+          formattedProducts = productsArray.map((item) => ({
+            id: item.id,
+            name: item.name || "",
+            price: item.sale_price_inc_tax
+              ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+              : "Price Unavailable",
+            category: item.category?.name,
+            badge: item.customize ? "Customizable" : null,
+            image: item.images?.[0] || "/placeholder-image.jpg",
+            customize: item.customize,
+          }));
+
+          newTotalPages = data.last_page || 1;
         }
 
-        const formattedProducts = productsArray.map((item) => ({
-          id: item.id,
-          name: item.name || "",
-          price: item.sale_price_inc_tax
-            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-            : "Price Unavailable",
-          category: item.category?.name,
-          badge: item.customize ? "Customizable" : null,
-          image: item.images?.[0] || "/placeholder-image.jpg",
-          customize: item.meta?.customizable ?? item.customize ?? false,
-        }));
-
-        setAllProducts(formattedProducts);
-
-        // Apply initial filter
-        const initialFiltered = applyFilter(formattedProducts, filter);
-        setFilteredProducts(initialFiltered);
-
-        // Calculate total pages
-        const totalPagesCount = Math.ceil(
-          initialFiltered.length / productsPerPage
-        );
-        setTotalPages(totalPagesCount);
-        setCurrentPage(1);
+        setProducts(formattedProducts);
+        setTotalPages(newTotalPages);
 
         toast.success(
-          `Loaded ${formattedProducts.length} products successfully!`,
-          {
-            position: "top-right",
-            autoClose: 3000,
-          }
+          filter === "Customizable"
+            ? "Custom designs loaded!"
+            : `Products fetched for page ${currentPage}`,
+          { position: "top-right", autoClose: 3000 }
         );
       } catch (err) {
         console.error("Fetch error:", err);
@@ -81,77 +106,38 @@ const Product = () => {
           position: "top-right",
           autoClose: 5000,
         });
-        setAllProducts([]);
-        setFilteredProducts([]);
+        setProducts([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchAllProducts();
-  }, []); // Only run once on mount
-
-  // Filter function
-  const applyFilter = (products, currentFilter) => {
-    if (currentFilter === "All") return products;
-    if (currentFilter === "Customizable") {
-      return products.filter((product) => product.customize === true);
-    }
-    if (currentFilter === "Non-Customizable") {
-      return products.filter((product) => product.customize === false);
-    }
-    return products;
-  };
-
-  // Update filtered products when filter changes
-  useEffect(() => {
-    const filtered = applyFilter(allProducts, filter);
-    setFilteredProducts(filtered);
-
-    // Reset to page 1 and calculate new total pages
-    const newTotalPages = Math.ceil(filtered.length / productsPerPage);
-    setTotalPages(newTotalPages || 1);
-    setCurrentPage(1);
-
-    // Show toast for filtered results
-    if (filter !== "All") {
-      toast.info(`${filter}: ${filtered.length} products found`, {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }
-  }, [filter, allProducts, productsPerPage]);
-
-  // Paginate filtered products
-  const startIndex = (currentPage - 1) * productsPerPage;
-  const paginatedProducts = filteredProducts.slice(
-    startIndex,
-    startIndex + productsPerPage
-  );
+    fetchProducts();
+  }, [currentPage, filter]); // Re-run on page OR filter change
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      window.scrollTo(0, 0);
     }
   };
 
-  const getPageNumbers = () => {
-    if (totalPages <= 5) {
-      return [...Array(totalPages).keys()].map((i) => i + 1);
-    }
+  // Client-side filtering for All / Non-Customizable
+  const filteredProducts =
+    filter === "Customizable"
+      ? products
+      : products.filter((product) => {
+          if (filter === "All") return true;
+          if (filter === "Non-Customizable") return product.customize === false;
+          return true;
+        });
 
-    const maxPagesToShow = 5;
-    const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-    const pages = [];
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-
-    return pages;
-  };
+  // Client-side pagination slice
+  const startIndex = (currentPage - 1) * 12;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + 12);
+  const displayTotalPages =
+    filter === "Customizable"
+      ? Math.ceil(filteredProducts.length / 12) || 1
+      : totalPages;
 
   return (
     <div className="py-12 md:py-16">
@@ -159,13 +145,16 @@ const Product = () => {
       <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 mx-auto">
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Filter Products ({filteredProducts.length} of {allProducts.length})
+            Filter Products
           </h3>
           <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
             {["All", "Customizable", "Non-Customizable"].map((option) => (
               <button
                 key={option}
-                onClick={() => setFilter(option)}
+                onClick={() => {
+                  setFilter(option);
+                  setCurrentPage(1); // Reset to page 1 on filter change
+                }}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                   filter === option
                     ? "bg-[#5F1327] text-white"
@@ -247,25 +236,16 @@ const Product = () => {
               </div>
             ))
           ) : (
-            <div className="col-span-full text-center text-gray-600 py-12">
-              <div className="text-lg mb-2">
-                No {filter.toLowerCase()} products found.
-              </div>
-              <button
-                onClick={() => setFilter("All")}
-                className="text-[#5F1327] hover:underline"
-              >
-                Show all products
-              </button>
+            <div className="col-span-full text-center text-gray-600">
+              No products available.
             </div>
           )}
         </div>
 
-        {totalPages > 1 && (
+        {displayTotalPages > 1 && (
           <div className="mt-8 flex flex-col items-center space-y-4">
             <div className="text-gray-600">
-              Page {currentPage} of {totalPages} ({filteredProducts.length}{" "}
-              products)
+              Page {currentPage} of {displayTotalPages}
             </div>
             <div className="flex space-x-2">
               <button
@@ -278,34 +258,45 @@ const Product = () => {
                 }`}
                 aria-label="Previous page"
               >
-                &laquo; Previous
+                Previous
               </button>
-              {getPageNumbers().map((page) => (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page)}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                    currentPage === page
-                      ? "bg-[#5F1327] text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                  aria-label={`Page ${page}`}
-                  aria-current={currentPage === page ? "page" : undefined}
-                >
-                  {page}
-                </button>
-              ))}
+
+              {[...Array(displayTotalPages).keys()]
+                .filter((page) =>
+                  displayTotalPages <= 10
+                    ? true
+                    : page + 1 === 1 ||
+                      page + 1 === displayTotalPages ||
+                      (page + 1 >= currentPage - 2 &&
+                        page + 1 <= currentPage + 2)
+                )
+                .map((page) => (
+                  <button
+                    key={page + 1}
+                    onClick={() => handlePageChange(page + 1)}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                      currentPage === page + 1
+                        ? "bg-[#5F1327] text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                    aria-label={`Page ${page + 1}`}
+                    aria-current={currentPage === page + 1 ? "page" : undefined}
+                  >
+                    {page + 1}
+                  </button>
+                ))}
+
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
+                disabled={currentPage === displayTotalPages}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                  currentPage === totalPages
+                  currentPage === displayTotalPages
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
                 aria-label="Next page"
               >
-                Next &raquo;
+                Next
               </button>
             </div>
           </div>

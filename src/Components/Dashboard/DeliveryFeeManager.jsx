@@ -52,11 +52,12 @@ const DeliveryFeeManager = () => {
         throw new Error(data.message || "Failed to load locations");
       }
     } catch (err) {
+      console.error("Error fetching locations:", err);
       toast.error("Failed to load locations.");
     }
   };
 
-  // FETCH DATA FUNCTION
+  // FETCH DATA FUNCTION — SINGLE API CALL TO /delivery-fees
   const fetchData = async () => {
     if (!auth.token) return;
 
@@ -64,49 +65,23 @@ const DeliveryFeeManager = () => {
     setError("");
 
     try {
-      const statesRes = await fetch(`${API_BASE}/states`, {
+      const res = await fetch(`${API_BASE}/delivery-fees`, {
         headers: { Authorization: `Bearer ${auth.token}` },
       });
-      const states = await statesRes.json();
 
-      if (!statesRes.ok || !Array.isArray(states))
-        throw new Error("Failed to load states");
+      const result = await res.json();
 
-      let allPlaces = [];
-      let index = 0;
-
-      for (const state of states) {
-        const stateName = state.state_name;
-        const lgasRes = await fetch(
-          `${API_BASE}/lgas/${encodeURIComponent(stateName)}`,
-          { headers: { Authorization: `Bearer ${auth.token}` } }
-        );
-        const lgas = await lgasRes.json();
-
-        if (lgasRes.ok && Array.isArray(lgas)) {
-          for (const lga of lgas) {
-            const lgaName = lga.lga_name;
-            const placesRes = await fetch(
-              `${API_BASE}/places/${encodeURIComponent(
-                stateName
-              )}/${encodeURIComponent(lgaName)}`,
-              { headers: { Authorization: `Bearer ${auth.token}` } }
-            );
-            const places = await placesRes.json();
-
-            if (placesRes.ok && Array.isArray(places)) {
-              const formatted = places.map((p) => ({
-                id: p.id || ++index,
-                state: stateName,
-                lga: lgaName,
-                place: p.places,
-                fee: parseFloat(p.fee) || 0,
-              }));
-              allPlaces.push(...formatted);
-            }
-          }
-        }
+      if (!res.ok) {
+        throw new Error(result.message || "Failed to load delivery fees");
       }
+
+      const allPlaces = (result.data || []).map((item) => ({
+        id: item.id,
+        state: item.state_name,
+        lga: item.lga_name,
+        place: item.places,
+        fee: parseFloat(item.fee) || 0,
+      }));
 
       const start = (currentPage - 1) * ITEMS_PER_PAGE;
       const end = start + ITEMS_PER_PAGE;
@@ -115,6 +90,7 @@ const DeliveryFeeManager = () => {
       setDeliveryData(paginated);
       setTotalPages(Math.ceil(allPlaces.length / ITEMS_PER_PAGE) || 1);
     } catch (err) {
+      console.error("Error fetching delivery fees:", err);
       setError("Failed to load delivery fees.");
       toast.error("Failed to load delivery fees.");
       setDeliveryData([]);
@@ -211,6 +187,7 @@ const DeliveryFeeManager = () => {
         toast.error(data.message || "Operation failed.");
       }
     } catch (err) {
+      console.error("Error submitting form:", err);
       setModalError("Network error.");
       toast.error("Network error.");
     } finally {
@@ -235,6 +212,7 @@ const DeliveryFeeManager = () => {
         toast.error(data.message || "Delete failed.");
       }
     } catch (err) {
+      console.error("Error deleting delivery fee:", err);
       toast.error("Network error.");
     }
   };

@@ -14,12 +14,20 @@ const TaxManagement = () => {
 
   // Add Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [addForm, setAddForm] = useState({ percentage: "", is_active: true });
+  const [addForm, setAddForm] = useState({
+    name: "",
+    percentage: "",
+    is_active: true,
+  });
   const [isAdding, setIsAdding] = useState(false);
 
   // Edit Modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ percentage: "", is_active: true });
+  const [editForm, setEditForm] = useState({
+    name: "",
+    percentage: "",
+    is_active: true,
+  });
   const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -28,10 +36,7 @@ const TaxManagement = () => {
   // Fetch Taxes
   const fetchTaxes = async () => {
     if (!auth.token) {
-      toast.error("Please verify OTP to continue.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.error("Please verify OTP to continue.", { autoClose: 3000 });
       setTimeout(() => navigate("/admin/otp"), 2000);
       return;
     }
@@ -48,13 +53,9 @@ const TaxManagement = () => {
         },
       });
 
-      if (response.status === 401) {
-        throw new Error("Unauthorized. Please log in again.");
-      }
-
-      if (!response.ok) {
+      if (response.status === 401) throw new Error("Unauthorized.");
+      if (!response.ok)
         throw new Error(`Failed to fetch taxes: ${response.statusText}`);
-      }
 
       const data = await response.json();
       const taxArray = Array.isArray(data.tax) ? data.tax : [];
@@ -62,6 +63,7 @@ const TaxManagement = () => {
       setTaxes(
         taxArray.map((t) => ({
           id: t.id,
+          name: t.name || "Unnamed Tax",
           percentage: t.percentage,
           is_active:
             t.is_active === 1 || t.is_active === "1" || t.is_active === true,
@@ -73,16 +75,10 @@ const TaxManagement = () => {
         }))
       );
 
-      toast.success("Taxes loaded!", {
-        position: "top-right",
-        autoClose: 2000,
-      });
+      toast.success("Taxes loaded!", { autoClose: 2000 });
     } catch (err) {
       setError(err.message);
-      toast.error(`Error: ${err.message}`, {
-        position: "top-right",
-        autoClose: 5000,
-      });
+      toast.error(`Error: ${err.message}`, { autoClose: 5000 });
       setTaxes([]);
       if (err.message.includes("Unauthorized")) {
         setTimeout(() => navigate("/admin/signin"), 2000);
@@ -118,6 +114,7 @@ const TaxManagement = () => {
 
     setIsAdding(true);
     const formData = new FormData();
+    if (addForm.name) formData.append("name", addForm.name);
     formData.append("percentage", addForm.percentage);
     formData.append("is_active", addForm.is_active ? "1" : "0");
 
@@ -133,15 +130,12 @@ const TaxManagement = () => {
         throw new Error(err.message || "Failed to add tax");
       }
 
-      toast.success("Tax added!", { position: "top-right", autoClose: 3000 });
+      toast.success("Tax added!", { autoClose: 3000 });
       setIsAddModalOpen(false);
-      setAddForm({ percentage: "", is_active: true });
+      setAddForm({ name: "", percentage: "", is_active: true });
       fetchTaxes();
     } catch (err) {
-      toast.error(`Error: ${err.message}`, {
-        position: "top-right",
-        autoClose: 5000,
-      });
+      toast.error(`Error: ${err.message}`, { autoClose: 5000 });
     } finally {
       setIsAdding(false);
     }
@@ -150,6 +144,7 @@ const TaxManagement = () => {
   // Handle Edit
   const openEdit = (tax) => {
     setEditForm({
+      name: tax.name === "Unnamed Tax" ? "" : tax.name,
       percentage: tax.percentage,
       is_active: tax.is_active,
     });
@@ -172,7 +167,7 @@ const TaxManagement = () => {
       isNaN(editForm.percentage) ||
       editForm.percentage <= 0
     ) {
-      toast.error("Enter a valid percentage.", { position: "top-right" });
+      toast.error("Enter a valid percentage.");
       return;
     }
 
@@ -183,6 +178,7 @@ const TaxManagement = () => {
         percentage: editForm.percentage,
         is_active: editForm.is_active ? 1 : 0,
       };
+      if (editForm.name) payload.name = editForm.name;
 
       const response = await fetch(`${API_BASE}/taxes/${editingId}`, {
         method: "PATCH",
@@ -198,17 +194,11 @@ const TaxManagement = () => {
         throw new Error(err.message || "Failed to update tax");
       }
 
-      const result = await response.json();
-      console.log("Update response:", result); // Debug
-
-      toast.success("Tax updated!", { position: "top-right", autoClose: 3000 });
+      toast.success("Tax updated!", { autoClose: 3000 });
       setIsEditModalOpen(false);
-      fetchTaxes(); // This will now show correct data
+      fetchTaxes();
     } catch (err) {
-      toast.error(`Error: ${err.message}`, {
-        position: "top-right",
-        autoClose: 5000,
-      });
+      toast.error(`Error: ${err.message}`, { autoClose: 5000 });
     } finally {
       setIsEditing(false);
     }
@@ -216,22 +206,23 @@ const TaxManagement = () => {
 
   return (
     <div className="min-h-screen bg-[#FAF7F5] p-6">
-      <ToastContainer />
+      <ToastContainer position="top-right" />
+
       {/* Top Bar */}
       <div className="flex justify-end items-center mb-6 gap-3">
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#B34949] text-white rounded-md hover:bg-[#B34949]/80 cursor-pointer transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#5F1327] hover:bg-[#B54F5E] text-white rounded-md text-sm font-medium transition-colors"
         >
-          <Plus size={18} />
-          Create Promotion
+          <Plus className="w-4 h-4" />
+          Add Tax Rate
         </button>
-        <button className="relative p-2 hover:bg-gray-200 rounded-md">
-          <Bell className="w-5 h-5 text-gray-700" />
+        <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <Bell className="w-5 h-5 text-gray-600" />
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
         </button>
-        <button className="p-2 hover:bg-gray-200 rounded-md">
-          <Settings className="w-5 h-5 text-gray-700" />
+        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <Settings className="w-5 h-5 text-gray-600" />
         </button>
       </div>
 
@@ -269,9 +260,12 @@ const TaxManagement = () => {
                 </div>
 
                 <div className="pr-12">
-                  <h2 className="text-2xl font-bold text-[#414245] mb-2">
-                    {tax.percentage}%
+                  <h2 className="text-sm font-medium text-[#5F1327] mb-1">
+                    {tax.name}
                   </h2>
+                  <h3 className="text-2xl font-bold text-[#414245] mb-2">
+                    {tax.percentage}%
+                  </h3>
                   <p className="text-sm text-[#414245] mb-1">
                     Status:{" "}
                     <span
@@ -295,19 +289,32 @@ const TaxManagement = () => {
       {/* Add Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="flex justify-between items-center p-6 border-b">
-              <h2 className="text-lg font-semibold text-[#414245]">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-[#141718]">
                 Add Tax Rate
               </h2>
               <button
                 onClick={() => setIsAddModalOpen(false)}
-                className="p-1 hover:bg-gray-100 rounded-full"
+                className="text-gray-400 hover:text-gray-600"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleAddSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleAddSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#414245] mb-1">
+                  Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={addForm.name}
+                  onChange={handleAddChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
+                  placeholder="e.g. VAT, Sales Tax"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
                   Percentage (%)
@@ -319,7 +326,7 @@ const TaxManagement = () => {
                   onChange={handleAddChange}
                   step="0.01"
                   min="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
                   placeholder="e.g. 7.5"
                   required
                 />
@@ -336,11 +343,11 @@ const TaxManagement = () => {
                   Active
                 </label>
               </div>
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                  className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200"
                   disabled={isAdding}
                 >
                   Cancel
@@ -348,16 +355,9 @@ const TaxManagement = () => {
                 <button
                   type="submit"
                   disabled={isAdding}
-                  className="flex-1 px-4 py-2 bg-red-900 text-white rounded-md hover:bg-red-800 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 bg-[#5F1327] text-white py-2 rounded-lg font-medium hover:bg-[#B54F5E] disabled:opacity-50"
                 >
-                  {isAdding ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Adding...
-                    </>
-                  ) : (
-                    "Add Tax"
-                  )}
+                  {isAdding ? "Adding..." : "Add Tax"}
                 </button>
               </div>
             </form>
@@ -368,19 +368,32 @@ const TaxManagement = () => {
       {/* Edit Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="flex justify-between items-center p-6 border-b">
-              <h2 className="text-lg font-semibold text-[#414245]">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-[#141718]">
                 Edit Tax Rate
               </h2>
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="p-1 hover:bg-gray-100 rounded-full"
+                className="text-gray-400 hover:text-gray-600"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#414245] mb-1">
+                  Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={editForm.name}
+                  onChange={handleEditChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
+                  placeholder="e.g. VAT, Sales Tax"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
                   Percentage (%)
@@ -392,7 +405,7 @@ const TaxManagement = () => {
                   onChange={handleEditChange}
                   step="0.01"
                   min="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
                   required
                 />
               </div>
@@ -408,11 +421,11 @@ const TaxManagement = () => {
                   Active
                 </label>
               </div>
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                  className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200"
                   disabled={isEditing}
                 >
                   Cancel
@@ -420,7 +433,7 @@ const TaxManagement = () => {
                 <button
                   type="submit"
                   disabled={isEditing}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 bg-[#5F1327] text-white py-2 rounded-lg font-medium hover:bg-[#B54F5E] disabled:opacity-50"
                 >
                   {isEditing ? "Updating..." : "Update Tax"}
                 </button>

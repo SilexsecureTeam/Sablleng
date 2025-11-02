@@ -483,7 +483,7 @@ export const CartProvider = ({ children }) => {
     };
 
     fetchCart();
-  }, [auth?.isAuthenticated, auth?.token, cart_session_id, items]);
+  }, [auth?.isAuthenticated, auth?.token, cart_session_id]);
 
   // Cart merge on login
   useEffect(() => {
@@ -574,7 +574,7 @@ export const CartProvider = ({ children }) => {
     };
 
     handleMergeOnLogin();
-  }, [auth?.isAuthenticated, auth?.token, cart_session_id, items]);
+  }, [auth?.isAuthenticated, auth?.token, cart_session_id]);
 
   // Cart functions (unchanged)
   const addItem = async (product) => {

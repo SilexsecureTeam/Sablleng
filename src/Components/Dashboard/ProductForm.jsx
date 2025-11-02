@@ -23,11 +23,10 @@ const ProductForm = ({ onSave, onCancel }) => {
   const [categories, setCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
-  // Fetch categories (unchanged from previous)
   useEffect(() => {
     const fetchCategories = async () => {
       if (!auth.token) {
-        toast.error("Authentication token is missing. Please log in again.");
+        toast.error("Please log in again.");
         onCancel();
         return;
       }
@@ -42,29 +41,18 @@ const ProductForm = ({ onSave, onCancel }) => {
           },
         });
 
-        if (response.status === 401) {
-          throw new Error("Unauthorized. Please log in again.");
-        }
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch categories: ${response.statusText}`);
-        }
+        if (response.status === 401) throw new Error("Unauthorized.");
+        if (!response.ok) throw new Error(`Failed: ${response.statusText}`);
 
         const data = await response.json();
-        console.log("Categories API Response:", JSON.stringify(data, null, 2));
-
         const activeCategories = Array.isArray(data)
           ? data
               .filter((cat) => cat.is_active === 1)
-              .map((cat) => ({
-                value: cat.id,
-                label: cat.name,
-              }))
+              .map((cat) => ({ value: cat.id, label: cat.name }))
           : [];
         setCategories(activeCategories);
       } catch (error) {
-        console.error("Fetch categories error:", error.message);
-        toast.error(`Error fetching categories: ${error.message}`);
+        toast.error(`Error: ${error.message}`);
       } finally {
         setIsLoadingCategories(false);
       }
@@ -79,7 +67,6 @@ const ProductForm = ({ onSave, onCancel }) => {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-    // Clear server-side error for this field when user types
     setErrors((prev) => ({ ...prev, [name]: null, api: null }));
   };
 
@@ -95,7 +82,6 @@ const ProductForm = ({ onSave, onCancel }) => {
     const newColors = [...formData.colors];
     newColors[index] = value;
     setFormData((prev) => ({ ...prev, colors: newColors }));
-    setErrors((prev) => ({ ...prev, api: null }));
   };
 
   const addColorField = () => {
@@ -124,7 +110,6 @@ const ProductForm = ({ onSave, onCancel }) => {
       ...prev,
       images: [...prev.images, ...validImages].slice(0, 4),
     }));
-    setErrors((prev) => ({ ...prev, api: null }));
   };
 
   const removeImage = (index) => {
@@ -132,7 +117,6 @@ const ProductForm = ({ onSave, onCancel }) => {
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
     }));
-    setErrors((prev) => ({ ...prev, api: null }));
   };
 
   const validateForm = () => {
@@ -145,23 +129,19 @@ const ProductForm = ({ onSave, onCancel }) => {
     if (!formData.price || formData.price <= 0)
       newErrors.price = "Valid price is required";
     if (!formData.availableStock || formData.availableStock < 0)
-      newErrors.availableStock = "Valid stock quantity is required";
+      newErrors.availableStock = "Valid stock is required";
     setErrors((prev) => ({ ...prev, ...newErrors }));
     return Object.keys(newErrors).length === 0;
   };
 
   const handleContinue = () => {
-    if (validateForm()) {
-      setStep(2);
-    } else {
-      Object.values(errors).forEach((error) => toast.error(error));
-    }
+    if (validateForm()) setStep(2);
+    else Object.values(errors).forEach((error) => toast.error(error));
   };
 
   const handleCancel = () => {
-    if (step === 2) {
-      setStep(1);
-    } else {
+    if (step === 2) setStep(1);
+    else {
       setFormData({
         productName: "",
         category: "",
@@ -185,13 +165,12 @@ const ProductForm = ({ onSave, onCancel }) => {
     }
 
     if (!auth.token) {
-      toast.error("Authentication token is missing. Please log in again.");
+      toast.error("Please log in again.");
       onCancel();
       return;
     }
 
     setIsSubmitting(true);
-    setErrors({}); // Clear previous errors
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("name", formData.productName);
@@ -209,21 +188,13 @@ const ProductForm = ({ onSave, onCancel }) => {
         formDataToSend.append(`images[${index}]`, image.file);
       });
 
-      console.log("FormData payload:", [...formDataToSend.entries()]);
-
       const response = await fetch("https://api.sablle.ng/api/products", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-        },
+        headers: { Authorization: `Bearer ${auth.token}` },
         body: formDataToSend,
       });
 
       const data = await response.json();
-      console.log(
-        "POST /api/products response:",
-        JSON.stringify(data, null, 2)
-      );
 
       if (!response.ok) {
         if (response.status === 422) {
@@ -243,14 +214,12 @@ const ProductForm = ({ onSave, onCancel }) => {
           });
           setErrors(formattedErrors);
           throw new Error("Validation failed");
-        } else if (response.status === 401) {
-          throw new Error("Unauthorized. Please log in again.");
         } else {
           throw new Error(data.message || "Failed to create product");
         }
       }
 
-      toast.success("Product created successfully!");
+      toast.success("Product created!");
       const selectedCategory = categories.find(
         (cat) => cat.value === parseInt(formData.category)
       );
@@ -261,9 +230,9 @@ const ProductForm = ({ onSave, onCancel }) => {
         category:
           data.product.category?.name || selectedCategory?.label || "N/A",
         type: data.product.customize ? "Customizable" : "Non-custom",
-        price: data.product.sale_price_inc_tax
-          ? `₦${parseFloat(data.product.sale_price_inc_tax).toLocaleString()}`
-          : `₦${parseFloat(formData.price).toLocaleString()}`,
+        price: `₦${parseFloat(
+          data.product.sale_price_inc_tax || formData.price
+        ).toLocaleString()}`,
         stock: data.product.stock_quantity || formData.availableStock,
       });
       setFormData({
@@ -280,7 +249,6 @@ const ProductForm = ({ onSave, onCancel }) => {
       setErrors({});
       setStep(1);
     } catch (error) {
-      console.error("Create product error:", error.message);
       if (error.message !== "Validation failed") {
         toast.error(`Error: ${error.message}`);
         setErrors((prev) => ({ ...prev, api: error.message }));
@@ -295,7 +263,7 @@ const ProductForm = ({ onSave, onCancel }) => {
       {step === 1 ? (
         <div className="space-y-6">
           <div>
-            <label className="block text-sm text-gray-600 mb-2">
+            <label className="block text-sm font-medium text-[#414245] mb-1">
               Product Name
             </label>
             <input
@@ -304,16 +272,16 @@ const ProductForm = ({ onSave, onCancel }) => {
               value={formData.productName}
               onChange={handleInputChange}
               placeholder="Enter Product name"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
               disabled={isSubmitting}
             />
             {errors.productName && (
-              <p className="text-red-500 text-sm mt-1">{errors.productName}</p>
+              <p className="text-red-600 text-sm mt-1">{errors.productName}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm text-gray-600 mb-2">
+            <label className="block text-sm font-medium text-[#414245] mb-1">
               Product Category
             </label>
             <Select
@@ -324,15 +292,25 @@ const ProductForm = ({ onSave, onCancel }) => {
               isLoading={isLoadingCategories}
               isDisabled={isSubmitting || isLoadingCategories}
               className="text-sm"
-              classNamePrefix="react-select"
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  borderColor: "#d1d5db",
+                  "&:hover": { borderColor: "#9ca3af" },
+                  "&:focus-within": {
+                    borderColor: "#5F1327",
+                    boxShadow: "0 0 0 1px #5F1327",
+                  },
+                }),
+              }}
             />
             {errors.category && (
-              <p className="text-red-500 text-sm mt-1">{errors.category}</p>
+              <p className="text-red-600 text-sm mt-1">{errors.category}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm text-gray-600 mb-2">
+            <label className="block text-sm font-medium text-[#414245] mb-1">
               SKU Number
             </label>
             <input
@@ -341,17 +319,19 @@ const ProductForm = ({ onSave, onCancel }) => {
               value={formData.skuNumber}
               onChange={handleInputChange}
               placeholder="1234"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
               disabled={isSubmitting}
             />
             {errors.skuNumber && (
-              <p className="text-red-500 text-sm mt-1">{errors.skuNumber}</p>
+              <p className="text-red-600 text-sm mt-1">{errors.skuNumber}</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-600 mb-2">Price</label>
+              <label className="block text-sm font-medium text-[#414245] mb-1">
+                Price
+              </label>
               <input
                 type="number"
                 name="price"
@@ -360,16 +340,15 @@ const ProductForm = ({ onSave, onCancel }) => {
                 placeholder="0.00"
                 step="0.01"
                 min="0"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
                 disabled={isSubmitting}
               />
               {errors.price && (
-                <p className="text-red-500 text-sm mt-1">{errors.price}</p>
+                <p className="text-red-600 text-sm mt-1">{errors.price}</p>
               )}
             </div>
-
             <div>
-              <label className="block text-sm text-gray-600 mb-2">
+              <label className="block text-sm font-medium text-[#414245] mb-1">
                 Available Stock
               </label>
               <input
@@ -379,11 +358,11 @@ const ProductForm = ({ onSave, onCancel }) => {
                 onChange={handleInputChange}
                 placeholder="0"
                 min="0"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
                 disabled={isSubmitting}
               />
               {errors.availableStock && (
-                <p className="text-red-500 text-sm mt-1">
+                <p className="text-red-600 text-sm mt-1">
                   {errors.availableStock}
                 </p>
               )}
@@ -394,22 +373,20 @@ const ProductForm = ({ onSave, onCancel }) => {
             <input
               type="checkbox"
               name="allowCustomization"
-              id="allowCustomization"
               checked={formData.allowCustomization}
               onChange={handleInputChange}
-              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+              className="w-4 h-4 text-[#5F1327] border-gray-300 rounded focus:ring-[#5F1327]"
               disabled={isSubmitting}
             />
-            <label
-              htmlFor="allowCustomization"
-              className="ml-2 text-sm text-gray-700"
-            >
+            <label className="ml-2 text-sm font-medium text-[#414245]">
               Allow customization
             </label>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm text-gray-600 mb-2">Colors</label>
+            <label className="block text-sm font-medium text-[#414245] mb-1">
+              Colors
+            </label>
             {formData.colors.map((color, index) => (
               <div key={index} className="flex items-center gap-2">
                 <input
@@ -417,7 +394,7 @@ const ProductForm = ({ onSave, onCancel }) => {
                   value={color}
                   onChange={(e) => handleColorChange(index, e.target.value)}
                   placeholder="Enter color"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
                   disabled={isSubmitting}
                 />
                 {formData.colors.length > 1 && (
@@ -435,7 +412,7 @@ const ProductForm = ({ onSave, onCancel }) => {
             <button
               type="button"
               onClick={addColorField}
-              className="text-sm text-green-600 hover:text-green-800"
+              className="text-sm text-[#5F1327] hover:text-[#B54F5E]"
               disabled={isSubmitting}
             >
               + Add Color
@@ -443,20 +420,20 @@ const ProductForm = ({ onSave, onCancel }) => {
           </div>
 
           {errors.api && (
-            <p className="text-red-500 text-sm mt-1">{errors.api}</p>
+            <p className="text-red-600 text-sm mt-1">{errors.api}</p>
           )}
 
-          <div className="flex gap-4 pt-4">
+          <div className="flex gap-3 pt-4">
             <button
               onClick={handleCancel}
-              className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200"
               disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               onClick={handleContinue}
-              className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="flex-1 bg-[#5F1327] text-white py-2 rounded-lg font-medium hover:bg-[#B54F5E] disabled:opacity-50"
               disabled={isSubmitting || isLoadingCategories}
             >
               Continue
@@ -466,7 +443,7 @@ const ProductForm = ({ onSave, onCancel }) => {
       ) : (
         <div className="space-y-6">
           <div>
-            <label className="block text-sm text-gray-700 mb-3">
+            <label className="block text-sm font-medium text-[#414245] mb-3">
               Upload product images
             </label>
             <div className="grid grid-cols-4 gap-3">
@@ -508,7 +485,7 @@ const ProductForm = ({ onSave, onCancel }) => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-[#414245] mb-1">
               Product Description
             </label>
             <textarea
@@ -516,27 +493,27 @@ const ProductForm = ({ onSave, onCancel }) => {
               value={formData.description}
               onChange={handleInputChange}
               rows={8}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327] focus:border-transparent resize-none"
               placeholder="Enter product description..."
               disabled={isSubmitting}
             />
           </div>
 
           {errors.api && (
-            <p className="text-red-500 text-sm mt-1">{errors.api}</p>
+            <p className="text-red-600 text-sm mt-1">{errors.api}</p>
           )}
 
-          <div className="flex gap-4 pt-4">
+          <div className="flex gap-3 pt-4">
             <button
               onClick={handleCancel}
-              className="px-8 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-8 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
               disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               onClick={handleSaveProduct}
-              className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="px-8 py-2 bg-[#5F1327] text-white rounded-lg font-medium hover:bg-[#B54F5E] disabled:opacity-50"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Saving..." : "Save Product"}
