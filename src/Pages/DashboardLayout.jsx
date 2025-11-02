@@ -34,6 +34,10 @@ const Settings = lazy(() => import("../Components/Dashboard/Settings"));
 const AdminRole = lazy(() => import("../Components/Dashboard/AdminRole"));
 const ProductView = lazy(() => import("../Components/Dashboard/ProductView"));
 const Sidebar = lazy(() => import("../Components/Dashboard/Sidebar"));
+const CategoryProducts = lazy(() =>
+  import("../Components/Dashboard/CategoryProducts")
+);
+const OrderDetails = lazy(() => import("../Components/Dashboard/OrderDetails"));
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -75,6 +79,14 @@ const DashboardLayout = () => {
                 }
               />
               <Route
+                path="/orders/:reference/details"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <OrderDetails />
+                  </MainContent>
+                }
+              />
+              <Route
                 path="/customers"
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
@@ -95,6 +107,14 @@ const DashboardLayout = () => {
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
                     <Categories />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/categories/:id/products"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <CategoryProducts />
                   </MainContent>
                 }
               />

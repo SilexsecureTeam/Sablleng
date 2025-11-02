@@ -1,9 +1,12 @@
+// src/context/CartContext.jsx
 import React, { useState, useContext, useEffect } from "react";
 import { toast } from "react-toastify";
 import { CartContext } from "./CartContextObject";
 import { AuthContext } from "./AuthContextObject";
+import { useLocation } from "react-router-dom";
 
 export const CartProvider = ({ children }) => {
+  const location = useLocation();
   // Cart state
   const [items, setItems] = useState(() =>
     JSON.parse(localStorage.getItem("cart_items") || "[]")
@@ -85,7 +88,10 @@ export const CartProvider = ({ children }) => {
         console.log("🛒 Wishlist fetch response data:", data);
 
         if (response.ok) {
-          const wishlistItems = Array.isArray(data.data) ? data.data : [];
+          // FIXED: Use data.wishlist per Postman, not data.data
+          const wishlistItems = Array.isArray(data.wishlist)
+            ? data.wishlist
+            : [];
           const formattedWishlist = wishlistItems.map((item) => ({
             id: item.product_id,
             name: item.product?.name || item.name || "Unknown Product",
@@ -150,7 +156,9 @@ export const CartProvider = ({ children }) => {
         auth?.isAuthenticated &&
         auth?.token &&
         wishlist_session_id &&
-        !localStorage.getItem("wishlist_merged")
+        !localStorage.getItem("wishlist_merged") &&
+        location.pathname !== "/signin" && // FIXED: Skip on signin
+        location.pathname !== "/signup" // Optional: Add other login routes
       ) {
         console.log("🛒 CartContext: Merging wishlist on login...");
         try {
@@ -171,6 +179,7 @@ export const CartProvider = ({ children }) => {
           const data = await response.json();
           if (response.ok) {
             toast.success("Wishlist merged successfully!");
+            // FIXED: Assume merge returns data.data; adjust if it's data.wishlist
             const wishlistItems = Array.isArray(data.data) ? data.data : [];
             const formattedWishlist = wishlistItems.map((item) => ({
               id: item.product_id,
@@ -210,13 +219,16 @@ export const CartProvider = ({ children }) => {
           console.error("❌ Wishlist merge error:", error);
           toast.error("Network error during wishlist merge");
         }
-      } else if (auth?.isAuthenticated) {
-        localStorage.removeItem("wishlist_merged");
       }
     };
 
     handleWishlistMergeOnLogin();
-  }, [auth?.isAuthenticated, auth?.token, wishlist_session_id, items]);
+  }, [
+    auth?.isAuthenticated,
+    auth?.token,
+    wishlist_session_id,
+    location.pathname,
+  ]); // ADD: location.pathname to deps (runs only when route changes too)
 
   // Wishlist functions
   const addToWishlist = async (product) => {
@@ -247,19 +259,36 @@ export const CartProvider = ({ children }) => {
           autoClose: 3000,
         });
 
-        // Fetch updated wishlist
+        // FIXED: Store new session_id IMMEDIATELY if provided (for guests)
+        if (!auth?.isAuthenticated && data.session_id) {
+          console.log("🛒 New session_id from add:", data.session_id);
+          setWishlistSessionId(data.session_id);
+          localStorage.setItem("wishlist_session_id", data.session_id);
+        }
+
+        // NOW fetch updated with potentially new headers/session_id
+        const updatedHeaders = {};
+        if (auth?.isAuthenticated && auth?.token) {
+          updatedHeaders["Authorization"] = `Bearer ${auth.token}`;
+        } else if (wishlist_session_id || data.session_id) {
+          // Use new one if set
+          updatedHeaders["X-Cart-Session"] =
+            data.session_id || wishlist_session_id;
+        }
+
         const wishlistResponse = await fetch(
           "https://api.sablle.ng/api/wishlist",
           {
             method: "GET",
-            headers,
+            headers: updatedHeaders, // Use fresh headers
           }
         );
         const wishlistData = await wishlistResponse.json();
 
         if (wishlistResponse.ok) {
-          const wishlistItems = Array.isArray(wishlistData.data)
-            ? wishlistData.data
+          // FIXED: Use data.wishlist per Postman
+          const wishlistItems = Array.isArray(wishlistData.wishlist)
+            ? wishlistData.wishlist
             : [];
           const formattedWishlist = wishlistItems.map((item) => ({
             id: item.product_id,
@@ -288,10 +317,7 @@ export const CartProvider = ({ children }) => {
           }));
 
           setWishlist(formattedWishlist);
-          if (!auth?.isAuthenticated && data.session_id) {
-            setWishlistSessionId(data.session_id);
-            localStorage.setItem("wishlist_session_id", data.session_id);
-          }
+          console.log("🛒 Updated wishlist length:", formattedWishlist.length);
         } else {
           toast.error("Failed to fetch updated wishlist");
         }
@@ -350,8 +376,9 @@ export const CartProvider = ({ children }) => {
         const wishlistData = await wishlistResponse.json();
 
         if (wishlistResponse.ok) {
-          const wishlistItems = Array.isArray(wishlistData.data)
-            ? wishlistData.data
+          // FIXED: Use data.wishlist per Postman
+          const wishlistItems = Array.isArray(wishlistData.wishlist)
+            ? wishlistData.wishlist
             : [];
           const formattedWishlist = wishlistItems.map((item) => ({
             id: item.product_id,

@@ -54,6 +54,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home, path: "/dashboard" },
     {
+      id: "customers",
+      label: "Customers",
+      icon: Users,
+      path: "/dashboard/customers",
+    },
+    {
+      id: "orders",
+      label: "Order Management",
+      icon: Package,
+      path: "/dashboard/orders",
+    },
+    {
       id: "product-list",
       label: "Product List",
       icon: List,
@@ -64,12 +76,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: "Categories",
       icon: Grid,
       path: "/dashboard/categories",
-    },
-    {
-      id: "orders",
-      label: "Order Management",
-      icon: Package,
-      path: "/dashboard/orders",
     },
     {
       id: "tax-management",
@@ -83,12 +89,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: CreditCard,
       path: "/dashboard/delivery-fee-manager",
     },
-    {
-      id: "customers",
-      label: "Customers",
-      icon: Users,
-      path: "/dashboard/customers",
-    },
+
     {
       id: "Inventory",
       label: "Inventory",

@@ -47,9 +47,9 @@ const Categories = () => {
   const [isEditing, setIsEditing] = useState(false);
 
   // Show Modal
-  const [isShowModalOpen, setIsShowModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [products, setProducts] = useState([]);
+  // const [isShowModalOpen, setIsShowModalOpen] = useState(false);
+  // const [selectedCategory, setSelectedCategory] = useState(null);
+  // const [products, setProducts] = useState([]);
 
   // Fetch categories with pagination & search
   const fetchCategories = async (page = 1, search = "") => {
@@ -255,35 +255,35 @@ const Categories = () => {
   };
 
   // Show Category & Products
-  const handleShow = async (category) => {
-    try {
-      const response = await fetch(
-        `https://api.sablle.ng/api/categories/${category.id}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${auth.token}`,
-          },
-        }
-      );
+  // const handleShow = async (category) => {
+  //   try {
+  //     const response = await fetch(
+  //       `https://api.sablle.ng/api/categories/${category.id}`,
+  //       {
+  //         method: "GET",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${auth.token}`,
+  //         },
+  //       }
+  //     );
 
-      if (!response.ok) throw new Error("Failed to fetch category details");
+  //     if (!response.ok) throw new Error("Failed to fetch category details");
 
-      const data = await response.json();
-      setSelectedCategory(category);
-      setProducts(Array.isArray(data.products) ? data.products : []);
-      setIsShowModalOpen(true);
-    } catch (err) {
-      toast.error(`Error: ${err.message}`, { autoClose: 5000 });
-    }
-  };
+  //     const data = await response.json();
+  //     setSelectedCategory(category);
+  //     setProducts(Array.isArray(data.products) ? data.products : []);
+  //     setIsShowModalOpen(true);
+  //   } catch (err) {
+  //     toast.error(`Error: ${err.message}`, { autoClose: 5000 });
+  //   }
+  // };
 
-  const closeShowModal = () => {
-    setIsShowModalOpen(false);
-    setSelectedCategory(null);
-    setProducts([]);
-  };
+  // const closeShowModal = () => {
+  //   setIsShowModalOpen(false);
+  //   setSelectedCategory(null);
+  //   setProducts([]);
+  // };
 
   return (
     <div className="min-h-screen bg-[#FAF7F5] p-6">
@@ -362,7 +362,11 @@ const Categories = () => {
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleShow(category)}
+                        onClick={() =>
+                          navigate(
+                            `/dashboard/categories/${category.id}/products`
+                          )
+                        }
                         className="p-1 text-green-600 hover:text-green-800"
                         title="View Products"
                       >
@@ -622,7 +626,7 @@ const Categories = () => {
       )}
 
       {/* Show Modal */}
-      {isShowModalOpen && selectedCategory && (
+      {/* {isShowModalOpen && selectedCategory && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
             <div className="flex justify-between items-center mb-4">
@@ -686,7 +690,7 @@ const Categories = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

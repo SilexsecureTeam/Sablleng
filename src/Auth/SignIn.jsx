@@ -118,7 +118,7 @@ const SignIn = () => {
             }
           } catch (error) {
             console.error("SignIn: Merge cart error:", error.message);
-            toast.error("Network error while merging cart");
+            // toast.error("Network error while merging cart");
           }
         }
 

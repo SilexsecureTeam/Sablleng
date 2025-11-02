@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Search, Zap, Bell, Settings, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, Bell, Settings } from "lucide-react";
 import { AuthContext } from "../../context/AuthContextObject";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -12,10 +13,11 @@ const OrderManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const ordersPerPage = 10;
+  const navigate = useNavigate();
 
   // MODAL
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  // const [isModalOpen, setIsModalOpen] = useState(false);
+  // const [selectedOrder, setSelectedOrder] = useState(null);
 
   const { auth } = useContext(AuthContext);
 
@@ -44,7 +46,7 @@ const OrderManagement = () => {
 
       const contentType = response.headers.get("Content-Type");
       if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
+        // const text = await response.text();
         throw new Error("Server returned non-JSON response");
       }
 
@@ -82,15 +84,15 @@ const OrderManagement = () => {
   }, [auth?.isAuthenticated, auth?.token]);
 
   // Open Modal
-  const openDetails = (order) => {
-    setSelectedOrder(order);
-    setIsModalOpen(true);
-  };
+  // const openDetails = (order) => {
+  //   setSelectedOrder(order);
+  //   setIsModalOpen(true);
+  // };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedOrder(null);
-  };
+  // const closeModal = () => {
+  //   setIsModalOpen(false);
+  //   setSelectedOrder(null);
+  // };
 
   // Status Style
   const getStatusStyle = (status) => {
@@ -142,10 +144,6 @@ const OrderManagement = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-[#C3B7B9] text-gray-700 rounded-md hover:bg-[#C3B7B9]/80 text-sm font-medium">
-              <Zap className="w-4 h-4" />
-              Quick Action
-            </button>
             <button className="p-2 hover:bg-gray-100 rounded-lg">
               <Bell className="w-5 h-5 text-gray-600" />
             </button>
@@ -274,7 +272,9 @@ const OrderManagement = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <button
-                          onClick={() => openDetails(order)}
+                          onClick={() =>
+                            navigate(`/dashboard/orders/${order.id}/details`)
+                          }
                           className="text-sm text-[#0B36B5] hover:text-blue-800 font-medium"
                         >
                           Details
@@ -330,7 +330,7 @@ const OrderManagement = () => {
       </div>
 
       {/* DETAILS MODAL — READ-ONLY */}
-      {isModalOpen && selectedOrder && (
+      {/* {isModalOpen && selectedOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
@@ -379,7 +379,7 @@ const OrderManagement = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };
