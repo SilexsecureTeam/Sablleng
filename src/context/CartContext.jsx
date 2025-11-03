@@ -7,6 +7,7 @@ import { useLocation } from "react-router-dom";
 
 export const CartProvider = ({ children }) => {
   const location = useLocation();
+  const [isInitialized, setIsInitialized] = useState(false);
   // Cart state
   const [items, setItems] = useState(() =>
     JSON.parse(localStorage.getItem("cart_items") || "[]")
@@ -123,13 +124,18 @@ export const CartProvider = ({ children }) => {
             setWishlistSessionId(data.session_id);
             localStorage.setItem("wishlist_session_id", data.session_id);
           }
-          toast.success(
-            `Wishlist loaded with ${formattedWishlist.length} items`,
-            {
-              position: "top-right",
-              autoClose: 3000,
-            }
-          );
+          // NEW: Gate toast—only on non-empty or after init (skips "0 items" on reload)
+          if (formattedWishlist.length > 0 || isInitialized) {
+            toast.success(
+              `Wishlist loaded with ${formattedWishlist.length} items`,
+              {
+                position: "top-right",
+                autoClose: 3000,
+              }
+            );
+          }
+          // NEW: Mark as initialized after first run
+          setIsInitialized(true);
         } else {
           console.error("❌ CartContext: Wishlist API error:", data.message);
           if (response.status === 401) {
@@ -147,78 +153,93 @@ export const CartProvider = ({ children }) => {
     };
 
     fetchWishlist();
-  }, [auth?.isAuthenticated, auth?.token, wishlist_session_id]);
+  }, [auth?.isAuthenticated, auth?.token, wishlist_session_id, isInitialized]); // NEW: Add isInitialized to deps for re-runs if needed
 
   // Wishlist merge on login
   useEffect(() => {
     const handleWishlistMergeOnLogin = async () => {
+      // NEW: Early guard—skip if no session, already merged, or on login routes
       if (
-        auth?.isAuthenticated &&
-        auth?.token &&
-        wishlist_session_id &&
-        !localStorage.getItem("wishlist_merged") &&
-        location.pathname !== "/signin" && // FIXED: Skip on signin
-        location.pathname !== "/signup" // Optional: Add other login routes
+        !auth?.isAuthenticated ||
+        !auth?.token ||
+        !wishlist_session_id ||
+        localStorage.getItem("wishlist_merged") ||
+        location.pathname === "/signin" ||
+        location.pathname === "/signup"
       ) {
-        console.log("🛒 CartContext: Merging wishlist on login...");
-        try {
-          const formData = new FormData();
-          formData.append("session_id", wishlist_session_id);
-
-          const response = await fetch(
-            "https://api.sablle.ng/api/wishlist/merge",
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${auth.token}`,
-              },
-              body: formData,
-            }
+        // NEW: Clear stale session on logged-in reload to prevent retries
+        if (auth?.isAuthenticated && wishlist_session_id) {
+          console.log(
+            "🛒 CartContext: Clearing stale wishlist session on reload"
           );
-
-          const data = await response.json();
-          if (response.ok) {
-            toast.success("Wishlist merged successfully!");
-            // FIXED: Assume merge returns data.data; adjust if it's data.wishlist
-            const wishlistItems = Array.isArray(data.data) ? data.data : [];
-            const formattedWishlist = wishlistItems.map((item) => ({
-              id: item.product_id,
-              name: item.product?.name || item.name || "Unknown Product",
-              price: item.product?.sale_price_inc_tax
-                ? `₦${parseFloat(
-                    item.product.sale_price_inc_tax
-                  ).toLocaleString()}`
-                : item.price || "Price Unavailable",
-              category:
-                item.product?.category?.name ||
-                item.category ||
-                "Unknown Category",
-              badge: item.product?.customize
-                ? "Customizable"
-                : item.badge || null,
-              image:
-                item.product?.images?.[0] ||
-                item.image ||
-                "/placeholder-image.jpg",
-              customize:
-                item.product?.meta?.customizable ??
-                item.product?.customize ??
-                item.customize ??
-                false,
-            }));
-
-            setWishlist(formattedWishlist);
-            setWishlistSessionId(null);
-            localStorage.removeItem("wishlist_session_id");
-            localStorage.setItem("wishlist_merged", "true");
-          } else {
-            console.error("❌ Wishlist merge failed:", data);
-            toast.error(data.message || "Failed to merge wishlist");
-          }
-        } catch (error) {
-          console.error("❌ Wishlist merge error:", error);
-          toast.error("Network error during wishlist merge");
+          setWishlistSessionId(null);
+          localStorage.removeItem("wishlist_session_id");
         }
+        return;
+      }
+
+      console.log("🛒 CartContext: Merging wishlist on login...");
+      try {
+        const formData = new FormData();
+        formData.append("session_id", wishlist_session_id);
+
+        const response = await fetch(
+          "https://api.sablle.ng/api/wishlist/merge",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${auth.token}`,
+            },
+            body: formData,
+          }
+        );
+
+        const data = await response.json();
+        if (response.ok) {
+          toast.success("Wishlist merged successfully!");
+          // FIXED: Assume merge returns data.data; adjust if it's data.wishlist
+          const wishlistItems = Array.isArray(data.data) ? data.data : [];
+          const formattedWishlist = wishlistItems.map((item) => ({
+            id: item.product_id,
+            name: item.product?.name || item.name || "Unknown Product",
+            price: item.product?.sale_price_inc_tax
+              ? `₦${parseFloat(
+                  item.product.sale_price_inc_tax
+                ).toLocaleString()}`
+              : item.price || "Price Unavailable",
+            category:
+              item.product?.category?.name ||
+              item.category ||
+              "Unknown Category",
+            badge: item.product?.customize
+              ? "Customizable"
+              : item.badge || null,
+            image:
+              item.product?.images?.[0] ||
+              item.image ||
+              "/placeholder-image.jpg",
+            customize:
+              item.product?.meta?.customizable ??
+              item.product?.customize ??
+              item.customize ??
+              false,
+          }));
+
+          setWishlist(formattedWishlist);
+          setWishlistSessionId(null);
+          localStorage.removeItem("wishlist_session_id");
+          localStorage.setItem("wishlist_merged", "true");
+        } else {
+          console.error("❌ Wishlist merge failed:", data);
+          toast.error(data.message || "Failed to merge wishlist");
+        }
+      } catch (error) {
+        console.error("❌ Wishlist merge error:", error);
+        // REMOVED: Silent—no toast spam
+        // NEW: Force-clear on fail to stop future retries
+        localStorage.setItem("wishlist_merged", "true");
+        setWishlistSessionId(null);
+        localStorage.removeItem("wishlist_session_id");
       }
     };
 
@@ -228,7 +249,7 @@ export const CartProvider = ({ children }) => {
     auth?.token,
     wishlist_session_id,
     location.pathname,
-  ]); // ADD: location.pathname to deps (runs only when route changes too)
+  ]);
 
   // Wishlist functions
   const addToWishlist = async (product) => {
