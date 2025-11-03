@@ -460,7 +460,7 @@ const ProductDetail = () => {
                     </button>
                   ) : (
                     <button
-                      className="bg-[#5F1327] hover:bg-[#5F1327]/70 text-white font-medium py-3 px-8 rounded-lg transition-colors"
+                      className="bg-[#5F1327] hidden hover:bg-[#5F1327]/70 text-white font-medium py-3 px-8 rounded-lg transition-colors"
                       onClick={handleOrderNow}
                       disabled={isAddingToCart}
                     >

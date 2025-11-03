@@ -56,7 +56,7 @@ export default function Hero1() {
         return (
           <Link
             to="/groups/for-him"
-            className="absolute bottom-10 right-10 bg-[#5F1327] text-white px-8 py-4 rounded-full font-semibold text-lg md:text-xl shadow-lg hover:bg-[#8B1A3A] transition-colors duration-300 drop-shadow-lg"
+            className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-[#5F1327] text-white px-8 py-4 rounded-full font-semibold text-lg md:text-xl shadow-lg hover:bg-[#8B1A3A] hover:scale-105 hover:shadow-2xl transition-all duration-300 ease-out drop-shadow-lg"
           >
             Shop For Him
           </Link>
@@ -67,7 +67,7 @@ export default function Hero1() {
         return (
           <Link
             to="/groups/for-her"
-            className="absolute bottom-10 right-10 bg-[#5F1327] text-white px-8 py-4 rounded-full font-semibold text-lg md:text-xl shadow-lg hover:bg-[#8B1A3A] transition-colors duration-300 drop-shadow-lg"
+            className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-[#5F1327] text-white px-8 py-4 rounded-full font-semibold text-lg md:text-xl shadow-lg hover:bg-[#8B1A3A] hover:scale-105 hover:shadow-2xl transition-all duration-300 ease-out drop-shadow-lg"
           >
             Shop For Her
           </Link>
@@ -76,7 +76,7 @@ export default function Hero1() {
         return (
           <Link
             to="/groups/hampers"
-            className="absolute bottom-10 right-10 bg-[#5F1327] text-white px-8 py-4 rounded-full font-semibold text-lg md:text-xl shadow-lg hover:bg-[#8B1A3A] transition-colors duration-300 drop-shadow-lg"
+            className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-[#5F1327] text-white px-8 py-4 rounded-full font-semibold text-lg md:text-xl shadow-lg hover:bg-[#8B1A3A] hover:scale-105 hover:shadow-2xl transition-all duration-300 ease-out drop-shadow-lg"
           >
             Explore Hampers
           </Link>
@@ -85,7 +85,7 @@ export default function Hero1() {
         return (
           <Link
             to="/groups/exclusive-at-sabblle"
-            className="absolute bottom-10 right-10 bg-[#5F1327] text-white px-8 py-4 rounded-full font-semibold text-lg md:text-xl shadow-lg hover:bg-[#8B1A3A] transition-colors duration-300 drop-shadow-lg"
+            className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-[#5F1327] text-white px-8 py-4 rounded-full font-semibold text-lg md:text-xl shadow-lg hover:bg-[#8B1A3A] hover:scale-105 hover:shadow-2xl transition-all duration-300 ease-out drop-shadow-lg"
           >
             Exclusive Deals
           </Link>

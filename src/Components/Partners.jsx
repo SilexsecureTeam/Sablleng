@@ -20,7 +20,7 @@ export default function Partners() {
               <img
                 src={image}
                 alt={`Partner ${index + 1}`}
-                className="h-10 sm:h-12 md:h-16 lg:h-20 w-auto max-h-16 sm:max-h-20 lg:max-h-24 object-contain"
+                className="h-8 md:h-10 lg:h-14 w-auto max-h-10 sm:max-h-12 lg:max-h-16 object-contain"
               />
             </div>
           ))}
