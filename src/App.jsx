@@ -35,6 +35,7 @@ const CustomizablePage = lazy(() => import("./Pages/Customizable"));
 const DashboardLayout = lazy(() => import("./Pages/DashboardLayout"));
 const MyProfilePage = lazy(() => import("./Pages/MyProfilePage"));
 const OrdersPage = lazy(() => import("./Pages/OrdersPage"));
+const GroupedCategoryPage = lazy(() => import("./Pages/GroupedCategoryPage"));
 const WishListPage = lazy(() => import("./Pages/WishListPage"));
 
 const LoadingSpinner = () => {
@@ -104,6 +105,10 @@ const App = () => {
                 <Route
                   path="/categories/:categorySlug"
                   element={<CategoryPage />}
+                />
+                <Route
+                  path="/groups/:mainSlug"
+                  element={<GroupedCategoryPage />}
                 />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/delivery" element={<DeliveryPage />} />

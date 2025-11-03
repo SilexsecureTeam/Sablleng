@@ -17,12 +17,13 @@ import { CartContext } from "../context/CartContextObject";
 import { AuthContext } from "../context/AuthContextObject";
 import logo from "../assets/logo-d.png";
 import { toast } from "react-toastify";
+import { getSubCategories } from "../utils/categoryGroups";
 
 const Header = () => {
   const { items } = useContext(CartContext);
   const { auth, logout } = useContext(AuthContext);
   const [mobileMenu, setMobileMenu] = useState(false);
-  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
@@ -30,6 +31,18 @@ const Header = () => {
   const timeoutRef = useRef(null);
   const profileRef = useRef(null);
   const mobileMenuRef = useRef(null);
+
+  // Static main categories (matching Category1.jsx)
+  const mainCategories = [
+    { id: 1, name: "Christmas", slug: "christmas" },
+    { id: 2, name: "Hampers", slug: "hampers" },
+    { id: 3, name: "Corporate", slug: "corporate" },
+    { id: 4, name: "Exclusive at sabblle", slug: "exclusive-at-sabblle" },
+    { id: 5, name: "For Him", slug: "for-him" },
+    { id: 6, name: "For Her", slug: "for-her" },
+    { id: 7, name: "Birthday", slug: "birthday" },
+    { id: 8, name: "Confectionery", slug: "confectionery" },
+  ];
 
   // Calculate total items in cart
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -103,17 +116,6 @@ const Header = () => {
     fetchData();
   }, []);
 
-  // Handle dropdown delay for desktop (categories)
-  const handleMouseEnter = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setCategoryOpen(true), 200);
-  };
-
-  const handleMouseLeave = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setCategoryOpen(false), 200);
-  };
-
   // Handle profile dropdown toggle
   const toggleProfileDropdown = () => {
     setProfileOpen((prev) => !prev);
@@ -127,7 +129,7 @@ const Header = () => {
         !mobileMenuRef.current.contains(event.target)
       ) {
         setMobileMenu(false);
-        setCategoryOpen(false);
+        setActiveDropdown(null);
       }
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setProfileOpen(false);
@@ -136,6 +138,28 @@ const Header = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Toggle dropdown for specific main category (mobile)
+  const toggleDropdown = (slug) => {
+    setActiveDropdown((prev) => (prev === slug ? null : slug));
+  };
+
+  // Close all dropdowns
+  const closeAllDropdowns = () => {
+    setActiveDropdown(null);
+  };
+
+  // Handle desktop hover with delay
+  const handleMouseEnter = (slug) => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setActiveDropdown(slug);
+  };
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setActiveDropdown(null);
+    }, 250); // 250ms delay before closing
+  };
 
   return (
     <>
@@ -290,89 +314,118 @@ const Header = () => {
             ref={mobileMenuRef}
             className="md:hidden bg-[#5F1327] text-white border-t border-[#5F1327]/20"
           >
-            <Link
-              to="/"
-              className="block px-4 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
-              onClick={() => setMobileMenu(false)}
-            >
-              Home
-            </Link>
-            <Link
-              to="/about"
-              className="block px-4 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
-              onClick={() => setMobileMenu(false)}
-            >
-              About Us
-            </Link>
-            <Link
-              to="/product"
-              className="block px-4 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
-              onClick={() => setMobileMenu(false)}
-            >
-              Product
-            </Link>
-            <Link
-              to="/contact"
-              className="block px-4 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
-              onClick={() => setMobileMenu(false)}
-            >
-              Contact Us
-            </Link>
-            <Link
-              to="/cart"
-              className="block px-4 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
-              onClick={() => setMobileMenu(false)}
-            >
-              Cart
-            </Link>
+            {/* Mobile Categories */}
+            <div className="space-y-1">
+              {mainCategories.map((main) => {
+                const subs = getSubCategories(main.slug, categories);
+                return (
+                  <div
+                    key={main.id}
+                    className="border-t border-[#5F1327]/20 first:border-t-0"
+                  >
+                    <button
+                      onClick={() => toggleDropdown(main.slug)}
+                      className="flex items-center justify-between w-full px-4 py-3 hover:bg-[#5F1327]/20 transition-colors duration-200 sm:py-2"
+                    >
+                      <span className="text-sm font-medium">{main.name}</span>
+                      <ChevronDown
+                        size={18}
+                        className={`transition-transform duration-200 ${
+                          activeDropdown === main.slug ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    {activeDropdown === main.slug && (
+                      <div className="bg-[#5F1327]/10 space-y-1 px-4 pb-3">
+                        <Link
+                          to={`/groups/${main.slug}`}
+                          className="block py-2 text-sm font-semibold text-white hover:text-gray-200 border-b border-[#5F1327]/20"
+                          onClick={() => {
+                            setMobileMenu(false);
+                            closeAllDropdowns();
+                          }}
+                        >
+                          View All {main.name}
+                        </Link>
+                        {subs.length > 0 ? (
+                          <div className="space-y-1 pt-2">
+                            {subs.map((sub) => (
+                              <Link
+                                key={sub.id}
+                                to={`/categories/${sub.slug}`}
+                                className="block py-1.5 text-sm text-gray-200 hover:text-white pl-4 border-l border-gray-300"
+                                onClick={() => {
+                                  setMobileMenu(false);
+                                  closeAllDropdowns();
+                                }}
+                              >
+                                {sub.name}
+                              </Link>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="py-2 text-gray-300 text-sm">
+                            No subcategories available
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
             {auth.isAuthenticated ? (
               <>
-                <Link
-                  to="/profile"
-                  className="flex items-center gap-3 px-4 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
-                  onClick={() => setMobileMenu(false)}
-                >
-                  <UserCircle size={18} />
-                  <span className="text-sm font-medium">My Profile</span>
-                </Link>
+                <div className="border-t border-[#5F1327]/20 pt-2 px-4 pb-4">
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-3 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
+                    onClick={() => setMobileMenu(false)}
+                  >
+                    <UserCircle size={18} />
+                    <span className="text-sm font-medium">My Profile</span>
+                  </Link>
 
-                <Link
-                  to="/orders"
-                  className="flex items-center gap-3 px-4 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
-                  onClick={() => setMobileMenu(false)}
-                >
-                  <Package size={18} />
-                  <span className="text-sm font-medium">Order History</span>
-                </Link>
+                  <Link
+                    to="/orders"
+                    className="flex items-center gap-3 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
+                    onClick={() => setMobileMenu(false)}
+                  >
+                    <Package size={18} />
+                    <span className="text-sm font-medium">Order History</span>
+                  </Link>
 
-                <Link
-                  to="/wishlist"
-                  className="flex items-center gap-3 px-4 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
-                  onClick={() => setMobileMenu(false)}
-                >
-                  <Heart size={18} />
-                  <span className="text-sm font-medium">My Wishlist</span>
-                </Link>
+                  <Link
+                    to="/wishlist"
+                    className="flex items-center gap-3 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
+                    onClick={() => setMobileMenu(false)}
+                  >
+                    <Heart size={18} />
+                    <span className="text-sm font-medium">My Wishlist</span>
+                  </Link>
 
-                <button
-                  onClick={() => {
-                    logout();
-                    setMobileMenu(false);
-                  }}
-                  className="flex items-center gap-3 w-full px-4 py-2 text-red-300 hover:bg-red-900/20 transition-colors duration-200"
-                >
-                  <LogOut size={18} />
-                  <span className="text-sm font-medium">Sign Out</span>
-                </button>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setMobileMenu(false);
+                    }}
+                    className="flex items-center gap-3 w-full py-2 text-red-300 hover:bg-red-900/20 transition-colors duration-200"
+                  >
+                    <LogOut size={18} />
+                    <span className="text-sm font-medium">Sign Out</span>
+                  </button>
+                </div>
               </>
             ) : (
-              <Link
-                to="/signin"
-                className="block px-4 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
-                onClick={() => setMobileMenu(false)}
-              >
-                Sign In
-              </Link>
+              <div className="border-t border-[#5F1327]/20 pt-2 px-4 pb-4">
+                <Link
+                  to="/signin"
+                  className="block py-2 hover:bg-[#5F1327]/20 transition-colors duration-200 text-center"
+                  onClick={() => setMobileMenu(false)}
+                >
+                  Sign In
+                </Link>
+              </div>
             )}
           </div>
         )}
@@ -384,75 +437,83 @@ const Header = () => {
         {/* FIXED: top-10 to stack below Noti (approx height) */}
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8">
           {/* Desktop Nav - Centered */}
-          <div className="flex font-medium items-center justify-center gap-6 py-3 md:py-4">
-            <Link
-              to="/"
-              className="text-gray-700 hover:text-[#5F1327] transition-colors duration-200"
-            >
-              Home
-            </Link>
-            <div
-              className="relative group"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-            >
-              <button className="flex items-center gap-1 text-gray-700 hover:text-[#5F1327] transition-colors duration-200">
-                Categories{" "}
-                <ChevronDown
-                  size={18}
-                  className={`transition-transform duration-200 ${
-                    categoryOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-              {categoryOpen && (
-                <div className="absolute left-0 top-full mt-2 w-64 bg-white shadow-lg rounded-lg py-2 border border-gray-100 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out transform scale-95 group-hover:scale-100 overflow-hidden max-h-96 overflow-y-auto">
-                  {isLoadingCategories ? (
-                    <div className="px-4 py-2 flex items-center gap-2 text-gray-500">
-                      <Loader2 size={16} className="animate-spin" />
-                      Loading categories...
+          <div className="hidden md:flex flex-wrap font-medium items-center justify-center gap-6 py-3 md:py-4">
+            {mainCategories.map((main) => {
+              const subs = getSubCategories(main.slug, categories);
+              return (
+                <div
+                  key={main.id}
+                  className="relative group"
+                  onMouseEnter={() => handleMouseEnter(main.slug)}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <Link
+                    to={`/groups/${main.slug}`}
+                    className="flex items-center gap-1 text-gray-700 hover:text-[#5F1327] transition-colors duration-200 whitespace-nowrap"
+                  >
+                    {main.name}
+                    <ChevronDown
+                      size={18}
+                      className={`transition-transform duration-200 ${
+                        activeDropdown === main.slug ? "rotate-180" : ""
+                      }`}
+                    />
+                  </Link>
+                  {activeDropdown === main.slug && (
+                    <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-2 w-80 bg-white shadow-lg rounded-lg py-2 border border-gray-100 opacity-100 transition-all duration-300 ease-in-out scale-100 overflow-hidden max-h-96 overflow-y-auto z-50">
+                      {isLoadingCategories ? (
+                        <div className="px-4 py-2 flex items-center gap-2 text-gray-500">
+                          <Loader2 size={16} className="animate-spin" />
+                          Loading subcategories...
+                        </div>
+                      ) : errorCategories ? (
+                        <div className="px-4 py-2 text-red-500 text-sm">
+                          Error loading subcategories
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Link
+                            to={`/groups/${main.slug}`}
+                            className="block px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-[#5F1327] hover:text-white transition-colors duration-200 text-center"
+                          >
+                            View All {main.name}
+                          </Link>
+                          {subs.length > 0 ? (
+                            <div className="space-y-1">
+                              {subs.map((sub) => (
+                                <Link
+                                  key={sub.id}
+                                  to={`/categories/${sub.slug}`}
+                                  className="block px-4 py-1 text-xs text-gray-600 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200 truncate"
+                                >
+                                  {sub.name}
+                                </Link>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="px-4 py-2 text-gray-500 text-sm text-center">
+                              No subcategories available
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ) : errorCategories ? (
-                    <div className="px-4 py-2 text-red-500 text-sm">
-                      Error loading categories
-                    </div>
-                  ) : categories.length === 0 ? (
-                    <div className="px-4 py-2 text-gray-500 text-sm">
-                      No categories available
-                    </div>
-                  ) : (
-                    categories.map((category) => (
-                      <Link
-                        key={category.slug}
-                        to={`/categories/${category.slug}`}
-                        className="block px-4 py-2 text-gray-700 hover:bg-[#5F1327] hover:text-white transition-colors duration-200"
-                        onClick={() => setCategoryOpen(false)}
-                      >
-                        {category.name}
-                      </Link>
-                    ))
                   )}
                 </div>
-              )}
-            </div>
-            <Link
-              to="/about"
-              className="text-gray-700 hover:text-[#5F1327] transition-colors duration-200"
-            >
-              About Us
-            </Link>
-            <Link
-              to="/product"
-              className="text-gray-700 hover:text-[#5F1327] transition-colors duration-200"
-            >
-              Product
-            </Link>
-            <Link
-              to="/contact"
-              className="text-gray-700 hover:text-[#5F1327] transition-colors duration-200"
-            >
-              Contact Us
-            </Link>
+              );
+            })}
+          </div>
+          {/* Mobile/Desktop Responsive Nav - Show main categories as simple links on small screens */}
+          <div className="md:hidden flex flex-wrap justify-center gap-4 py-2 px-2">
+            {mainCategories.map((main) => (
+              <Link
+                key={main.id}
+                to={`/groups/${main.slug}`}
+                className="text-sm text-gray-700 hover:text-[#5F1327] transition-colors duration-200 px-3 py-1 rounded-md hover:bg-gray-100"
+              >
+                {main.name}
+              </Link>
+            ))}
           </div>
         </div>
       </nav>

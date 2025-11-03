@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useContext } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Heart } from "lucide-react";
@@ -11,6 +11,7 @@ import Footer from "../Components/Footer";
 
 const CategoryPage = () => {
   const { categorySlug } = useParams();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState("All");
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -242,6 +243,12 @@ const CategoryPage = () => {
       <Cahero />
       <div className="py-12 md:py-8">
         <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 mx-auto">
+          <button
+            onClick={() => navigate(-1)}
+            className="mb-4 inline-flex items-center text-sm font-medium text-[#5F1327] hover:text-gray-700"
+          >
+            ← Back
+          </button>
           <h2 className="text-2xl font-bold text-gray-900 mb-3">
             {categoryName}
           </h2>
