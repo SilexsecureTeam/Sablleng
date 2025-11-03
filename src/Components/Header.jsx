@@ -231,31 +231,157 @@ const Header = React.memo(() => {
     <>
       {/* Noti Bar - Always Visible, Sticky at Top */}
       <div className="bg-[#5F1327] sticky top-0 z-50 text-center border-b border-[#5F1327]/20">
-        <div className="max-w-[1200px] mx-auto px-2 sm:px-4 sm:px-6 md:px-8 flex flex-col xs:flex-row xs:justify-between items-center gap-1 xs:gap-0 py-1.5 xs:py-2">
-          {/* Left: Phone/Email - Squeeze on tiny screens, spaced on xs+ */}
-          <div className="order-3 xs:order-1 flex-shrink-0 flex flex-col xs:flex-row items-center xs:items-center gap-1 xs:gap-4 text-white text-xs xs:text-sm font-semibold truncate xs:whitespace-normal">
-            <span className="truncate hidden xs:block">+2348187230200</span>
-            <span className="truncate block xs:hidden">+234 818 723 0200</span>
-            <span className="hidden xs:inline"> | </span>
-            <span className="underline truncate xs:whitespace-normal">
-              info@sablle.ng
-            </span>
+        <div className="max-w-[1200px] mx-auto px-2 sm:px-4 sm:px-6 md:px-8">
+          {/* Desktop: Phone Left, Logo Center, Icons Right */}
+          <div className="hidden md:flex items-center justify-between py-1.5 xs:py-2">
+            {/* Left: Phone/Email */}
+            <div className="text-white text-xs xs:text-sm font-semibold flex items-center gap-4">
+              <span>+2348187230200</span>
+              <span>|</span>
+              <span className="underline">info@sablle.ng</span>
+            </div>
+
+            {/* Center: Logo */}
+            <Link to="/" className="flex-shrink-0 mx-auto">
+              <img
+                src={logo}
+                alt="Sablle Logo"
+                className="w-[120px] h-[25px]"
+              />
+            </Link>
+
+            {/* Right: Icons */}
+            <div className="flex items-center gap-3 md:gap-4 flex-shrink-0">
+              <button
+                className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200"
+                aria-label="Search"
+              >
+                <Search size={20} />
+              </button>
+
+              {/* Profile Section */}
+              <div className="relative" ref={profileRef}>
+                {auth.isAuthenticated ? (
+                  <button
+                    onClick={toggleProfileDropdown}
+                    className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors duration-200"
+                    aria-label="User Profile"
+                    aria-expanded={profileOpen}
+                    role="button"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#5F1327] font-semibold text-sm">
+                      {getInitials(auth.user?.name)}
+                    </div>
+                    <span className="text-sm font-medium">
+                      {auth.user?.name || "User"}
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform duration-200 ${
+                        profileOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                ) : (
+                  <Link
+                    to="/signin"
+                    className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200"
+                    aria-label="Sign In"
+                  >
+                    <User size={20} />
+                  </Link>
+                )}
+                {auth.isAuthenticated && profileOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-white shadow-lg rounded-lg py-2 border border-gray-100 z-50 max-h-[70vh] overflow-y-auto">
+                    {/* User Info Section */}
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-[#5F1327] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                        {getInitials(auth.user?.name)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">
+                          {auth.user?.name || "N/A"}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {auth.user?.email || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Menu Items */}
+                    <div className="py-1" role="menu">
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
+                        onClick={() => setProfileOpen(false)}
+                        role="menuitem"
+                      >
+                        <UserCircle size={18} />
+                        <span className="text-sm font-medium">My Profile</span>
+                      </Link>
+
+                      <Link
+                        to="/orders"
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
+                        onClick={() => setProfileOpen(false)}
+                        role="menuitem"
+                      >
+                        <Package size={18} />
+                        <span className="text-sm font-medium">
+                          Order History
+                        </span>
+                      </Link>
+
+                      <Link
+                        to="/wishlist"
+                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
+                        onClick={() => setProfileOpen(false)}
+                        role="menuitem"
+                      >
+                        <Heart size={18} />
+                        <span className="text-sm font-medium">My Wishlist</span>
+                      </Link>
+
+                      <div className="border-t border-gray-100 my-1"></div>
+
+                      <button
+                        onClick={() => {
+                          logout();
+                          setProfileOpen(false);
+                          setMobileMenu(false);
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors duration-200"
+                        role="menuitem"
+                      >
+                        <LogOut size={18} />
+                        <span className="text-sm font-medium">Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Cart */}
+              <Link
+                to="/cart"
+                className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200 relative"
+                aria-label="Shopping Cart"
+              >
+                <ShoppingCart size={20} />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-white text-[#5F1327] text-xs px-1 py-0 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+                    {cartItemCount > 99 ? "99+" : cartItemCount}
+                  </span>
+                )}
+              </Link>
+            </div>
           </div>
 
-          {/* Center: Logo */}
-          <Link to="/" className="order-2 xs:order-2 flex-shrink-0">
-            <img
-              src={logo}
-              alt="Sablle Logo"
-              className="w-[80px] xs:w-[100px] sm:w-[120px] h-[16px] xs:h-[20px] sm:h-[25px]"
-            />
-          </Link>
-
-          {/* Right: Icons Cluster + Hamburger Left on Mobile */}
-          <div className="flex items-center justify-between w-full xs:w-auto gap-1 xs:gap-2 sm:gap-3 md:gap-4 order-1 xs:order-3 flex-shrink-0">
-            {/* Hamburger - Left on Mobile */}
+          {/* Mobile: Single Row - Hamburger Left, Logo Center, Icons Right */}
+          <div className="md:hidden flex items-center justify-between py-1.5 xs:py-2 mb-2">
+            {/* Hamburger - Left */}
             <button
-              className="md:hidden text-white hover:text-gray-200 transition-colors duration-200 p-1 xs:p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded"
+              className="text-white hover:text-gray-200 transition-colors duration-200 p-1 xs:p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded"
               onClick={() => setMobileMenu(!mobileMenu)}
               aria-label={mobileMenu ? "Close Menu" : "Open Menu"}
               aria-expanded={mobileMenu}
@@ -264,8 +390,17 @@ const Header = React.memo(() => {
               {mobileMenu ? <X size={24} /> : <Menu size={24} />}
             </button>
 
-            {/* Icons Cluster - Center, Tighter on Mobile */}
-            <div className="flex items-center gap-1 xs:gap-2 sm:gap-3 md:gap-4 flex-shrink-0">
+            {/* Logo - Center */}
+            <Link to="/" className="flex-1 flex justify-center flex-shrink-0">
+              <img
+                src={logo}
+                alt="Sablle Logo"
+                className="w-[80px] xs:w-[100px] sm:w-[120px] h-[16px] xs:h-[20px] sm:h-[25px]"
+              />
+            </Link>
+
+            {/* Icons Cluster - Right */}
+            <div className="flex items-center gap-1 xs:gap-2 sm:gap-3 flex-shrink-0">
               <button
                 className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200 p-1 xs:p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded"
                 aria-label="Search"
@@ -286,12 +421,9 @@ const Header = React.memo(() => {
                     <div className="w-6 h-6 xs:w-7 xs:h-7 rounded-full bg-white flex items-center justify-center text-[#5F1327] font-semibold text-xs xs:text-sm">
                       {getInitials(auth.user?.name)}
                     </div>
-                    <span className="hidden sm:inline-block text-xs sm:text-sm font-medium truncate max-w-[100px] xs:max-w-none">
-                      {auth.user?.name || "User"}
-                    </span>
                     <ChevronDown
                       size={16}
-                      className={`hidden sm:inline-block transition-transform duration-200 ${
+                      className={`transition-transform duration-200 ${
                         profileOpen ? "rotate-180" : ""
                       }`}
                     />
@@ -388,6 +520,15 @@ const Header = React.memo(() => {
                   </span>
                 )}
               </Link>
+            </div>
+          </div>
+
+          {/* Mobile: Phone/Email Bottom Center Row */}
+          <div className="md:hidden flex justify-center">
+            <div className="text-white text-xs xs:text-sm font-semibold flex items-center gap-4">
+              <span>+2348187230200</span>
+              <span>|</span>
+              <span className="underline">info@sablle.ng</span>
             </div>
           </div>
         </div>
