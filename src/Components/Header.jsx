@@ -221,20 +221,26 @@ const Header = React.memo(() => {
     [closeAllDropdowns]
   );
 
+  // Close mobile menu handler
+  const handleCloseMenu = useCallback(() => {
+    setMobileMenu(false);
+    closeAllDropdowns();
+  }, [closeAllDropdowns]);
+
   return (
     <>
       {/* Noti Bar - Always Visible, Sticky at Top */}
       <div className="bg-[#5F1327] sticky top-0 z-50 text-center border-b border-[#5F1327]/20">
         <div className="max-w-[1200px] mx-auto px-2 sm:px-4 sm:px-6 md:px-8 flex flex-col xs:flex-row xs:justify-between items-center gap-1 xs:gap-0 py-1.5 xs:py-2">
-          {/* Left: Phone/Email - Squeeze on tiny screens */}
-          <h2 className="text-white text-xs xs:text-sm font-semibold order-3 xs:order-1 flex-shrink-0 truncate xs:whitespace-normal">
-            <span className="hidden xs:inline">+2348187230200 | </span>
-            <span className="truncate">+2348187230200</span>
+          {/* Left: Phone/Email - Squeeze on tiny screens, spaced on xs+ */}
+          <div className="order-3 xs:order-1 flex-shrink-0 flex flex-col xs:flex-row items-center xs:items-center gap-1 xs:gap-4 text-white text-xs xs:text-sm font-semibold truncate xs:whitespace-normal">
+            <span className="truncate hidden xs:block">+2348187230200</span>
+            <span className="truncate block xs:hidden">+234 818 723 0200</span>
             <span className="hidden xs:inline"> | </span>
             <span className="underline truncate xs:whitespace-normal">
               info@sablle.ng
             </span>
-          </h2>
+          </div>
 
           {/* Center: Logo */}
           <Link to="/" className="order-2 xs:order-2 flex-shrink-0">
@@ -407,6 +413,17 @@ const Header = React.memo(() => {
           aria-label="Mobile Navigation"
           aria-expanded={true}
         >
+          {/* Close Button - Top Right X Icon */}
+          <div className="flex justify-end p-4 border-b border-[#5F1327]/20">
+            <button
+              onClick={handleCloseMenu}
+              className="text-white hover:text-gray-200 transition-colors duration-200 p-2 rounded-full hover:bg-[#5F1327]/20"
+              aria-label="Close Menu"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
           {/* Mobile Categories */}
           <div className="space-y-1 pt-4">
             {mainCategories.map((main) => {
