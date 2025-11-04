@@ -12,7 +12,7 @@ const ProductForm = ({ onSave, onCancel }) => {
     category: "",
     skuNumber: "",
     price: "",
-    availableStock: "",
+    // availableStock: "",
     allowCustomization: false,
     images: [],
     description: "",
@@ -128,8 +128,8 @@ const ProductForm = ({ onSave, onCancel }) => {
       newErrors.skuNumber = "SKU number is required";
     if (!formData.price || formData.price <= 0)
       newErrors.price = "Valid price is required";
-    if (!formData.availableStock || formData.availableStock < 0)
-      newErrors.availableStock = "Valid stock is required";
+    // if (!formData.availableStock || formData.availableStock < 0)
+    //   newErrors.availableStock = "Valid stock is required";
     setErrors((prev) => ({ ...prev, ...newErrors }));
     return Object.keys(newErrors).length === 0;
   };
@@ -147,7 +147,7 @@ const ProductForm = ({ onSave, onCancel }) => {
         category: "",
         skuNumber: "",
         price: "",
-        availableStock: "",
+        // availableStock: "",
         allowCustomization: false,
         images: [],
         description: "",
@@ -177,7 +177,7 @@ const ProductForm = ({ onSave, onCancel }) => {
       formDataToSend.append("product_code", formData.skuNumber);
       formDataToSend.append("category_id", formData.category);
       formDataToSend.append("sale_price_inc_tax", formData.price);
-      formDataToSend.append("stock_quantity", formData.availableStock);
+      // formDataToSend.append("stock_quantity", formData.availableStock);
       formDataToSend.append("customize", formData.allowCustomization ? 1 : 0);
       formDataToSend.append("description", formData.description);
       formData.colors.forEach((color, index) => {
@@ -206,7 +206,7 @@ const ProductForm = ({ onSave, onCancel }) => {
               name: "productName",
               category_id: "category",
               sale_price_inc_tax: "price",
-              stock_quantity: "availableStock",
+              // stock_quantity: "availableStock",
             };
             const formField = fieldMap[key] || key;
             formattedErrors[formField] = messages.join(", ");
@@ -233,14 +233,14 @@ const ProductForm = ({ onSave, onCancel }) => {
         price: `₦${parseFloat(
           data.product.sale_price_inc_tax || formData.price
         ).toLocaleString()}`,
-        stock: data.product.stock_quantity || formData.availableStock,
+        // stock: data.product.stock_quantity || formData.availableStock,
       });
       setFormData({
         productName: "",
         category: "",
         skuNumber: "",
         price: "",
-        availableStock: "",
+        // availableStock: "",
         allowCustomization: false,
         images: [],
         description: "",
@@ -347,7 +347,7 @@ const ProductForm = ({ onSave, onCancel }) => {
                 <p className="text-red-600 text-sm mt-1">{errors.price}</p>
               )}
             </div>
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-[#414245] mb-1">
                 Available Stock
               </label>
@@ -366,7 +366,7 @@ const ProductForm = ({ onSave, onCancel }) => {
                   {errors.availableStock}
                 </p>
               )}
-            </div>
+            </div> */}
           </div>
 
           <div className="flex items-center">

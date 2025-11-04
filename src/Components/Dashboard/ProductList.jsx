@@ -56,7 +56,7 @@ const ProductList = () => {
         price: item.sale_price_inc_tax
           ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
           : "N/A",
-        stock: item.stock_quantity ?? 0,
+        // stock: item.stock_quantity ?? 0,
       }));
 
       setProducts(formattedProducts);
@@ -84,6 +84,34 @@ const ProductList = () => {
     setIsEditModalOpen(true);
   };
 
+  const handleDelete = async (productId, index) => {
+    if (!window.confirm("Are you sure you want to delete this product?"))
+      return;
+
+    try {
+      const response = await fetch(
+        `https://api.sablle.ng/api/products/${productId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to delete product");
+      }
+
+      toast.success("Product deleted!", { autoClose: 3000 });
+      setProducts((prev) => prev.filter((_, i) => i !== index));
+      fetchProducts(); // Refresh from server
+    } catch (err) {
+      toast.error(`Error: ${err.message}`, { autoClose: 5000 });
+    }
+  };
+
   const handleNewProduct = () => setIsModalOpen(true);
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -100,7 +128,7 @@ const ProductList = () => {
       category: formData.category || "N/A",
       type: formData.allowCustomization ? "Customizable" : "Non-custom",
       price: `₦${parseFloat(formData.price || 0).toLocaleString()}`,
-      stock: parseInt(formData.stock || formData.availableStock || 0, 10),
+      // stock: parseInt(formData.stock || formData.availableStock || 0, 10),
     };
     setProducts((prev) => [newProduct, ...prev].slice(0, 10));
     setIsModalOpen(false);
@@ -116,7 +144,7 @@ const ProductList = () => {
       category: formData.category,
       type: formData.allowCustomization ? "Customizable" : "Non-custom",
       price: `₦${parseFloat(formData.price).toLocaleString()}`,
-      stock: parseInt(formData.availableStock, 10),
+      // stock: parseInt(formData.availableStock, 10),
     };
     setProducts((prev) =>
       prev.map((item, i) => (i === index ? updatedProduct : item))
@@ -215,9 +243,9 @@ const ProductList = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         Price
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                      {/* <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         Stock
-                      </th>
+                      </th> */}
                       <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                         Actions
                       </th>
@@ -254,16 +282,24 @@ const ProductList = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
                           {product.price}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
+                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
                           {product.stock}
-                        </td>
+                        </td> */}
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => handleEdit(index)}
-                            className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-[#5F1327] hover:bg-gray-200 transition-colors"
-                          >
-                            Edit
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleEdit(index)}
+                              className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-[#5F1327] hover:bg-gray-200 transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(product.id, index)}
+                              className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

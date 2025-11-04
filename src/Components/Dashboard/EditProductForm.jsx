@@ -22,7 +22,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
         category: product.category,
         skuNumber: product.sku,
         price: product.price.replace("N", "").replace(/,/g, ""), // Remove 'N' and commas
-        availableStock: product.stock.toString(),
+        // availableStock: product.stock.toString(),
         allowCustomization: product.type === "Customizable",
         images: [], // Images not used in product list
         description: "", // Description not used in product list
@@ -79,7 +79,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
       category: "",
       skuNumber: "",
       price: "",
-      availableStock: "",
+      // availableStock: "",
       allowCustomization: false,
       images: [],
       description: "",
@@ -148,7 +148,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
               />
             </div>
 
-            <div>
+            {/* <div>
               <label className="block text-sm text-gray-600 mb-2">
                 Available Stock
               </label>
@@ -160,7 +160,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
                 placeholder="0"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
-            </div>
+            </div> */}
           </div>
 
           <div className="flex items-center">

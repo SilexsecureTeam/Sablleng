@@ -1,15 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import {
-  Bell,
-  Settings,
-  Zap,
-  X,
-  Edit2,
-  Eye,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Bell, Settings, Zap, X, Edit2, Eye, Search } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthContext } from "../../context/AuthContextObject";
@@ -22,9 +12,6 @@ const Categories = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const itemsPerPage = 50;
 
   // Add Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -46,13 +33,8 @@ const Categories = () => {
   const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Show Modal
-  // const [isShowModalOpen, setIsShowModalOpen] = useState(false);
-  // const [selectedCategory, setSelectedCategory] = useState(null);
-  // const [products, setProducts] = useState([]);
-
-  // Fetch categories with pagination & search
-  const fetchCategories = async (page = 1, search = "") => {
+  // Fetch categories with search only (no pagination)
+  const fetchCategories = async (search = "") => {
     if (!auth.token) {
       toast.error("Please verify OTP to continue.", { autoClose: 3000 });
       setTimeout(() => navigate("/admin/otp"), 2000);
@@ -85,12 +67,8 @@ const Categories = () => {
         );
       }
 
-      const start = (page - 1) * itemsPerPage;
-      const end = start + itemsPerPage;
-      const paginated = categoriesArray.slice(start, end);
-
       const formattedCategories = await Promise.all(
-        paginated.map(async (item) => {
+        categoriesArray.map(async (item) => {
           let productCount = 0;
           try {
             const productResponse = await fetch(
@@ -124,7 +102,6 @@ const Categories = () => {
       );
 
       setCategories(formattedCategories);
-      setTotalPages(Math.ceil(categoriesArray.length / itemsPerPage) || 1);
       toast.success("Categories loaded!", { autoClose: 2000 });
     } catch (err) {
       setError(err.message);
@@ -136,21 +113,8 @@ const Categories = () => {
   };
 
   useEffect(() => {
-    fetchCategories(1, searchQuery);
-  }, [auth.token, navigate]);
-
-  useEffect(() => {
-    const delay = setTimeout(() => {
-      setCurrentPage(1);
-      fetchCategories(1, searchQuery);
-    }, 300);
-    return () => clearTimeout(delay);
-  }, [searchQuery]);
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    fetchCategories(page, searchQuery);
-  };
+    fetchCategories(searchQuery);
+  }, [auth.token, navigate, searchQuery]);
 
   // Add Category
   const handleAddInputChange = (e) => {
@@ -195,7 +159,7 @@ const Categories = () => {
       setIsAddModalOpen(false);
       setAddFormData({ name: "", description: "", image: null });
       setAddImagePreview(null);
-      fetchCategories(currentPage, searchQuery);
+      fetchCategories(searchQuery);
     } catch (err) {
       toast.error(`Error: ${err.message}`, { autoClose: 5000 });
     } finally {
@@ -246,44 +210,13 @@ const Categories = () => {
 
       toast.success("Category updated!", { autoClose: 3000 });
       setIsEditModalOpen(false);
-      fetchCategories(currentPage, searchQuery);
+      fetchCategories(searchQuery);
     } catch (err) {
       toast.error(`Error: ${err.message}`, { autoClose: 5000 });
     } finally {
       setIsEditing(false);
     }
   };
-
-  // Show Category & Products
-  // const handleShow = async (category) => {
-  //   try {
-  //     const response = await fetch(
-  //       `https://api.sablle.ng/api/categories/${category.id}`,
-  //       {
-  //         method: "GET",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           Authorization: `Bearer ${auth.token}`,
-  //         },
-  //       }
-  //     );
-
-  //     if (!response.ok) throw new Error("Failed to fetch category details");
-
-  //     const data = await response.json();
-  //     setSelectedCategory(category);
-  //     setProducts(Array.isArray(data.products) ? data.products : []);
-  //     setIsShowModalOpen(true);
-  //   } catch (err) {
-  //     toast.error(`Error: ${err.message}`, { autoClose: 5000 });
-  //   }
-  // };
-
-  // const closeShowModal = () => {
-  //   setIsShowModalOpen(false);
-  //   setSelectedCategory(null);
-  //   setProducts([]);
-  // };
 
   return (
     <div className="min-h-screen bg-[#FAF7F5] p-6">
@@ -316,7 +249,7 @@ const Categories = () => {
         {/* Search */}
         <div className="mb-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <e className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search categories..."
@@ -389,58 +322,6 @@ const Categories = () => {
                 </div>
               ))}
             </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                <p className="text-sm text-gray-700">
-                  Page {currentPage} of {totalPages}
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                      currentPage === 1
-                        ? "bg-gray-100 text-gray-400"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const page = Math.max(
-                      1,
-                      Math.min(totalPages, currentPage - 2 + i)
-                    );
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                          currentPage === page
-                            ? "bg-[#5F1327] text-white"
-                            : "bg-white text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    );
-                  })}
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                      currentPage === totalPages
-                        ? "bg-gray-100 text-gray-400"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>
@@ -624,73 +505,6 @@ const Categories = () => {
           </div>
         </div>
       )}
-
-      {/* Show Modal */}
-      {/* {isShowModalOpen && selectedCategory && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-[#141718]">
-                {selectedCategory.name} - Products
-              </h2>
-              <button
-                onClick={closeShowModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div>
-              <p className="text-sm text-[#6C7275] mb-4">
-                {selectedCategory.description}
-              </p>
-              <p className="text-sm font-medium mb-4">
-                Total Products: {products.length}
-              </p>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200 text-[#414245]">
-                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">
-                        Product Name
-                      </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">
-                        Price
-                      </th>
-                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">
-                        Stock
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {products.map((product, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-4 py-2 text-sm text-gray-900">
-                          {product.name || "N/A"}
-                        </td>
-                        <td className="px-4 py-2 text-sm font-semibold text-[#5F1327]">
-                          ₦
-                          {parseFloat(
-                            product.sale_price_inc_tax || 0
-                          ).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-sm text-gray-600">
-                          {product.stock_quantity || 0}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {products.length === 0 && (
-                <p className="text-center text-gray-500 py-4">
-                  No products in this category.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )} */}
     </div>
   );
 };

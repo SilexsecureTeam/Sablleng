@@ -99,17 +99,40 @@ const CategoryProducts = () => {
 
   // Handle Edit
   const handleEdit = (product) => {
-    setSelectedProduct(product);
+    const normalizedProduct = {
+      id: product.id,
+      product: product.name || "N/A",
+      sku: product.product_code || "N/A",
+      category: product.category?.name || "N/A",
+      type: product.customize ? "Customizable" : "Non-custom",
+      price: product.sale_price_inc_tax
+        ? `₦${parseFloat(product.sale_price_inc_tax).toLocaleString()}`
+        : "N/A",
+      // stock: product.stock_quantity ?? 0,
+    };
+
+    setSelectedProduct(normalizedProduct);
     setIsEditModalOpen(true);
   };
 
-  const handleUpdateProduct = (updatedProductData) => {
-    // Update the product in the current page's products list
+  // handleUpdateProduct — update local list with normalized data
+  const handleUpdateProduct = (formData) => {
+    const updatedProduct = {
+      id: selectedProduct.id,
+      product: formData.productName,
+      sku: formData.skuNumber,
+      category: formData.category,
+      type: formData.allowCustomization ? "Customizable" : "Non-custom",
+      price: `₦${parseFloat(formData.price).toLocaleString()}`,
+      // stock: parseInt(formData.availableStock, 10),
+    };
+
     setProducts((prev) =>
       prev.map((p) =>
-        p.id === updatedProductData.id ? { ...p, ...updatedProductData } : p
+        p.id === updatedProduct.id ? { ...p, ...updatedProduct } : p
       )
     );
+
     toast.success("Product updated!", { autoClose: 3000 });
     setIsEditModalOpen(false);
     setSelectedProduct(null);
@@ -201,9 +224,9 @@ const CategoryProducts = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Price
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                {/* <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Stock
-                </th>
+                </th> */}
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Actions
                 </th>
@@ -245,9 +268,10 @@ const CategoryProducts = () => {
                     <td className="px-6 py-4 text-sm font-semibold text-[#5F1327]">
                       {formatPrice(product.sale_price_inc_tax)}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {product.availableStock || 0} {/* Exact stock from API */}
-                    </td>
+
+                    {/* <td className="px-6 py-4 text-sm text-gray-600">
+                      {product.stock_quantity ?? 0}
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center gap-2">
                         <button
