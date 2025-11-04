@@ -109,19 +109,14 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
               <label className="block text-sm text-gray-600 mb-2">
                 Product Category
               </label>
-              <select
+              <input
+                type="text"
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-gray-400 appearance-none bg-white"
-              >
-                <option value="">Select Product Category</option>
-                <option value="electronics">Electronics</option>
-                <option value="clothing">Clothing</option>
-                <option value="food">Food & Beverage</option>
-                <option value="home">Home & Garden</option>
-                <option value="sports">Sports & Outdoors</option>
-              </select>
+                placeholder="Enter Product Category"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
             </div>
 
             <div>

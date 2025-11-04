@@ -57,10 +57,16 @@ const OrderManagement = () => {
           const status = order.status.toLowerCase();
           const displayStatus = status === "paid" ? "Paid" : "Pending";
 
+          // Calculate total number of items (sum of quantities)
+          const totalItems = order.items.reduce(
+            (sum, item) => sum + item.quantity,
+            0
+          );
+
           return {
             id: order.order_reference,
             customer: order.user?.name || "Unknown",
-            items: "N/A",
+            items: totalItems,
             total: `₦${parseFloat(order.total).toLocaleString()}`,
             status: displayStatus,
             date: new Date(order.created_at).toLocaleDateString("en-GB"),
@@ -82,17 +88,6 @@ const OrderManagement = () => {
   useEffect(() => {
     fetchOrders();
   }, [auth?.isAuthenticated, auth?.token]);
-
-  // Open Modal
-  // const openDetails = (order) => {
-  //   setSelectedOrder(order);
-  //   setIsModalOpen(true);
-  // };
-
-  // const closeModal = () => {
-  //   setIsModalOpen(false);
-  //   setSelectedOrder(null);
-  // };
 
   // Status Style
   const getStatusStyle = (status) => {
@@ -328,58 +323,6 @@ const OrderManagement = () => {
           )}
         </div>
       </div>
-
-      {/* DETAILS MODAL — READ-ONLY */}
-      {/* {isModalOpen && selectedOrder && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Order Details</h3>
-              <button
-                onClick={closeModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Order ID</p>
-                  <p className="font-medium">{selectedOrder.id}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Customer</p>
-                  <p className="font-medium">{selectedOrder.customer}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Total</p>
-                  <p className="font-medium">{selectedOrder.total}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Date</p>
-                  <p className="font-medium">{selectedOrder.date}</p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Status</p>
-                <span
-                  className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
-                    selectedOrder.status
-                  )}`}
-                >
-                  {selectedOrder.status}
-                </span>
-                <p className="text-xs text-gray-500 mt-2">
-                  Status update will be enabled when backend API is ready.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )} */}
     </div>
   );
 };

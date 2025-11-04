@@ -7,4 +7,6 @@ export default defineConfig({
   plugins: [react(),
     tailwindcss(),
   ],
+  define: { global: 'globalThis' },
+  optimizeDeps: { include: ['buffer'] },
 })

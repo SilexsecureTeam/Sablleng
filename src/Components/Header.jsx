@@ -6,7 +6,7 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Search,
   User,
@@ -27,6 +27,7 @@ import { toast } from "react-toastify";
 import { getSubCategories } from "../utils/categoryGroups";
 
 const Header = React.memo(() => {
+  const location = useLocation();
   const { items } = useContext(CartContext);
   const { auth, logout } = useContext(AuthContext);
   const [mobileMenu, setMobileMenu] = useState(false);
@@ -39,6 +40,7 @@ const Header = React.memo(() => {
   const profileRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const overlayRef = useRef(null);
+  const navigate = useNavigate();
 
   // Static main categories (matching Category1.jsx)
   const mainCategories = [
@@ -151,6 +153,11 @@ const Header = React.memo(() => {
     fetchData();
   }, []);
 
+  // Close profile dropdown when location changes
+  useEffect(() => {
+    setProfileOpen(false);
+  }, [location.pathname]);
+
   // Handle profile dropdown toggle
   const toggleProfileDropdown = useCallback(() => {
     setProfileOpen((prev) => !prev);
@@ -180,10 +187,10 @@ const Header = React.memo(() => {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [mobileMenu]);
@@ -313,7 +320,6 @@ const Header = React.memo(() => {
                       <Link
                         to="/profile"
                         className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
-                        onClick={() => setProfileOpen(false)}
                         role="menuitem"
                       >
                         <UserCircle size={18} />
@@ -323,7 +329,6 @@ const Header = React.memo(() => {
                       <Link
                         to="/orders"
                         className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
-                        onClick={() => setProfileOpen(false)}
                         role="menuitem"
                       >
                         <Package size={18} />
@@ -335,7 +340,6 @@ const Header = React.memo(() => {
                       <Link
                         to="/wishlist"
                         className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
-                        onClick={() => setProfileOpen(false)}
                         role="menuitem"
                       >
                         <Heart size={18} />
@@ -365,152 +369,6 @@ const Header = React.memo(() => {
               <Link
                 to="/cart"
                 className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200 relative"
-                aria-label="Shopping Cart"
-              >
-                <ShoppingCart size={20} />
-                {cartItemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-white text-[#5F1327] text-xs px-1 py-0 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
-                    {cartItemCount > 99 ? "99+" : cartItemCount}
-                  </span>
-                )}
-              </Link>
-            </div>
-          </div>
-
-          {/* Mobile: Single Row - Hamburger Left, Logo Center, Icons Right */}
-          <div className="md:hidden flex items-center justify-between py-1.5 xs:py-2 mb-2">
-            {/* Hamburger - Left */}
-            <button
-              className="text-white hover:text-gray-200 transition-colors duration-200 p-1 xs:p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded"
-              onClick={() => setMobileMenu(!mobileMenu)}
-              aria-label={mobileMenu ? "Close Menu" : "Open Menu"}
-              aria-expanded={mobileMenu}
-              role="button"
-            >
-              {mobileMenu ? <X size={24} /> : <Menu size={24} />}
-            </button>
-
-            {/* Logo - Center */}
-            <Link to="/" className="flex-1 flex justify-center flex-shrink-0">
-              <img
-                src={logo}
-                alt="Sablle Logo"
-                className="w-[80px] xs:w-[100px] sm:w-[120px] h-[16px] xs:h-[20px] sm:h-[25px]"
-              />
-            </Link>
-
-            {/* Icons Cluster - Right */}
-            <div className="flex items-center gap-1 xs:gap-2 sm:gap-3 flex-shrink-0">
-              <button
-                className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200 p-1 xs:p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded"
-                aria-label="Search"
-              >
-                <Search size={20} />
-              </button>
-
-              {/* Profile Section */}
-              <div className="relative" ref={profileRef}>
-                {auth.isAuthenticated ? (
-                  <button
-                    onClick={toggleProfileDropdown}
-                    className="flex items-center gap-1 xs:gap-2 text-white hover:text-gray-200 transition-colors duration-200 p-1 xs:p-2 min-w-[44px] min-h-[44px] rounded"
-                    aria-label="User Profile"
-                    aria-expanded={profileOpen}
-                    role="button"
-                  >
-                    <div className="w-6 h-6 xs:w-7 xs:h-7 rounded-full bg-white flex items-center justify-center text-[#5F1327] font-semibold text-xs xs:text-sm">
-                      {getInitials(auth.user?.name)}
-                    </div>
-                    <ChevronDown
-                      size={16}
-                      className={`transition-transform duration-200 ${
-                        profileOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                ) : (
-                  <Link
-                    to="/signin"
-                    className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200 p-1 xs:p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded"
-                    aria-label="Sign In"
-                  >
-                    <User size={20} />
-                  </Link>
-                )}
-                {auth.isAuthenticated && profileOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-64 bg-white shadow-lg rounded-lg py-2 border border-gray-100 z-50 max-h-[70vh] overflow-y-auto">
-                    {/* User Info Section */}
-                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-[#5F1327] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                        {getInitials(auth.user?.name)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate">
-                          {auth.user?.name || "N/A"}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {auth.user?.email || "N/A"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Menu Items */}
-                    <div className="py-1" role="menu">
-                      <Link
-                        to="/profile"
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
-                        onClick={() => setProfileOpen(false)}
-                        role="menuitem"
-                      >
-                        <UserCircle size={18} />
-                        <span className="text-sm font-medium">My Profile</span>
-                      </Link>
-
-                      <Link
-                        to="/orders"
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
-                        onClick={() => setProfileOpen(false)}
-                        role="menuitem"
-                      >
-                        <Package size={18} />
-                        <span className="text-sm font-medium">
-                          Order History
-                        </span>
-                      </Link>
-
-                      <Link
-                        to="/wishlist"
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
-                        onClick={() => setProfileOpen(false)}
-                        role="menuitem"
-                      >
-                        <Heart size={18} />
-                        <span className="text-sm font-medium">My Wishlist</span>
-                      </Link>
-
-                      <div className="border-t border-gray-100 my-1"></div>
-
-                      <button
-                        onClick={() => {
-                          logout();
-                          setProfileOpen(false);
-                          setMobileMenu(false);
-                        }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors duration-200"
-                        role="menuitem"
-                      >
-                        <LogOut size={18} />
-                        <span className="text-sm font-medium">Sign Out</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Cart */}
-              <Link
-                to="/cart"
-                className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200 relative p-1 xs:p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded"
                 aria-label="Shopping Cart"
               >
                 <ShoppingCart size={20} />
@@ -646,39 +504,46 @@ const Header = React.memo(() => {
           {auth.isAuthenticated ? (
             <>
               <div className="border-t border-[#5F1327]/20 pt-2 px-4 pb-4">
-                <Link
-                  to="/profile"
-                  className="flex items-center gap-3 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
-                  onClick={() => setMobileMenu(false)}
+                <button
+                  onClick={() => {
+                    navigate("/profile");
+                    setMobileMenu(false);
+                  }}
+                  className="flex items-center gap-3 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200 w-full text-left"
                   role="menuitem"
                 >
                   <UserCircle size={18} />
                   <span className="text-sm font-medium">My Profile</span>
-                </Link>
+                </button>
 
-                <Link
-                  to="/orders"
-                  className="flex items-center gap-3 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
-                  onClick={() => setMobileMenu(false)}
+                <button
+                  onClick={() => {
+                    navigate("/orders");
+                    setMobileMenu(false);
+                  }}
+                  className="flex items-center gap-3 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200 w-full text-left"
                   role="menuitem"
                 >
                   <Package size={18} />
                   <span className="text-sm font-medium">Order History</span>
-                </Link>
+                </button>
 
-                <Link
-                  to="/wishlist"
-                  className="flex items-center gap-3 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200"
-                  onClick={() => setMobileMenu(false)}
+                <button
+                  onClick={() => {
+                    navigate("/wishlist");
+                    setMobileMenu(false);
+                  }}
+                  className="flex items-center gap-3 py-2 hover:bg-[#5F1327]/20 transition-colors duration-200 w-full text-left"
                   role="menuitem"
                 >
                   <Heart size={18} />
                   <span className="text-sm font-medium">My Wishlist</span>
-                </Link>
+                </button>
 
                 <button
                   onClick={() => {
                     logout();
+                    navigate("/");
                     setMobileMenu(false);
                   }}
                   className="flex items-center gap-3 w-full py-2 text-red-300 hover:bg-red-900/20 transition-colors duration-200"
@@ -783,7 +648,6 @@ const Header = React.memo(() => {
               );
             })}
           </div>
-          {/* Removed: Mobile/Desktop Responsive Nav shelf - now hamburger-only */}
         </div>
       </nav>
     </>

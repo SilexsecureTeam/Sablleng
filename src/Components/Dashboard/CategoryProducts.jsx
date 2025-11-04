@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Search, Eye, Edit2, Trash2 } from "lucide-react";
+import { ChevronLeft, Search, Edit2, Trash2 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthContext } from "../../context/AuthContextObject";
+import EditProductForm from "./EditProductForm"; // Import EditProductForm
 
 const CategoryProducts = () => {
   const { auth } = useContext(AuthContext);
@@ -17,6 +18,10 @@ const CategoryProducts = () => {
   const itemsPerPage = 20;
   const [totalPages, setTotalPages] = useState(1);
   const [categoryName, setCategoryName] = useState(""); // For header
+
+  // Edit Modal States
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   // Fetch category details and products
   const fetchCategoryProducts = async (page = 1, search = "") => {
@@ -90,6 +95,51 @@ const CategoryProducts = () => {
   const handlePageChange = (page) => {
     setCurrentPage(page);
     fetchCategoryProducts(page, searchQuery);
+  };
+
+  // Handle Edit
+  const handleEdit = (product) => {
+    setSelectedProduct(product);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateProduct = (updatedProductData) => {
+    // Update the product in the current page's products list
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === updatedProductData.id ? { ...p, ...updatedProductData } : p
+      )
+    );
+    toast.success("Product updated!", { autoClose: 3000 });
+    setIsEditModalOpen(false);
+    setSelectedProduct(null);
+  };
+
+  // Handle Delete
+  const handleDelete = async (productId) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+
+    try {
+      const response = await fetch(
+        `https://api.sablle.ng/api/products/${productId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to delete product");
+      }
+
+      toast.success("Product deleted!", { autoClose: 3000 });
+      fetchCategoryProducts(currentPage, searchQuery); // Refresh list
+    } catch (err) {
+      toast.error(`Error: ${err.message}`, { autoClose: 5000 });
+    }
   };
 
   const formatPrice = (amount) =>
@@ -196,23 +246,19 @@ const CategoryProducts = () => {
                       {formatPrice(product.sale_price_inc_tax)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {product.stock_quantity || 0}
+                      {product.availableStock || 0} {/* Exact stock from API */}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center gap-2">
                         <button
-                          className="text-blue-600 hover:text-blue-800 p-1"
-                          title="View"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
+                          onClick={() => handleEdit(product)}
                           className="text-green-600 hover:text-green-800 p-1"
                           title="Edit"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => handleDelete(product.id)}
                           className="text-red-600 hover:text-red-800 p-1"
                           title="Delete"
                         >
@@ -280,6 +326,22 @@ const CategoryProducts = () => {
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && selectedProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <EditProductForm
+              product={selectedProduct}
+              onSave={handleUpdateProduct}
+              onCancel={() => {
+                setIsEditModalOpen(false);
+                setSelectedProduct(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

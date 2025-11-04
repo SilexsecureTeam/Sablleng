@@ -89,18 +89,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: CreditCard,
       path: "/dashboard/delivery-fee-manager",
     },
+    {
+      id: "coupon-code",
+      label: "Coupon Code",
+      icon: Tag,
+      path: "/dashboard/coupon-code",
+    },
 
     {
       id: "Inventory",
       label: "Inventory",
       icon: Archive,
       path: "/dashboard/inventories",
-    },
-    {
-      id: "coupon-code",
-      label: "Coupon Code",
-      icon: Tag,
-      path: "/dashboard/coupon-code",
     },
     {
       id: "report",

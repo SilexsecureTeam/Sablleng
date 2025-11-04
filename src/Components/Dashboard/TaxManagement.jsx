@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Bell, Settings, Plus, X, Edit2 } from "lucide-react";
+import { Bell, Settings, Plus, X, Edit2, Trash2 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthContext } from "../../context/AuthContextObject";
@@ -204,6 +204,30 @@ const TaxManagement = () => {
     }
   };
 
+  // Handle Delete
+  const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this tax?")) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/taxes/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to delete tax");
+      }
+
+      toast.success("Tax deleted!", { autoClose: 3000 });
+      fetchTaxes();
+    } catch (err) {
+      toast.error(`Error: ${err.message}`, { autoClose: 5000 });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF7F5] p-6">
       <ToastContainer position="top-right" />
@@ -249,13 +273,20 @@ const TaxManagement = () => {
                 key={tax.id}
                 className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow relative bg-white"
               >
-                <div className="absolute top-4 right-4">
+                <div className="absolute top-4 right-4 flex gap-1">
                   <button
                     onClick={() => openEdit(tax)}
                     className="p-1 text-blue-600 hover:text-blue-800"
                     title="Edit"
                   >
                     <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(tax.id)}
+                    className="p-1 text-red-600 hover:text-red-800"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
 

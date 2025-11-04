@@ -1,6 +1,6 @@
 // src/Auth/SignIn.jsx
 import React, { useState, useContext } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -11,6 +11,7 @@ import logo from "../assets/logo.png";
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useContext(AuthContext);
   const { cart_session_id, setCartSessionId, setItems, setTotal } =
     useContext(CartContext);
@@ -118,7 +119,6 @@ const SignIn = () => {
             }
           } catch (error) {
             console.error("SignIn: Merge cart error:", error.message);
-            // toast.error("Network error while merging cart");
           }
         }
 
@@ -171,12 +171,13 @@ const SignIn = () => {
           setTotal(cachedTotal);
         }
 
+        const fromPath = location.state?.from?.pathname || "/";
+        const finalPath =
+          role.toLowerCase() === "admin" ? "/dashboard" : fromPath;
+        console.log("SignIn: Redirecting to:", finalPath);
+
         setTimeout(() => {
-          console.log(
-            "SignIn: Navigating to:",
-            role.toLowerCase() === "admin" ? "/dashboard" : "/"
-          );
-          navigate(role.toLowerCase() === "admin" ? "/dashboard" : "/");
+          navigate(finalPath, { replace: true });
         }, 2000);
       } else {
         console.error("SignIn: Login error:", data.message);

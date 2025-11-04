@@ -20,6 +20,7 @@ const OrderDetails = () => {
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Fetch single order details
   const fetchOrderDetails = async () => {
@@ -34,7 +35,7 @@ const OrderDetails = () => {
 
     try {
       const response = await fetch(
-        `https://api.sablle.ng/api/orders/${reference}`,
+        `https://api.sablle.ng/api/admin/orders/${reference}`,
         {
           method: "GET",
           headers: {
@@ -61,6 +62,7 @@ const OrderDetails = () => {
 
       // Format for display
       const formattedOrder = {
+        numericId: orderData.id, // Numeric ID for update endpoint
         id: orderData.order_reference,
         subtotal: `₦${parseFloat(orderData.subtotal).toLocaleString()}`,
         deliveryFee: `₦${parseFloat(orderData.delivery_fee).toLocaleString()}`,
@@ -94,6 +96,46 @@ const OrderDetails = () => {
     }
   };
 
+  // Update order status
+  const updateOrderStatus = async (newStatus) => {
+    if (!order?.numericId || !auth.token) return;
+
+    setIsUpdatingStatus(true);
+    try {
+      const formData = new FormData();
+      formData.append("_method", "PATCH");
+      formData.append("order_status", newStatus);
+
+      const response = await fetch(
+        `https://api.sablle.ng/api/admin/orders/status/${order.numericId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || `Failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      toast.success(data.message || "Order status updated successfully!", {
+        autoClose: 3000,
+      });
+
+      // Refetch to update UI
+      await fetchOrderDetails();
+    } catch (err) {
+      toast.error(`Update failed: ${err.message}`, { autoClose: 5000 });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   useEffect(() => {
     if (reference) {
       fetchOrderDetails();
@@ -117,6 +159,16 @@ const OrderDetails = () => {
 
   // Safe items getter
   const safeItems = order?.items || [];
+
+  // Accepted statuses
+  const acceptedStatuses = [
+    "Order Placed",
+    "Processing",
+    "Packed",
+    "Shipped",
+    "Out for Delivery",
+    "Delivered",
+  ];
 
   if (error && !isLoading) {
     return (
@@ -209,13 +261,27 @@ const OrderDetails = () => {
                   <Package className="w-4 h-4" />
                   Status
                 </p>
-                <span
-                  className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
-                    order.status
-                  )}`}
-                >
-                  {order.orderStatus}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
+                      order.status
+                    )}`}
+                  >
+                    {order.orderStatus}
+                  </span>
+                  <select
+                    value={order.orderStatus}
+                    onChange={(e) => updateOrderStatus(e.target.value)}
+                    disabled={isUpdatingStatus}
+                    className="ml-2 px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5F1327] disabled:opacity-50"
+                  >
+                    {acceptedStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
@@ -242,14 +308,21 @@ const OrderDetails = () => {
                       className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
                     >
                       <div className="flex items-center gap-3 flex-1">
-                        {/* Placeholder for image */}
-                        <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
-                          <span className="text-xs text-gray-500">Img</span>
-                        </div>
+                        {/* Placeholder for image - use first image if available */}
+                        {item.product?.images?.length > 0 ? (
+                          <img
+                            src={item.product.images[0]}
+                            alt={item.product.name}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-xs text-gray-500">Img</span>
+                          </div>
+                        )}
                         <div className="flex-1">
                           <p className="font-medium text-sm text-[#141718]">
-                            Item {item.product_id}{" "}
-                            {/* Use product_id since name not in response */}
+                            {item.product?.name || `Item ${item.product_id}`}
                           </p>
                           <p className="text-xs text-gray-500">
                             Qty: {item.quantity} • Color: {item.color || "N/A"}
@@ -262,8 +335,7 @@ const OrderDetails = () => {
                         </div>
                       </div>
                       <p className="text-sm font-medium text-[#5F1327]">
-                        {formatPrice(item.price * item.quantity)}{" "}
-                        {/* Assume unit_price; adjust if needed */}
+                        {formatPrice(item.price * item.quantity)}
                       </p>
                     </div>
                   ))}

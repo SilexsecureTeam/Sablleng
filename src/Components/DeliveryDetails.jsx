@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
 import { toast, ToastContainer } from "react-toastify";
@@ -13,9 +13,10 @@ const DeliveryDetail = () => {
   const [formData, setFormData] = useState({
     shipping_address: "",
     delivery_fee: 0,
-    tax_rate: 7.5,
+    tax_rate: 0,
   });
   const [errors, setErrors] = useState({});
+  const [taxes, setTaxes] = useState([]);
 
   // Dropdown states
   const [states, setStates] = useState([]);
@@ -27,6 +28,7 @@ const DeliveryDetail = () => {
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingLgas, setLoadingLgas] = useState(false);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
+  const location = useLocation();
 
   const API_BASE = "https://api.sablle.ng/api";
 
@@ -35,6 +37,12 @@ const DeliveryDetail = () => {
     fetchStates();
   }, []);
 
+  // Fetch active taxes on mount (after auth check)
+  useEffect(() => {
+    if (auth?.token) {
+      fetchActiveTaxes();
+    }
+  }, [auth?.token]);
   // Fetch LGAs when state changes
   useEffect(() => {
     if (selectedState) {
@@ -150,6 +158,46 @@ const DeliveryDetail = () => {
     }
   };
 
+  // Fetch active taxes
+  const fetchActiveTaxes = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/taxes`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch taxes:", response.statusText);
+        return;
+      }
+
+      const data = await response.json();
+      const taxArray = Array.isArray(data.tax) ? data.tax : [];
+      const activeTaxes = taxArray.filter(
+        (t) => t.is_active === 1 || t.is_active === "1" || t.is_active === true
+      );
+
+      setTaxes(activeTaxes);
+
+      if (activeTaxes.length > 0) {
+        // Use first active tax rate
+        setFormData((prev) => ({
+          ...prev,
+          tax_rate: parseFloat(activeTaxes[0].percentage) || 0,
+        }));
+      } else {
+        console.warn("No active taxes found; defaulting to 0%");
+        setFormData((prev) => ({ ...prev, tax_rate: 0 }));
+      }
+    } catch (error) {
+      console.error("Error fetching active taxes:", error);
+      setFormData((prev) => ({ ...prev, tax_rate: 0 })); // Fallback to 0
+    }
+  };
+
   // Debug logging on mount (unchanged)
   useEffect(() => {
     console.log("\n=== CHECKOUT PAGE LOADED ===");
@@ -179,8 +227,8 @@ const DeliveryDetail = () => {
     if (!formData.delivery_fee || formData.delivery_fee < 0) {
       newErrors.delivery_fee = "Delivery fee must be a valid number";
     }
-    if (!formData.tax_rate || formData.tax_rate < 0) {
-      newErrors.tax_rate = "Tax rate must be a valid number";
+    if (formData.tax_rate < 0 || formData.tax_rate === undefined) {
+      newErrors.tax_rate = "No active tax rate available";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -201,7 +249,7 @@ const DeliveryDetail = () => {
     if (!auth?.isAuthenticated || !auth?.token) {
       console.log("❌ User not authenticated");
       toast.error("You must be logged in to checkout");
-      navigate("/signin");
+      navigate("/signin", { state: { from: location } });
       return;
     }
 

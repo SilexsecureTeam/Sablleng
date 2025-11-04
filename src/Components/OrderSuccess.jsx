@@ -1,12 +1,19 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, memo } from "react";
 import { Check, Download, Printer } from "lucide-react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import {
+  PDFDownloadLink,
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  Image,
+} from "@react-pdf/renderer";
 
 const OrderSuccess = () => {
   const { auth } = useContext(AuthContext);
@@ -16,7 +23,6 @@ const OrderSuccess = () => {
   const { orderId: urlOrderId } = useParams();
   const [orderData, setOrderData] = useState(location.state || null);
   const [isFetching, setIsFetching] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [error, setError] = useState("");
   const API_BASE = "https://api.sablle.ng/api";
@@ -30,7 +36,7 @@ const OrderSuccess = () => {
       });
       navigate("/orders");
     }
-  }, [location.state, urlOrderId, navigate]);
+  }, [location.state, urlOrderId, navigate, location]);
 
   // Check authentication and fetch order details
   useEffect(() => {
@@ -39,7 +45,7 @@ const OrderSuccess = () => {
         position: "top-right",
         autoClose: 3000,
       });
-      navigate("/signin");
+      navigate("/signin", { state: { from: location } });
       return;
     }
 
@@ -111,7 +117,7 @@ const OrderSuccess = () => {
     if (!location.state || urlOrderId) {
       fetchOrderDetails();
     }
-  }, [auth, navigate, location.state, urlOrderId]);
+  }, [auth, navigate, location.state, urlOrderId, location]);
 
   const formatCurrency = (amount) =>
     new Intl.NumberFormat("en-NG", {
@@ -122,103 +128,6 @@ const OrderSuccess = () => {
     })
       .format(amount)
       .replace("NGN", "₦");
-
-  const generateReceiptPDF = async () => {
-    setIsDownloading(true);
-    setError("");
-    try {
-      const element = document.getElementById("receipt-content");
-      if (!element) {
-        throw new Error("Receipt content not found.");
-      }
-
-      // Temporarily hide buttons
-      const buttons = element.querySelectorAll("button");
-      buttons.forEach((btn) => (btn.style.display = "none"));
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.getElementById("receipt-content");
-          if (clonedElement) {
-            const allElements = clonedElement.querySelectorAll("*");
-            allElements.forEach((el) => {
-              const computedStyle = window.getComputedStyle(el);
-              const backgroundColor = computedStyle.backgroundColor;
-              const color = computedStyle.color;
-
-              if (backgroundColor && backgroundColor !== "rgba(0, 0, 0, 0)") {
-                el.style.backgroundColor = toHexColor(backgroundColor);
-              }
-              if (color) {
-                el.style.color = toHexColor(color);
-              }
-            });
-          }
-        },
-      });
-
-      // Restore buttons
-      buttons.forEach((btn) => (btn.style.display = ""));
-
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-      pdf.save(`Sabilay_Receipt_${orderData.orderId || "order"}.pdf`);
-    } catch (err) {
-      console.error("PDF generation error:", err);
-      setError("Failed to generate receipt. Please try again.");
-      toast.error("Failed to generate receipt. Please try again.", {
-        position: "top-right",
-        autoClose: 4000,
-      });
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const toHexColor = (color) => {
-    if (!color || color === "transparent" || color === "rgba(0, 0, 0, 0)") {
-      return color;
-    }
-
-    if (color.startsWith("oklch")) {
-      const colorMap = {
-        "oklch(65.92% 0.185 28.07)": "#5F1327",
-        "oklch(51.01% 0.043 252.99)": "#4B5563",
-        "oklch(97.14% 0.013 252.99)": "#F9FAFB",
-        "oklch(52.95% 0.143 142.5)": "#15803D",
-        "oklch(29.23% 0.035 252.99)": "#1F2A44",
-        "oklch(76.63% 0.022 142.5)": "#BBF7D0",
-        "oklch(54.86% 0.139 27.52)": "#DC2626",
-        "oklch(96.08% 0.013 27.52)": "#FEF2F2",
-      };
-      return colorMap[color] || "#000000";
-    }
-
-    if (color.startsWith("rgb")) {
-      const rgbMatch = color.match(/\d+/g);
-      if (rgbMatch) {
-        const [r, g, b] = rgbMatch.map(Number);
-        return `#${((1 << 24) + (r << 16) + (g << 8) + b)
-          .toString(16)
-          .slice(1)
-          .toUpperCase()}`;
-      }
-    }
-
-    return color;
-  };
 
   const handlePrint = () => {
     setIsPrinting(true);
@@ -242,6 +151,294 @@ const OrderSuccess = () => {
     navigate("/order-tracking", {
       state: { orderId: orderData.orderId, address: orderData.address },
     });
+  };
+
+  // PDF Styles
+  const pdfStyles = StyleSheet.create({
+    page: {
+      flexDirection: "column",
+      backgroundColor: "#ffffff",
+      padding: 30,
+      fontFamily: "Helvetica",
+    },
+    section: {
+      margin: 10,
+      padding: 10,
+    },
+    title: {
+      fontSize: 24,
+      textAlign: "center",
+      marginBottom: 20,
+      fontWeight: "bold",
+    },
+    subtitle: {
+      fontSize: 12,
+      textAlign: "center",
+      marginBottom: 30,
+      color: "#6B7280",
+    },
+    successIcon: {
+      width: 60,
+      height: 60,
+      borderWidth: 2,
+      borderColor: "#10B981",
+      borderRadius: 30,
+      alignItems: "center",
+      justifyContent: "center",
+      margin: "0 auto 20px",
+      backgroundColor: "#D1FAE5",
+    },
+    checkIcon: {
+      fontSize: 30,
+      color: "#10B981",
+    },
+    detailGrid: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 20,
+      borderWidth: 1,
+      borderColor: "#E5E7EB",
+      borderRadius: 6,
+      padding: 15,
+    },
+    detailLabel: {
+      fontSize: 12,
+      fontWeight: "bold",
+      color: "#111827",
+    },
+    detailValue: {
+      fontSize: 12,
+      color: "#6B7280",
+      textAlign: "right",
+    },
+    itemsTitle: {
+      fontSize: 14,
+      fontWeight: "bold",
+      marginBottom: 10,
+      color: "#111827",
+    },
+    itemRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 8,
+      fontSize: 12,
+    },
+    itemImage: {
+      width: 40,
+      height: 40,
+      borderRadius: 4,
+      marginRight: 10,
+    },
+    itemInfo: {
+      flex: 1,
+      color: "#6B7280",
+    },
+    itemPrice: {
+      fontSize: 12,
+      color: "#111827",
+    },
+    summary: {
+      marginTop: 20,
+      paddingTop: 15,
+      borderTopWidth: 1,
+      borderTopColor: "#E5E7EB",
+    },
+    summaryRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 5,
+      fontSize: 12,
+    },
+    summaryLabel: {
+      color: "#6B7280",
+    },
+    summaryValue: {
+      color: "#111827",
+    },
+    totalRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 10,
+      paddingTop: 10,
+      borderTopWidth: 1,
+      borderTopColor: "#111827",
+      fontSize: 16,
+      fontWeight: "bold",
+    },
+    addressTitle: {
+      fontSize: 14,
+      fontWeight: "bold",
+      marginBottom: 5,
+      marginTop: 20,
+      color: "#111827",
+    },
+    addressText: {
+      fontSize: 12,
+      color: "#6B7280",
+      lineHeight: 1.4,
+    },
+    customizedBadge: {
+      backgroundColor: "#5F1327",
+      color: "#FFFFFF",
+      fontSize: 8,
+      paddingHorizontal: 4,
+      paddingVertical: 1,
+      borderRadius: 3,
+      marginLeft: 5,
+    },
+  });
+
+  // Memoized PDF Document Component (prevents unnecessary re-renders)
+  const ReceiptPDF = memo(({ orderData }) => (
+    <Document key={`doc-${orderData.orderId}`}>
+      <Page size="A4" style={pdfStyles.page}>
+        <View style={pdfStyles.section}>
+          {/* Success Section */}
+          <View style={pdfStyles.successIcon}>
+            <Text style={pdfStyles.checkIcon}>✓</Text>
+          </View>
+          <Text style={pdfStyles.title}>Order Placed Successfully!</Text>
+          <Text style={pdfStyles.subtitle}>
+            Thank you for shopping with Sabilay
+          </Text>
+
+          {/* Order Details Grid */}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              marginBottom: 20,
+            }}
+          >
+            <View style={pdfStyles.detailGrid}>
+              <Text style={pdfStyles.detailLabel}>Order Reference</Text>
+              <Text style={pdfStyles.detailValue}>{orderData.orderId}</Text>
+            </View>
+            <View style={pdfStyles.detailGrid}>
+              <Text style={pdfStyles.detailLabel}>Payment</Text>
+              <Text style={pdfStyles.detailValue}>
+                {orderData.paymentMethod}
+              </Text>
+            </View>
+          </View>
+
+          {/* Items */}
+          <Text style={pdfStyles.itemsTitle}>Items</Text>
+          <View style={{ marginBottom: 20 }}>
+            {orderData.items.length > 0 ? (
+              orderData.items.map((item, index) => (
+                <View
+                  key={`item-${item.id}-${index}`}
+                  style={pdfStyles.itemRow}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      flex: 1,
+                    }}
+                  >
+                    {item.product?.images?.[0] && (
+                      <Image
+                        source={{ uri: item.product.images[0] }}
+                        style={pdfStyles.itemImage}
+                      />
+                    )}
+                    <View style={pdfStyles.itemInfo}>
+                      <Text>
+                        {item.product?.name || "Unknown Product"} x{" "}
+                        {item.quantity}
+                      </Text>
+                      {item.customization_id && (
+                        <Text style={pdfStyles.customizedBadge}>
+                          Customized
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <Text style={pdfStyles.itemPrice}>
+                    {formatCurrency(item.price * item.quantity)}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={{ fontSize: 12, color: "#6B7280" }}>
+                No items found for this order.
+              </Text>
+            )}
+          </View>
+
+          {/* Order Summary */}
+          <View style={pdfStyles.summary}>
+            <View style={pdfStyles.summaryRow}>
+              <Text style={pdfStyles.summaryLabel}>Subtotal</Text>
+              <Text style={pdfStyles.summaryValue}>
+                {formatCurrency(orderData.subtotal)}
+              </Text>
+            </View>
+            <View style={pdfStyles.summaryRow}>
+              <Text style={pdfStyles.summaryLabel}>Discount</Text>
+              <Text style={pdfStyles.summaryValue}>
+                {formatCurrency(orderData.discount_amount || 0)}
+              </Text>
+            </View>
+            <View style={pdfStyles.summaryRow}>
+              <Text style={pdfStyles.summaryLabel}>
+                VAT ({orderData.tax_rate}%)
+              </Text>
+              <Text style={pdfStyles.summaryValue}>
+                {formatCurrency(orderData.vat)}
+              </Text>
+            </View>
+            <View style={pdfStyles.summaryRow}>
+              <Text style={pdfStyles.summaryLabel}>Delivery</Text>
+              <Text style={pdfStyles.summaryValue}>
+                {formatCurrency(orderData.delivery)}
+              </Text>
+            </View>
+            <View style={pdfStyles.totalRow}>
+              <Text style={{ fontSize: 16, fontWeight: "bold" }}>Total</Text>
+              <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+                {formatCurrency(orderData.total)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Delivery Address */}
+          <Text style={pdfStyles.addressTitle}>Delivery Address</Text>
+          <View>
+            {orderData.address &&
+            orderData.address.name &&
+            orderData.address.address ? (
+              <>
+                <Text style={pdfStyles.addressText}>
+                  {orderData.address.name}
+                </Text>
+                <Text style={pdfStyles.addressText}>
+                  {orderData.address.address}
+                </Text>
+              </>
+            ) : (
+              <Text style={pdfStyles.addressText}>
+                No address provided for this order.
+              </Text>
+            )}
+          </View>
+        </View>
+      </Page>
+    </Document>
+  ));
+
+  // Simple Error Boundary for PDF (prevents full crash)
+  const PDFErrorBoundary = ({ children }) => {
+    const [hasError, setHasError] = useState(false);
+    useEffect(() => {
+      if (hasError) {
+        toast.error("PDF generation failed—try refreshing.");
+        setHasError(false);
+      }
+    }, [hasError]);
+    return hasError ? <span>PDF Preview Unavailable</span> : children;
   };
 
   if (isFetching) {
@@ -412,17 +609,24 @@ const OrderSuccess = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 pt-4 no-print">
-          <button
-            onClick={generateReceiptPDF}
-            disabled={isDownloading || isFetching}
-            className={`flex-1 py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 ${
-              isDownloading || isFetching ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            aria-label="Download order receipt as PDF"
-          >
-            <Download size={16} />
-            {isDownloading ? "Downloading..." : "Download Receipt"}
-          </button>
+          <PDFErrorBoundary>
+            <PDFDownloadLink
+              document={<ReceiptPDF orderData={orderData} />}
+              fileName={`Sabilay_Receipt_${orderData.orderId || "order"}.pdf`}
+              className="flex-1 py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+            >
+              {({ loading }) =>
+                loading ? (
+                  "Generating PDF..."
+                ) : (
+                  <>
+                    <Download size={16} />
+                    Download Receipt
+                  </>
+                )
+              }
+            </PDFDownloadLink>
+          </PDFErrorBoundary>
           <button
             onClick={handlePrint}
             disabled={isPrinting || isFetching}

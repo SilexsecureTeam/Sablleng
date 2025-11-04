@@ -1,16 +1,29 @@
-import React from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { ArrowUpRight, Circle } from "lucide-react";
+import { AuthContext } from "../../context/AuthContextObject";
+import { useNavigate } from "react-router-dom";
 
 const DashboardHome = () => {
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+  const [ordersError, setOrdersError] = useState(null);
+  const { auth } = useContext(AuthContext);
+  const navigate = useNavigate();
+
   const metrics = [
     { label: "Total Revenue", value: "₦0", extra: "↑ 12.5% vs last month" },
     { label: "This Month", value: "₦0", extra: "Last 7 days" },
-    { label: "Total Orders", value: "960", extra: "Last 7 days" },
+    {
+      label: "Total Orders",
+      value: totalOrders.toString(),
+      extra: "Last 7 days",
+    },
     { label: "Low Stock", value: "7" },
   ];
 
   const recentActivity = [
-    { text: "New order placed", time: "John Doe • 2 minutes ago" },
+    { text: "New order placed", time: "John Doe • 2 minutes ago" },
     { text: "Product added", time: "Admin • 1 hour ago" },
     { text: "Customization approved", time: "Jane Smith • 3 hours ago" },
     { text: "Low stock alert", time: "System • 5 hours ago" },
@@ -24,41 +37,6 @@ const DashboardHome = () => {
       value: 18,
       color: "bg-[#16CF0C]",
       width: "45%",
-    },
-  ];
-
-  const orders = [
-    {
-      orderId: "P001",
-      customer: "Acme Corp",
-      total: "₦120,000",
-      status: "Processing",
-      statusColor: "bg-[#FFE4CC] text-[#AD5507]",
-      date: "2025-09-28",
-    },
-    {
-      orderId: "P001",
-      customer: "Beta Ltd",
-      total: "₦120,000",
-      status: "Shipped",
-      statusColor: "bg-[#E0FBEC] text-[#079722]",
-      date: "2025-09-28",
-    },
-    {
-      orderId: "P001",
-      customer: "Delta Inc",
-      total: "₦120,000",
-      status: "Awaiting Customization",
-      statusColor: "bg-[#E5EAFF] text-[#143AAD]",
-      date: "2025-09-28",
-    },
-    {
-      orderId: "P001",
-      customer: "RH-PEC",
-      total: "₦120,000",
-      status: "Shipped",
-      statusColor: "bg-[#E0FBEC] text-[#079722]",
-      date: "2025-09-28",
     },
   ];
 
@@ -94,6 +72,78 @@ const DashboardHome = () => {
       bulletColor: "fill-amber-600 text-amber-600",
     },
   ];
+
+  // Fetch orders for total and recent
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!auth?.isAuthenticated || !auth?.token) {
+        setIsLoadingOrders(false);
+        return;
+      }
+
+      setIsLoadingOrders(true);
+      setOrdersError(null);
+
+      try {
+        const response = await fetch("https://api.sablle.ng/api/admin/orders", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+            Accept: "application/json",
+          },
+        });
+
+        const contentType = response.headers.get("Content-Type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Server returned non-JSON response");
+        }
+
+        const data = await response.json();
+
+        if (response.ok) {
+          const mappedOrders = data.data
+            .map((order) => ({
+              orderId: order.order_reference,
+              customer: order.user?.name || "Unknown",
+              total: `₦${parseFloat(order.total).toLocaleString()}`,
+              status: order.order_status,
+              date: new Date(order.created_at).toLocaleDateString("en-GB"),
+            }))
+            .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort recent first
+
+          setTotalOrders(data.data.length);
+          setRecentOrders(mappedOrders.slice(0, 4)); // Take top 4 recent
+        } else {
+          throw new Error(data.message || `Error ${response.status}`);
+        }
+      } catch (error) {
+        setOrdersError(error.message);
+      } finally {
+        setIsLoadingOrders(false);
+      }
+    };
+
+    fetchOrders();
+  }, [auth?.isAuthenticated, auth?.token]);
+
+  // Status color map (adjust based on common statuses)
+  const getStatusColor = (status) => {
+    const lowerStatus = status.toLowerCase();
+    if (lowerStatus.includes("shipped") || lowerStatus.includes("delivered")) {
+      return "bg-[#E0FBEC] text-[#079722]";
+    } else if (
+      lowerStatus.includes("processing") ||
+      lowerStatus.includes("packed")
+    ) {
+      return "bg-[#FFE4CC] text-[#AD5507]";
+    } else if (
+      lowerStatus.includes("awaiting") ||
+      lowerStatus.includes("pending")
+    ) {
+      return "bg-[#E5EAFF] text-[#143AAD]";
+    }
+    return "bg-gray-200 text-gray-600";
+  };
 
   return (
     <div className="min-h-screen bg-[#FAF7F5] text-[#414245] p-6">
@@ -183,52 +233,76 @@ const DashboardHome = () => {
         {/* Recent Orders Table */}
         <div className="bg-white text-[#414245] rounded-lg p-6 shadow-sm mb-6">
           <h2 className="text-base font-semibold  mb-4">Recent Orders</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3 px-4">
-                    Order
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3 px-4">
-                    Customer
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3 px-4">
-                    Total
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3 px-4">
-                    Status
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-600 pb-3 px-4">
-                    Date
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((order, idx) => (
-                  <tr
-                    key={idx}
-                    className="border-b border-gray-100 last:border-0"
-                  >
-                    <td className="py-3 px-4 text-sm ">{order.orderId}</td>
-                    <td className="py-3 px-4 text-sm ">{order.customer}</td>
-                    <td className="py-3 px-4 text-sm ">{order.total}</td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${order.statusColor}`}
-                      >
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-sm ">{order.date}</td>
-                    <td className="py-3 px-4 text-sm text-[#0029A3]">
-                      Details
-                    </td>
+          {isLoadingOrders ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#5F1327]"></div>
+              <span className="ml-2 text-sm text-gray-600">
+                Loading orders...
+              </span>
+            </div>
+          ) : ordersError ? (
+            <div className="text-center py-8 text-sm text-red-600">
+              {ordersError}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left text-xs font-medium text-gray-600 pb-3 px-4">
+                      Order
+                    </th>
+                    <th className="text-left text-xs font-medium text-gray-600 pb-3 px-4">
+                      Customer
+                    </th>
+                    <th className="text-left text-xs font-medium text-gray-600 pb-3 px-4">
+                      Total
+                    </th>
+                    <th className="text-left text-xs font-medium text-gray-600 pb-3 px-4">
+                      Status
+                    </th>
+                    <th className="text-left text-xs font-medium text-gray-600 pb-3 px-4">
+                      Date
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {recentOrders.map((order, idx) => (
+                    <tr
+                      key={idx}
+                      className="border-b border-gray-100 last:border-0"
+                    >
+                      <td className="py-3 px-4 text-sm ">{order.orderId}</td>
+                      <td className="py-3 px-4 text-sm ">{order.customer}</td>
+                      <td className="py-3 px-4 text-sm ">{order.total}</td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                            order.status
+                          )}`}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-sm ">{order.date}</td>
+                      <td className="py-3 px-4 ">
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/dashboard/orders/${order.orderId}/details`
+                            )
+                          }
+                          className="text-sm text-[#0B36B5] hover:text-blue-800 font-medium"
+                        >
+                          Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Customization Requests */}

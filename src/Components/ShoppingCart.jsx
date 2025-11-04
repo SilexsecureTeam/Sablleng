@@ -2,7 +2,7 @@ import React, { useContext, useState } from "react";
 import { Minus, Plus, X } from "lucide-react";
 import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -13,6 +13,7 @@ export default function ShoppingCart() {
   const [bonusCard, setBonusCard] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   React.useEffect(() => {
     console.log("ShoppingCart: Items state:", JSON.stringify(items, null, 2));
@@ -53,7 +54,7 @@ export default function ShoppingCart() {
         position: "top-right",
         autoClose: 3000,
       });
-      navigate("/signin");
+      navigate("/signin", { state: { from: location } });
       return;
     }
     navigate("/delivery");

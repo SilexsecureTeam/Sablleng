@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContextObject";
 import { toast } from "react-toastify";
 import {
@@ -21,6 +21,7 @@ const Orders = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const location = useLocation();
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -29,7 +30,7 @@ const Orders = () => {
         position: "top-right",
         autoClose: 3000,
       });
-      navigate("/signin");
+      navigate("/signin", { state: { from: location } });
     }
   }, [auth.isAuthenticated, navigate]);
 

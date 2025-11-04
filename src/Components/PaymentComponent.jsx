@@ -64,7 +64,7 @@ const PaymentComponent = () => {
         position: "top-right",
         autoClose: 3000,
       });
-      navigate("/signin");
+      navigate("/signin", { state: { from: location } });
       return;
     }
 
