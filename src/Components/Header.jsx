@@ -238,7 +238,7 @@ const Header = React.memo(() => {
     <>
       {/* Noti Bar - Always Visible, Sticky at Top */}
       <div className="bg-[#5F1327] sticky top-0 z-50 text-center border-b border-[#5F1327]/20">
-        <div className="max-w-[1200px] mx-auto px-2 sm:px-4 sm:px-6 md:px-8">
+        <div className="max-w-[1200px] mx-auto px-2 sm:px-4 md:px-8">
           {/* Desktop: Phone Left, Logo Center, Icons Right */}
           <div className="hidden md:flex items-center justify-between py-1.5 xs:py-2">
             {/* Left: Phone/Email */}
@@ -321,6 +321,7 @@ const Header = React.memo(() => {
                         to="/profile"
                         className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
                         role="menuitem"
+                        onClick={() => setProfileOpen(false)}
                       >
                         <UserCircle size={18} />
                         <span className="text-sm font-medium">My Profile</span>
@@ -330,6 +331,7 @@ const Header = React.memo(() => {
                         to="/orders"
                         className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
                         role="menuitem"
+                        onClick={() => setProfileOpen(false)}
                       >
                         <Package size={18} />
                         <span className="text-sm font-medium">
@@ -341,6 +343,7 @@ const Header = React.memo(() => {
                         to="/wishlist"
                         className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
                         role="menuitem"
+                        onClick={() => setProfileOpen(false)}
                       >
                         <Heart size={18} />
                         <span className="text-sm font-medium">My Wishlist</span>
@@ -381,8 +384,130 @@ const Header = React.memo(() => {
             </div>
           </div>
 
+          {/* Mobile: Hamburger, Logo, Icons Row */}
+          <div className="md:hidden flex items-center justify-between py-3">
+            {/* Left: Hamburger */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setMobileMenu(true);
+              }}
+              className="p-2 text-white hover:text-gray-200 transition-colors duration-200"
+              aria-label="Open Menu"
+            >
+              <Menu size={24} />
+            </button>
+
+            {/* Center: Logo */}
+            <Link to="/" className="flex-shrink-0">
+              <img
+                src={logo}
+                alt="Sablle Logo"
+                className="w-[120px] h-[25px]"
+              />
+            </Link>
+
+            {/* Right: Icons */}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <button
+                className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200"
+                aria-label="Search"
+              >
+                <Search size={20} />
+              </button>
+
+              {/* Profile Section - Mobile */}
+              <div className="relative" ref={profileRef}>
+                {auth.isAuthenticated ? (
+                  <button
+                    onClick={toggleProfileDropdown}
+                    className="text-white hover:text-gray-200 transition-colors duration-200"
+                    aria-label="User Profile"
+                    aria-expanded={profileOpen}
+                  >
+                    <UserCircle size={20} />
+                  </button>
+                ) : (
+                  <Link
+                    to="/signin"
+                    className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200"
+                    aria-label="Sign In"
+                  >
+                    <User size={20} />
+                  </Link>
+                )}
+                {auth.isAuthenticated && profileOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg rounded-lg py-2 border border-gray-100 z-50">
+                    <div className="py-1" role="menu">
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
+                        role="menuitem"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <UserCircle size={18} />
+                        <span className="text-sm font-medium">My Profile</span>
+                      </Link>
+
+                      <Link
+                        to="/orders"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
+                        role="menuitem"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <Package size={18} />
+                        <span className="text-sm font-medium">
+                          Order History
+                        </span>
+                      </Link>
+
+                      <Link
+                        to="/wishlist"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
+                        role="menuitem"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <Heart size={18} />
+                        <span className="text-sm font-medium">My Wishlist</span>
+                      </Link>
+
+                      <div className="border-t border-gray-100 my-1"></div>
+
+                      <button
+                        onClick={() => {
+                          logout();
+                          setProfileOpen(false);
+                          setMobileMenu(false);
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2 text-red-600 hover:bg-red-50 transition-colors duration-200"
+                        role="menuitem"
+                      >
+                        <LogOut size={18} />
+                        <span className="text-sm font-medium">Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Cart */}
+              <Link
+                to="/cart"
+                className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200 relative"
+                aria-label="Shopping Cart"
+              >
+                <ShoppingCart size={20} />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[#5F1327] text-white text-xs px-1 py-0 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+                    {cartItemCount > 99 ? "99+" : cartItemCount}
+                  </span>
+                )}
+              </Link>
+            </div>
+          </div>
+
           {/* Mobile: Phone/Email Bottom Center Row */}
-          <div className="md:hidden flex justify-center">
+          <div className="md:hidden flex justify-center py-2">
             <div className="text-white text-xs xs:text-sm font-semibold flex items-center gap-4">
               <span>+2348187230200</span>
               <span>|</span>
@@ -571,7 +696,7 @@ const Header = React.memo(() => {
 
       {/* Nav Links - Centered, White BG, Always Below Noti */}
       <nav
-        className="bg-white sticky top-[calc(theme(spacing.10)+theme(spacing.4))] z-40 border-b border-gray-200"
+        className="bg-white md:sticky md:top-[calc(theme(spacing.10)+theme(spacing.4))] z-40 border-b border-gray-200"
         role="navigation"
         aria-label="Main Navigation"
       >

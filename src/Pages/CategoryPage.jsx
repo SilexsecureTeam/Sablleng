@@ -94,16 +94,27 @@ const CategoryPage = () => {
       }
 
       const cacheKey = `products_${categoryId}`;
-      const cachedProducts = localStorage.getItem(cacheKey);
-      if (cachedProducts) {
-        const parsedProducts = JSON.parse(cachedProducts);
-        if (isMounted) {
-          setProducts(parsedProducts);
-          // Total pages will be set after filtering
-          setCurrentPage(1);
-          setIsLoading(false);
+      const cachedData = localStorage.getItem(cacheKey);
+      const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in ms - adjust as needed
+
+      if (cachedData) {
+        try {
+          const { products: cachedProducts, timestamp } =
+            JSON.parse(cachedData);
+          const now = Date.now();
+          if (now - timestamp < CACHE_DURATION) {
+            // Cache is fresh
+            if (isMounted) {
+              setProducts(cachedProducts);
+              setCurrentPage(1);
+              setIsLoading(false);
+            }
+            return;
+          }
+          // Cache is stale - fall through to fetch
+        } catch (parseErr) {
+          console.warn("Invalid cache data, fetching fresh:", parseErr);
         }
-        return;
       }
 
       if (isMounted) {
@@ -139,14 +150,22 @@ const CategoryPage = () => {
             : "Price Unavailable",
           category: item.category?.name || categoryName,
           badge: item.customize ? "Customizable" : null,
-          image: item.images?.[0] || "/placeholder-image.jpg",
+          image: item.images?.[0]?.path
+            ? `https://api.sablle.ng/storage/products/${item.images[0].path}`
+            : "/placeholder-image.jpg",
           customize: item.meta?.customizable ?? item.customize ?? false,
         }));
 
         if (isMounted) {
           setProducts(formattedProducts);
-          localStorage.setItem(cacheKey, JSON.stringify(formattedProducts));
-          // Total pages will be set after filtering
+          // Update cache with timestamp
+          localStorage.setItem(
+            cacheKey,
+            JSON.stringify({
+              products: formattedProducts,
+              timestamp: Date.now(),
+            })
+          );
           setCurrentPage(1);
 
           if (formattedProducts.length > 0) {

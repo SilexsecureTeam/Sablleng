@@ -37,6 +37,7 @@ const MyProfilePage = lazy(() => import("./Pages/MyProfilePage"));
 const OrdersPage = lazy(() => import("./Pages/OrdersPage"));
 const GroupedCategoryPage = lazy(() => import("./Pages/GroupedCategoryPage"));
 const WishListPage = lazy(() => import("./Pages/WishListPage"));
+const AdminForgotPassword = lazy(() => import("./Auth/AdminForgotPassword"));
 
 const LoadingSpinner = () => {
   return (
@@ -127,6 +128,10 @@ const App = () => {
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/admin/signin" element={<AdminSignIn />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route
+                  path="/admin/forgot-password"
+                  element={<AdminForgotPassword />}
+                />
                 <Route path="/reset-password" element={<PasswordReset />} />
                 <Route path="/otp" element={<OtpPage />} />
                 <Route path="/admin/otp" element={<AdminOtpPage />} />

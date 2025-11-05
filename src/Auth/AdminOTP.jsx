@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -12,6 +12,23 @@ const AdminOtpPage = () => {
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [countdown, setCountdown] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          setCanResend(true);
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const handleChange = (e, index) => {
     const { value } = e.target;
@@ -67,7 +84,7 @@ const AdminOtpPage = () => {
           },
           body: JSON.stringify({
             otp: otp.join(""),
-            email: auth.user.email, // Include email for OTP verification
+            email: auth.user.email,
           }),
         }
       );
@@ -111,6 +128,9 @@ const AdminOtpPage = () => {
     }
 
     setIsLoading(true);
+    setCanResend(false);
+    setCountdown(60);
+
     try {
       const response = await fetch(
         "https://api.sablle.ng/api/admin/resend-otp",
@@ -120,7 +140,7 @@ const AdminOtpPage = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            email: auth.user.email, // Include email for resend
+            email: auth.user.email,
           }),
         }
       );
@@ -136,13 +156,23 @@ const AdminOtpPage = () => {
       } else {
         console.error("OTP: Resend error:", data.message);
         toast.error(data.message || "Failed to resend OTP. Please try again.");
+        setCanResend(true);
       }
     } catch (error) {
       console.error("OTP: Resend network error:", error.message);
       toast.error("Network error while resending OTP.");
+      setCanResend(true);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   return (
@@ -201,10 +231,16 @@ const AdminOtpPage = () => {
               <button
                 type="button"
                 onClick={handleResend}
-                className="text-[#5F1327] hover:underline"
-                disabled={isLoading}
+                className={`${
+                  canResend
+                    ? "text-[#5F1327] hover:underline"
+                    : "text-gray-400 cursor-not-allowed"
+                }`}
+                disabled={!canResend || isLoading}
               >
-                Resend Code
+                {canResend
+                  ? "Resend Code"
+                  : `Resend Code (${formatTime(countdown)})`}
               </button>
             </p>
             <button

@@ -91,8 +91,8 @@ const AdminSignIn = () => {
   };
 
   const handleForgotPassword = () => {
-    console.log("Forgot Password clicked");
-    // Implement forgot password logic here
+    // console.log("Forgot Password clicked");
+    navigate("/admin/forgot-password");
   };
 
   return (
