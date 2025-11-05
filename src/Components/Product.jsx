@@ -39,7 +39,7 @@ const Product = () => {
             : [];
 
           formattedProducts = productsArray.map((item) => {
-            const latestCust = item.customization?.[0] || {};
+            // const latestCust = item.customization?.[0] || {};
 
             return {
               id: item.id,
@@ -49,9 +49,11 @@ const Product = () => {
                 : "₦0", // or item.price if available
               category: item.category || "Customized",
               badge: "Customizable",
-              image: latestCust.image_path
-                ? `https://api.sablle.ng/storage/${latestCust.image_path}`
-                : "/placeholder-image.jpg",
+              image:
+                item.images?.[0]?.url ||
+                (item.images?.[0]?.path
+                  ? `https://api.sablle.ng/storage/${item.images[0].path}`
+                  : "/placeholder-image.jpg"),
               customize: true,
             };
           });
@@ -83,7 +85,11 @@ const Product = () => {
               : "Price Unavailable",
             category: item.category?.name,
             badge: item.customize ? "Customizable" : null,
-            image: item.images?.[0] || "/placeholder-image.jpg",
+            image:
+              item.images?.[0]?.url ||
+              (item.images?.[0]?.path
+                ? `https://api.sablle.ng/storage/${item.images[0].path}`
+                : "/placeholder-image.jpg"),
             customize: item.customize,
           }));
 

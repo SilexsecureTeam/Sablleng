@@ -150,9 +150,11 @@ const CategoryPage = () => {
             : "Price Unavailable",
           category: item.category?.name || categoryName,
           badge: item.customize ? "Customizable" : null,
-          image: item.images?.[0]?.path
-            ? `https://api.sablle.ng/storage/products/${item.images[0].path}`
-            : "/placeholder-image.jpg",
+          image:
+            item.images?.[0]?.url ||
+            (item.images?.[0]?.path
+              ? `https://api.sablle.ng/storage/${item.images[0].path}`
+              : "/placeholder-image.jpg"),
           customize: item.meta?.customizable ?? item.customize ?? false,
         }));
 

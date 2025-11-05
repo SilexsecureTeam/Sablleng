@@ -27,26 +27,22 @@ const ProductDetail = () => {
   });
   const sliderRef = useRef(null);
 
-  const colors = [
-    { name: "black", color: "bg-black" },
-    { name: "purple", color: "bg-purple-600" },
-    { name: "red", color: "bg-red-500" },
-    { name: "yellow", color: "bg-yellow-400" },
+  // Define thumbnails using actual product images (up to 4, cycle bg colors if fewer)
+  const bgColors = [
+    "bg-blue-100",
+    "bg-green-100",
+    "bg-red-100",
+    "bg-yellow-100",
   ];
-
-  // Define thumbnails based on product image
-  const thumbnails = product
-    ? [
-        { bgColor: "bg-blue-100", image: product.image },
-        { bgColor: "bg-green-100", image: product.image },
-        { bgColor: "bg-red-100", image: product.image },
-        { bgColor: "bg-yellow-100", image: product.image },
-      ]
+  const thumbnails = product?.images
+    ? product.images.map((img, index) => ({
+        bgColor: bgColors[index % bgColors.length],
+        image: img,
+      }))
     : [];
 
   // Sample sizes (replace with dynamic sizes from API)
-  const sizes =
-    product?.sizes?.length > 0 ? product.sizes : ["S", "M", "L", "XL"];
+  const sizes = product?.sizes?.length > 0 ? product.sizes : ["no size"];
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -89,14 +85,26 @@ const ProductDetail = () => {
             : "Price Unavailable",
           category: data.category?.name || "Uncategorized",
           badge: data.customize ? "Customizable" : null,
-          image: data.images?.[0] || "/placeholder-image.jpg",
+          images: data.images?.map(
+            (img) => img.url || `https://api.sablle.ng/storage/${img.path}`
+          ) || ["/placeholder-image.jpg"], // All images as URLs
+          image:
+            data.images?.[0]?.url ||
+            (data.images?.[0]?.path
+              ? `https://api.sablle.ng/storage/${data.images[0].path}`
+              : "/placeholder-image.jpg"), // Main image (first one)
           model: data.product_code || "N/A",
           customize: data.customize,
-          sizes: data.size || [],
+          sizes: data.size || null, // Keep as-is for now
+          brand: data.brand?.name || "no brand", // From API brand
+          colours: data.colours || [], // From API colours
         };
 
         setProduct(formattedProduct);
-        setSelectedSize(formattedProduct.sizes[0] || "N/A");
+        setSelectedSize(formattedProduct.sizes?.[0] || "no size");
+        if (formattedProduct.colours?.length > 0) {
+          setSelectedColor(formattedProduct.colours[0].value);
+        }
 
         if (formattedProduct.category !== "Uncategorized") {
           const relatedResponse = await fetch(
@@ -121,7 +129,11 @@ const ProductDetail = () => {
                   : "Price Unavailable",
                 category: item.category?.name || "Uncategorized",
                 badge: item.customize ? "Customizable" : null,
-                image: item.images?.[0] || "/placeholder-image.jpg",
+                image:
+                  item.images?.[0]?.url ||
+                  (item.images?.[0]?.path
+                    ? `https://api.sablle.ng/storage/${item.images[0].path}`
+                    : "/placeholder-image.jpg"),
               }))
               .filter(
                 (p) =>
@@ -279,7 +291,11 @@ const ProductDetail = () => {
                   className={`rounded-lg p-8 flex items-center justify-center ${selectedThumbnail.bgColor}`}
                 >
                   <img
-                    src={selectedThumbnail.image || product.image}
+                    src={
+                      selectedThumbnail.image ||
+                      product.images?.[0] ||
+                      product.image
+                    }
                     alt={product.name}
                     className="max-h-64 md:h-80 max-w-full object-contain"
                   />
@@ -324,15 +340,17 @@ const ProductDetail = () => {
                     <span className="text-gray-500 w-24">Color:</span>
                     <span className="text-gray-900">{selectedColor}</span>
                   </div>
-                  {/* <div className="flex">
+                  <div className="flex">
                     <span className="text-gray-500 w-24">Size:</span>
                     <span className="text-gray-900">
-                      {selectedSize || "N/A"}
+                      {product.sizes
+                        ? product.sizes[0] || "no size"
+                        : "no size"}
                     </span>
-                  </div> */}
+                  </div>
                   <div className="flex">
                     <span className="text-gray-500 w-24">Brand:</span>
-                    <span className="text-gray-900">ACMELL</span>
+                    <span className="text-gray-900">{product.brand}</span>
                   </div>
                   <div className="flex">
                     <span className="text-gray-500 w-24">Material:</span>
@@ -352,42 +370,57 @@ const ProductDetail = () => {
                     Select color:
                   </label>
                   <div className="flex space-x-3">
-                    {colors.map((color) => (
-                      <button
-                        key={color.name}
-                        onClick={() => setSelectedColor(color.name)}
-                        className={`w-6 h-6 rounded-full border-2 ${
-                          color.color
-                        } ${
-                          selectedColor === color.name
-                            ? "border-gray-800"
-                            : "border-gray-300"
-                        }`}
-                      />
-                    ))}
+                    {product.colours?.map((col) => {
+                      // Map API color names to Tailwind bg classes (add more mappings as needed)
+                      const colorMap = {
+                        green: "bg-green-500",
+                        yellow: "bg-yellow-400",
+                        white: "bg-white border",
+                        gray: "bg-gray-400",
+                        // Add defaults or more colors
+                      };
+                      const colorClass = colorMap[col.value] || "bg-gray-300";
+                      return (
+                        <button
+                          key={col.id}
+                          onClick={() => setSelectedColor(col.value)}
+                          className={`w-6 h-6 rounded-full border-2 ${colorClass} ${
+                            selectedColor === col.value
+                              ? "border-gray-800"
+                              : "border-gray-300"
+                          }`}
+                        />
+                      );
+                    }) || (
+                      <span className="text-gray-500 text-sm">
+                        No colors available
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div className="space-x-3 flex items-center">
-                  <label className="text-gray-900 font-medium">
-                    Select size:
-                  </label>
-                  <div className="flex space-x-3">
-                    {sizes.map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => setSelectedSize(size)}
-                        className={`px-3 py-1 rounded border ${
-                          selectedSize === size
-                            ? "bg-[#5F1327] text-white border-[#5F1327]"
-                            : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
-                        } transition-colors`}
-                        disabled={sizes.length === 1 && size === "N/A"}
-                      >
-                        {size}
-                      </button>
-                    ))}
+                {product.sizes && product.sizes.length > 0 && (
+                  <div className="space-x-3 flex items-center">
+                    <label className="text-gray-900 font-medium">
+                      Select size:
+                    </label>
+                    <div className="flex space-x-3">
+                      {sizes.map((size) => (
+                        <button
+                          key={size}
+                          onClick={() => setSelectedSize(size)}
+                          className={`px-3 py-1 rounded border ${
+                            selectedSize === size
+                              ? "bg-[#5F1327] text-white border-[#5F1327]"
+                              : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                          } transition-colors`}
+                          disabled={sizes.length === 1 && size === "no size"}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="space-x-3 flex items-center">
                   <label className="text-gray-900 font-medium">Quantity:</label>
                   <div className="flex items-center gap-3">
