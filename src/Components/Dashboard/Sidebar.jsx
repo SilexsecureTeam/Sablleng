@@ -97,16 +97,16 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     },
 
     {
-      id: "Inventory",
-      label: "Inventory",
+      id: "brand",
+      label: "Brand",
       icon: Archive,
-      path: "/dashboard/inventories",
+      path: "/dashboard/brand",
     },
     {
-      id: "report",
-      label: "Report",
+      id: "supplier",
+      label: "Supplier",
       icon: FileText,
-      path: "/dashboard/report",
+      path: "/dashboard/suppliers",
     },
     {
       id: "customization",

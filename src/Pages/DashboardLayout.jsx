@@ -24,12 +24,15 @@ const Customization = lazy(() =>
 const TaxManagement = lazy(() =>
   import("../Components/Dashboard/TaxManagement")
 );
-const Inventory = lazy(() => import("../Components/Dashboard/Inventory"));
+const BrandList = lazy(() => import("../Components/Dashboard/BrandList"));
 const ProductList = lazy(() => import("../Components/Dashboard/ProductList"));
 const ProductReviews = lazy(() =>
   import("../Components/Dashboard/ProductReviews")
 );
-const Report = lazy(() => import("../Components/Dashboard/Report"));
+const EditSupplierForm = lazy(() =>
+  import("../Components/Dashboard/EditSupplierForm")
+);
+const SupplierList = lazy(() => import("../Components/Dashboard/SupplierList"));
 const Settings = lazy(() => import("../Components/Dashboard/Settings"));
 const AdminRole = lazy(() => import("../Components/Dashboard/AdminRole"));
 const ProductView = lazy(() => import("../Components/Dashboard/ProductView"));
@@ -143,10 +146,10 @@ const DashboardLayout = () => {
                 }
               />
               <Route
-                path="/inventories"
+                path="/brand"
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
-                    <Inventory />
+                    <BrandList />
                   </MainContent>
                 }
               />
@@ -175,10 +178,18 @@ const DashboardLayout = () => {
                 }
               />
               <Route
-                path="/report"
+                path="/suppliers"
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
-                    <Report />
+                    <SupplierList />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/suppliers/:id/edit"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <EditSupplierForm />
                   </MainContent>
                 }
               />

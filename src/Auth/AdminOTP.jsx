@@ -18,12 +18,11 @@ const AdminOtpPage = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdown((prev) => {
-        if (prev <= 1) {
+        if (prev === 1) {
           setCanResend(true);
-          clearInterval(timer);
           return 0;
         }
-        return prev - 1;
+        return prev > 0 ? prev - 1 : 0;
       });
     }, 1000);
 
@@ -133,7 +132,7 @@ const AdminOtpPage = () => {
 
     try {
       const response = await fetch(
-        "https://api.sablle.ng/api/admin/resend-otp",
+        "https://api.sablle.ng/api/admin/otp/resend",
         {
           method: "POST",
           headers: {
