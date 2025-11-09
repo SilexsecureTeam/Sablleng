@@ -109,6 +109,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       path: "/dashboard/suppliers",
     },
     {
+      id: "tags",
+      label: "Tags",
+      icon: Box,
+      path: "/dashboard/tags",
+    },
+    {
       id: "customization",
       label: "Customization",
       icon: Box,

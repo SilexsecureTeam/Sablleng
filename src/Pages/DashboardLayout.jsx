@@ -29,6 +29,10 @@ const ProductList = lazy(() => import("../Components/Dashboard/ProductList"));
 const ProductReviews = lazy(() =>
   import("../Components/Dashboard/ProductReviews")
 );
+const Tags = lazy(() => import("../Components/Dashboard/Tags"));
+const TagCategories = lazy(() =>
+  import("../Components/Dashboard/TagCategories")
+);
 const EditSupplierForm = lazy(() =>
   import("../Components/Dashboard/EditSupplierForm")
 );
@@ -174,6 +178,22 @@ const DashboardLayout = () => {
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
                     <ProductReviews />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/tags"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <Tags />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/tags/:id/categories"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <TagCategories />
                   </MainContent>
                 }
               />

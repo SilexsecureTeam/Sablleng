@@ -276,6 +276,12 @@ const ProductList = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
+                            <Link
+                              to={`/dashboard/product/${product.id}`}
+                              className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                            >
+                              View
+                            </Link>
                             <button
                               onClick={() => handleEdit(index)}
                               className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-[#5F1327] hover:bg-gray-200 transition-colors"

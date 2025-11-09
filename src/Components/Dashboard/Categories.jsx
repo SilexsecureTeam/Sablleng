@@ -45,6 +45,7 @@ const Categories = () => {
     setError(null);
 
     try {
+      // 1. Fetch main categories list
       const url = `https://api.sablle.ng/api/categories`;
       const response = await fetch(url, {
         method: "GET",
@@ -60,6 +61,7 @@ const Categories = () => {
       const data = await response.json();
       let categoriesArray = Array.isArray(data.data) ? data.data : data;
 
+      // 2. Search filter
       if (search.trim()) {
         const lowerSearch = search.toLowerCase();
         categoriesArray = categoriesArray.filter((cat) =>
@@ -67,42 +69,64 @@ const Categories = () => {
         );
       }
 
-      const formattedCategories = await Promise.all(
-        categoriesArray.map(async (item) => {
-          let productCount = 0;
-          try {
-            const productResponse = await fetch(
-              `https://api.sablle.ng/api/categories/${item.id}`,
-              {
+      if (categoriesArray.length === 0) {
+        setCategories([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. BATCHED PARALLEL FETCH (Option 2)
+      const BATCH_SIZE = 10;
+      const batches = [];
+      for (let i = 0; i < categoriesArray.length; i += BATCH_SIZE) {
+        batches.push(categoriesArray.slice(i, i + BATCH_SIZE));
+      }
+
+      const productCountPromises = batches.map((batch) =>
+        Promise.allSettled(
+          batch.map(
+            (item) =>
+              fetch(`https://api.sablle.ng/api/categories/${item.id}`, {
                 method: "GET",
                 headers: {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${auth.token}`,
                 },
-              }
-            );
-            if (productResponse.ok) {
-              const productData = await productResponse.json();
-              productCount = Array.isArray(productData.products)
-                ? productData.products.length
-                : 0;
-            }
-          } catch (err) {
-            console.error(`Error fetching products for ${item.id}:`, err);
-          }
-
-          return {
-            id: item.id,
-            name: item.name,
-            description: item.description || "No description available",
-            productCount,
-            status: item.is_active ? "Active" : "Inactive",
-          };
-        })
+              })
+                .then((res) => (res.ok ? res.json() : { products: [] }))
+                .then((data) => ({
+                  id: item.id,
+                  count: Array.isArray(data.products)
+                    ? data.products.length
+                    : 0,
+                }))
+                .catch(() => ({ id: item.id, count: 0 })) // Fallback on error
+          )
+        )
       );
 
+      const batchResults = await Promise.all(productCountPromises);
+      const productCountsMap = {};
+
+      batchResults.flat().forEach((result) => {
+        if (result.status === "fulfilled") {
+          productCountsMap[result.value.id] = result.value.count;
+        }
+      });
+
+      // 4. Combine data
+      const formattedCategories = categoriesArray.map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description || "No description available",
+        productCount: productCountsMap[item.id] ?? 0,
+        status: item.is_active ? "Active" : "Inactive",
+      }));
+
       setCategories(formattedCategories);
-      toast.success("Categories loaded!", { autoClose: 2000 });
+      toast.success(`Loaded ${formattedCategories.length} categories!`, {
+        autoClose: 2000,
+      });
     } catch (err) {
       setError(err.message);
       toast.error(`Error: ${err.message}`, { autoClose: 5000 });

@@ -88,7 +88,9 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
           price: data.sale_price_inc_tax || "",
           allowCustomization: data.customize || false,
           description: data.description || "",
-          colors: data.colours || [""],
+          colors: Array.isArray(data.colours)
+            ? data.colours.map((c) => c.value || "").filter(Boolean)
+            : [""],
           brand: data.brand?.name || data.brand || "",
           supplier: data.supplier?.name || data.supplier || "",
           couponCode: data.coupon?.code || data.coupon_code || "",
@@ -235,23 +237,33 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
     setIsSubmitting(true);
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append("_method", "PATCH"); // Laravel method spoofing
+      formDataToSend.append("_method", "PATCH");
       formDataToSend.append("name", formData.productName);
       formDataToSend.append("product_code", formData.skuNumber);
       formDataToSend.append("category_id", formData.category);
       formDataToSend.append("sale_price_inc_tax", formData.price);
       formDataToSend.append("customize", formData.allowCustomization ? 1 : 0);
       formDataToSend.append("description", formData.description);
+
+      // === SEND EXISTING IMAGE IDs (to preserve them) ===
+      const imageKeys = ["primary", "thumbnail1", "thumbnail2", "thumbnail3"];
+      imageKeys.forEach((key, index) => {
+        if (images[key]?.id) {
+          // Send existing image ID
+          formDataToSend.append(`existing_images[${index}]`, images[key].id);
+        } else if (images[key]?.file) {
+          // Send new file
+          formDataToSend.append(`images[${index}]`, images[key].file);
+        }
+      });
+
+      // === SEND COLORS ===
       formData.colors.forEach((color, index) => {
         if (color.trim())
           formDataToSend.append(`colours[${index}]`, color.trim());
       });
-      const imageKeys = ["primary", "thumbnail1", "thumbnail2", "thumbnail3"];
-      imageKeys.forEach((key, index) => {
-        if (images[key]?.file) {
-          formDataToSend.append(`images[${index}]`, images[key].file);
-        }
-      });
+
+      // Optional fields
       if (formData.brand) formDataToSend.append("brand", formData.brand);
       if (formData.supplier)
         formDataToSend.append("supplier", formData.supplier);
@@ -261,18 +273,14 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
       const response = await fetch(
         `https://api.sablle.ng/api/products/${product.id}`,
         {
-          method: "POST", // Use POST with _method
-          headers: {
-            Authorization: `Bearer ${auth.token}`,
-            // Let browser set Content-Type with boundary
-          },
+          method: "POST",
+          headers: { Authorization: `Bearer ${auth.token}` },
           body: formDataToSend,
         }
       );
 
       if (!response.ok) {
         const textResponse = await response.text();
-        console.error("Response text:", textResponse);
         let data;
         try {
           data = JSON.parse(textResponse);
@@ -307,7 +315,6 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
       }
 
       const data = await response.json();
-
       toast.success("Product updated!");
 
       const selectedCategory = categories.find(
@@ -325,28 +332,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
           : `₦${parseFloat(formData.price).toLocaleString()}`,
       };
 
-      onSave(updated, index);
-
-      // Reset form
-      setFormData({
-        productName: "",
-        category: "",
-        skuNumber: "",
-        price: "",
-        allowCustomization: false,
-        description: "",
-        colors: [""],
-        brand: "",
-        supplier: "",
-        couponCode: "",
-      });
-      setImages({
-        primary: null,
-        thumbnail1: null,
-        thumbnail2: null,
-        thumbnail3: null,
-      });
-      setErrors({});
+      onSave(updated, index); // This updates the list
     } catch (error) {
       if (error.message !== "Validation failed") {
         toast.error(`Error: ${error.message}`);
