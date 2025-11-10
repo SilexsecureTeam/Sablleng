@@ -4,11 +4,13 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthContext } from "../../context/AuthContextObject";
 import { useNavigate } from "react-router-dom";
+import Select from "react-select";
 
 const Categories = () => {
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
+  const [tags, setTags] = useState([]); // For dropdown
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,6 +21,7 @@ const Categories = () => {
     name: "",
     description: "",
     image: null,
+    tag: null, // { value: id, label: name }
   });
   const [addImagePreview, setAddImagePreview] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -29,9 +32,27 @@ const Categories = () => {
     name: "",
     description: "",
     is_active: true,
+    tag: null,
   });
   const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Fetch tags for select
+  const fetchTagsForSelect = async () => {
+    if (!auth.token) return;
+    try {
+      const res = await fetch("https://api.sablle.ng/api/tags", {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const tgs = Array.isArray(data.data) ? data.data : data;
+        setTags(tgs.map((t) => ({ value: t.id, label: t.name })));
+      }
+    } catch (err) {
+      console.error("Failed to load tags for select:", err);
+    }
+  };
 
   // Fetch categories with search only (no pagination)
   const fetchCategories = async (search = "") => {
@@ -75,51 +96,16 @@ const Categories = () => {
         return;
       }
 
-      // 3. BATCHED PARALLEL FETCH (Option 2)
-      const BATCH_SIZE = 10;
-      const batches = [];
-      for (let i = 0; i < categoriesArray.length; i += BATCH_SIZE) {
-        batches.push(categoriesArray.slice(i, i + BATCH_SIZE));
-      }
+      // 3. Build tag name map from dropdown (already loaded in tags state)
+      const tagNameMap = {};
+      tags.forEach((t) => (tagNameMap[t.value] = t.label));
 
-      const productCountPromises = batches.map((batch) =>
-        Promise.allSettled(
-          batch.map(
-            (item) =>
-              fetch(`https://api.sablle.ng/api/categories/${item.id}`, {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${auth.token}`,
-                },
-              })
-                .then((res) => (res.ok ? res.json() : { products: [] }))
-                .then((data) => ({
-                  id: item.id,
-                  count: Array.isArray(data.products)
-                    ? data.products.length
-                    : 0,
-                }))
-                .catch(() => ({ id: item.id, count: 0 })) // Fallback on error
-          )
-        )
-      );
-
-      const batchResults = await Promise.all(productCountPromises);
-      const productCountsMap = {};
-
-      batchResults.flat().forEach((result) => {
-        if (result.status === "fulfilled") {
-          productCountsMap[result.value.id] = result.value.count;
-        }
-      });
-
-      // 4. Combine data
+      // 4. Format categories — no extra API calls
       const formattedCategories = categoriesArray.map((item) => ({
         id: item.id,
         name: item.name,
-        description: item.description || "No description available",
-        productCount: productCountsMap[item.id] ?? 0,
+        productCount: 0, // Optional: enhance later with ?with=products
+        tagName: item.tag_id ? tagNameMap[item.tag_id] || "Unknown" : "None",
         status: item.is_active ? "Active" : "Inactive",
       }));
 
@@ -138,7 +124,17 @@ const Categories = () => {
 
   useEffect(() => {
     fetchCategories(searchQuery);
+    fetchTagsForSelect();
   }, [auth.token, navigate, searchQuery]);
+
+  // Handle Tag Select Change
+  const handleTagChange = (selectedOption, isEdit = false) => {
+    const setter = isEdit ? setEditFormData : setAddFormData;
+    setter((prev) => ({
+      ...prev,
+      tag: selectedOption || null,
+    }));
+  };
 
   // Add Category
   const handleAddInputChange = (e) => {
@@ -160,11 +156,16 @@ const Categories = () => {
       toast.error("Category name is required.");
       return;
     }
+    if (!addFormData.tag) {
+      toast.error("Tag is required.");
+      return;
+    }
 
     setIsAdding(true);
     const submitData = new FormData();
     submitData.append("name", addFormData.name);
     submitData.append("description", addFormData.description || "");
+    submitData.append("tag_id", addFormData.tag.value);
     if (addFormData.image) submitData.append("image", addFormData.image);
 
     try {
@@ -181,7 +182,7 @@ const Categories = () => {
 
       toast.success("Category added!", { autoClose: 3000 });
       setIsAddModalOpen(false);
-      setAddFormData({ name: "", description: "", image: null });
+      setAddFormData({ name: "", description: "", image: null, tag: null });
       setAddImagePreview(null);
       fetchCategories(searchQuery);
     } catch (err) {
@@ -192,14 +193,38 @@ const Categories = () => {
   };
 
   // Edit Category
-  const handleEdit = (category) => {
+  const handleEdit = async (category) => {
     setEditFormData({
       name: category.name,
       description: category.description,
       is_active: category.status === "Active",
+      tag: null, // Will populate below
     });
     setEditingId(category.id);
     setIsEditModalOpen(true);
+
+    // Fetch full category with tag
+    try {
+      const res = await fetch(
+        `https://api.sablle.ng/api/categories/${category.id}`,
+        {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const selectedTag = data.tag
+          ? { value: data.tag.id, label: data.tag.name }
+          : null;
+        setEditFormData((prev) => ({
+          ...prev,
+          tag: selectedTag,
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to load category details:", err);
+      toast.error("Failed to load category details.");
+    }
   };
 
   const handleEditInputChange = (e) => {
@@ -212,7 +237,21 @@ const Categories = () => {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    if (!editFormData.name.trim()) {
+      toast.error("Category name is required.");
+      return;
+    }
+    if (!editFormData.tag) {
+      toast.error("Tag is required.");
+      return;
+    }
     setIsEditing(true);
+
+    const submitData = {
+      ...editFormData,
+      tag_id: editFormData.tag.value,
+    };
+    delete submitData.tag; // Remove the object, keep only id in payload
 
     try {
       const response = await fetch(
@@ -223,7 +262,7 @@ const Categories = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${auth.token}`,
           },
-          body: JSON.stringify(editFormData),
+          body: JSON.stringify(submitData),
         }
       );
 
@@ -273,7 +312,7 @@ const Categories = () => {
         {/* Search */}
         <div className="mb-4">
           <div className="relative">
-            <e className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search categories..."
@@ -307,7 +346,13 @@ const Categories = () => {
                   className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow relative bg-white"
                 >
                   <div className="absolute top-4 right-4 space-y-1">
-                    <span className="px-3 py-1 bg-[#EAFFD8] text-[#1B8401] text-xs font-medium rounded block">
+                    <span
+                      className={`px-3 py-1 text-xs font-medium rounded block ${
+                        category.status === "Active"
+                          ? "bg-[#EAFFD8] text-[#1B8401]"
+                          : "bg-gray-200 text-gray-600"
+                      }`}
+                    >
                       {category.status}
                     </span>
                     <div className="flex gap-2 mt-2">
@@ -336,12 +381,12 @@ const Categories = () => {
                     <h2 className="text-base font-semibold text-[#141718] mb-1">
                       {category.name}
                     </h2>
-                    <p className="text-sm text-[#6C7275] mb-4">
-                      {category.description}
+                    <p className="text-sm text-[#6C7275] mb-1">
+                      Tag: {category.tagName}
                     </p>
-                    <p className="text-sm font-medium text-[#5F1327]">
+                    {/* <p className="text-sm font-medium text-[#5F1327]">
                       {category.productCount} products
-                    </p>
+                    </p> */}
                   </div>
                 </div>
               ))}
@@ -391,6 +436,19 @@ const Categories = () => {
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327] resize-none"
                   placeholder="Brief description..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#414245] mb-1">
+                  Tag
+                </label>
+                <Select
+                  options={tags}
+                  value={addFormData.tag}
+                  onChange={(opt) => handleTagChange(opt, false)}
+                  placeholder="Select a tag..."
+                  className="react-select-container"
+                  classNamePrefix="react-select"
                 />
               </div>
               <div>
@@ -494,6 +552,19 @@ const Categories = () => {
                   onChange={handleEditInputChange}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327] resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#414245] mb-1">
+                  Tag
+                </label>
+                <Select
+                  options={tags}
+                  value={editFormData.tag}
+                  onChange={(opt) => handleTagChange(opt, true)}
+                  placeholder="Select a tag..."
+                  className="react-select-container"
+                  classNamePrefix="react-select"
                 />
               </div>
               <div className="flex items-center">

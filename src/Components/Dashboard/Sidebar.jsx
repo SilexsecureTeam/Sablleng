@@ -72,6 +72,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       path: "/dashboard/product-list",
     },
     {
+      id: "tags",
+      label: "Tags",
+      icon: Box,
+      path: "/dashboard/tags",
+    },
+    {
       id: "categories",
       label: "Categories",
       icon: Grid,
@@ -107,12 +113,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: "Supplier",
       icon: FileText,
       path: "/dashboard/suppliers",
-    },
-    {
-      id: "tags",
-      label: "Tags",
-      icon: Box,
-      path: "/dashboard/tags",
     },
     {
       id: "customization",

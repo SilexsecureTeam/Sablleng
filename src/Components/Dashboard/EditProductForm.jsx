@@ -18,6 +18,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
     supplier: "",
     couponCode: "",
   });
+  const [sizes, setSizes] = useState([""]);
   const [images, setImages] = useState({
     primary: null,
     thumbnail1: null,
@@ -28,7 +29,11 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [isLoadingBrands, setIsLoadingBrands] = useState(false);
+  const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -56,6 +61,46 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
         toast.error(`Error: ${error.message}`);
       } finally {
         setIsLoadingCategories(false);
+      }
+    };
+
+    const fetchBrands = async () => {
+      setIsLoadingBrands(true);
+      try {
+        const res = await fetch("https://api.sablle.ng/api/brand", {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        });
+        if (!res.ok) throw new Error("Failed to load brands");
+        const data = await res.json();
+        const active = data.brands
+          .filter((b) => b.is_active)
+          .map((b) => ({ value: b.id, label: b.name }));
+        setBrands(active);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load brands");
+      } finally {
+        setIsLoadingBrands(false);
+      }
+    };
+
+    const fetchSuppliers = async () => {
+      setIsLoadingSuppliers(true);
+      try {
+        const res = await fetch("https://api.sablle.ng/api/suppliers", {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        });
+        if (!res.ok) throw new Error("Failed to load suppliers");
+        const data = await res.json();
+        const active = data
+          .filter((s) => s.is_active === 1)
+          .map((s) => ({ value: s.id, label: s.name }));
+        setSuppliers(active);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load suppliers");
+      } finally {
+        setIsLoadingSuppliers(false);
       }
     };
 
@@ -91,10 +136,17 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
           colors: Array.isArray(data.colours)
             ? data.colours.map((c) => c.value || "").filter(Boolean)
             : [""],
-          brand: data.brand?.name || data.brand || "",
-          supplier: data.supplier?.name || data.supplier || "",
+          brand: data.brand_id || data.brand?.id || "",
+          supplier: data.supplier_id || data.supplier?.id || "",
           couponCode: data.coupon?.code || data.coupon_code || "",
         });
+
+        setSizes(
+          Array.isArray(data.size)
+            ? data.size.map((s) => s.value || "").filter(Boolean)
+            : [""]
+        );
+
         setImages({
           primary: data.images?.[0]
             ? {
@@ -136,7 +188,12 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
     };
 
     setIsLoading(true);
-    Promise.all([fetchCategories(), fetchFullProduct()]).finally(() => {
+    Promise.all([
+      fetchCategories(),
+      fetchBrands(),
+      fetchSuppliers(),
+      fetchFullProduct(),
+    ]).finally(() => {
       setIsLoading(false);
     });
   }, [product, auth.token, onCancel]);
@@ -158,6 +215,16 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
     setErrors((prev) => ({ ...prev, category: null, api: null }));
   };
 
+  const handleBrandChange = (opt) => {
+    setFormData((prev) => ({ ...prev, brand: opt ? opt.value : "" }));
+    setErrors((prev) => ({ ...prev, brand: null }));
+  };
+
+  const handleSupplierChange = (opt) => {
+    setFormData((prev) => ({ ...prev, supplier: opt ? opt.value : "" }));
+    setErrors((prev) => ({ ...prev, supplier: null }));
+  };
+
   const handleColorChange = (index, value) => {
     const newColors = [...formData.colors];
     newColors[index] = value;
@@ -174,6 +241,16 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
       colors: prev.colors.filter((_, i) => i !== index),
     }));
   };
+
+  const handleSizeChange = (index, value) => {
+    const newSizes = [...sizes];
+    newSizes[index] = value;
+    setSizes(newSizes);
+  };
+
+  const addSizeField = () => setSizes((prev) => [...prev, ""]);
+  const removeSizeField = (index) =>
+    setSizes((prev) => prev.filter((_, i) => i !== index));
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -245,28 +322,35 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
       formDataToSend.append("customize", formData.allowCustomization ? 1 : 0);
       formDataToSend.append("description", formData.description);
 
-      // === SEND EXISTING IMAGE IDs (to preserve them) ===
+      // === SIZES ===
+      sizes
+        .filter((s) => s.trim())
+        .forEach((s, i) => {
+          formDataToSend.append(`size[${i}]`, s.trim());
+        });
+
+      // === COLORS ===
+      formData.colors
+        .filter((c) => c.trim())
+        .forEach((c, i) => {
+          formDataToSend.append(`colours[${i}]`, c.trim());
+        });
+
+      // === BRAND & SUPPLIER ===
+      if (formData.brand) formDataToSend.append("brand_id", formData.brand);
+      if (formData.supplier)
+        formDataToSend.append("supplier_id", formData.supplier);
+
+      // === IMAGES ===
       const imageKeys = ["primary", "thumbnail1", "thumbnail2", "thumbnail3"];
       imageKeys.forEach((key, index) => {
         if (images[key]?.id) {
-          // Send existing image ID
           formDataToSend.append(`existing_images[${index}]`, images[key].id);
         } else if (images[key]?.file) {
-          // Send new file
           formDataToSend.append(`images[${index}]`, images[key].file);
         }
       });
 
-      // === SEND COLORS ===
-      formData.colors.forEach((color, index) => {
-        if (color.trim())
-          formDataToSend.append(`colours[${index}]`, color.trim());
-      });
-
-      // Optional fields
-      if (formData.brand) formDataToSend.append("brand", formData.brand);
-      if (formData.supplier)
-        formDataToSend.append("supplier", formData.supplier);
       if (formData.couponCode)
         formDataToSend.append("coupon_code", formData.couponCode);
 
@@ -299,8 +383,8 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
               product_code: "skuNumber",
               category_id: "category",
               sale_price_inc_tax: "price",
-              brand: "brand",
-              supplier: "supplier",
+              brand_id: "brand",
+              supplier_id: "supplier",
               coupon_code: "couponCode",
             };
             const formField = fieldMap[key] || key;
@@ -332,7 +416,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
           : `₦${parseFloat(formData.price).toLocaleString()}`,
       };
 
-      onSave(updated, index); // This updates the list
+      onSave(updated, index);
     } catch (error) {
       if (error.message !== "Validation failed") {
         toast.error(`Error: ${error.message}`);
@@ -404,14 +488,25 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Brand
                   </label>
-                  <input
-                    type="text"
-                    name="brand"
-                    value={formData.brand}
-                    onChange={handleInputChange}
-                    placeholder="Enter Brand"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
-                    disabled={isSubmitting}
+                  <Select
+                    options={brands}
+                    value={brands.find((b) => b.value === formData.brand)}
+                    onChange={handleBrandChange}
+                    placeholder="Select Brand"
+                    isLoading={isLoadingBrands}
+                    isDisabled={isSubmitting || isLoadingBrands}
+                    className="text-sm"
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        borderColor: "#d1d5db",
+                        "&:hover": { borderColor: "#9ca3af" },
+                        "&:focus-within": {
+                          borderColor: "#5F1327",
+                          boxShadow: "0 0 0 1px #5F1327",
+                        },
+                      }),
+                    }}
                   />
                   {errors.brand && (
                     <p className="text-red-600 text-sm mt-1">{errors.brand}</p>
@@ -421,14 +516,25 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Supplier
                   </label>
-                  <input
-                    type="text"
-                    name="supplier"
-                    value={formData.supplier}
-                    onChange={handleInputChange}
-                    placeholder="Enter Supplier"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
-                    disabled={isSubmitting}
+                  <Select
+                    options={suppliers}
+                    value={suppliers.find((s) => s.value === formData.supplier)}
+                    onChange={handleSupplierChange}
+                    placeholder="Select Supplier"
+                    isLoading={isLoadingSuppliers}
+                    isDisabled={isSubmitting || isLoadingSuppliers}
+                    className="text-sm"
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        borderColor: "#d1d5db",
+                        "&:hover": { borderColor: "#9ca3af" },
+                        "&:focus-within": {
+                          borderColor: "#5F1327",
+                          boxShadow: "0 0 0 1px #5F1327",
+                        },
+                      }),
+                    }}
                   />
                   {errors.supplier && (
                     <p className="text-red-600 text-sm mt-1">
@@ -506,6 +612,44 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
                 </label>
               </div>
 
+              {/* === SIZES === */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Sizes
+                </label>
+                {sizes.map((size, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={size}
+                      onChange={(e) => handleSizeChange(index, e.target.value)}
+                      placeholder="e.g. Small, Medium, Large"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
+                      disabled={isSubmitting}
+                    />
+                    {sizes.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeSizeField(index)}
+                        className="px-2 py-1 text-red-600 hover:text-red-800"
+                        disabled={isSubmitting}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addSizeField}
+                  className="text-sm text-[#5F1327] hover:text-[#B54F5E]"
+                  disabled={isSubmitting}
+                >
+                  + Add Size
+                </button>
+              </div>
+
+              {/* === COLORS === */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Colors

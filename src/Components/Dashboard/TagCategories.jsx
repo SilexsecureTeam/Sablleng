@@ -41,7 +41,15 @@ const TagCategories = () => {
       if (!response.ok) throw new Error(`Failed: ${response.statusText}`);
 
       const data = await response.json();
-      let allCategories = Array.isArray(data.categories) ? data.categories : [];
+
+      // FIX: Handle array response from API
+      const raw = data.data || data;
+      const tagArray = Array.isArray(raw) ? raw : [raw];
+      const tagObj = tagArray[0] || {};
+
+      let allCategories = Array.isArray(tagObj.categories)
+        ? tagObj.categories
+        : [];
 
       // Filter by search
       if (search.trim()) {
@@ -58,7 +66,8 @@ const TagCategories = () => {
 
       setCategories(paginatedCategories);
       setTotalPages(Math.ceil(allCategories.length / itemsPerPage) || 1);
-      setTagName(data.name || "Tag");
+      setTagName(tagObj.name || "Tag");
+
       toast.success(`Loaded ${allCategories.length} categories`, {
         autoClose: 2000,
       });

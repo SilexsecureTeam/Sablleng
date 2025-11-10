@@ -13,13 +13,11 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthContext } from "../../context/AuthContextObject";
 import { useNavigate } from "react-router-dom";
-import Select from "react-select";
 
 const Tags = () => {
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
   const [tags, setTags] = useState([]);
-  const [categories, setCategories] = useState([]); // For dropdown
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,7 +27,6 @@ const Tags = () => {
   const [addFormData, setAddFormData] = useState({
     name: "",
     is_active: true,
-    categories: [], // array of { value: id, label: name }
   });
   const [isAdding, setIsAdding] = useState(false);
 
@@ -38,27 +35,9 @@ const Tags = () => {
   const [editFormData, setEditFormData] = useState({
     name: "",
     is_active: true,
-    categories: [],
   });
   const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-
-  // Fetch all categories (for dropdown)
-  const fetchCategoriesForSelect = async () => {
-    if (!auth.token) return;
-    try {
-      const res = await fetch("https://api.sablle.ng/api/categories", {
-        headers: { Authorization: `Bearer ${auth.token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const cats = Array.isArray(data.data) ? data.data : data;
-        setCategories(cats.map((c) => ({ value: c.id, label: c.name })));
-      }
-    } catch (err) {
-      console.error("Failed to load categories for select:", err);
-    }
-  };
 
   // Fetch tags
   const fetchTags = async (search = "") => {
@@ -118,17 +97,7 @@ const Tags = () => {
 
   useEffect(() => {
     fetchTags(searchQuery);
-    fetchCategoriesForSelect();
   }, [auth.token, navigate, searchQuery]);
-
-  // Handle Select Change
-  const handleSelectChange = (selectedOptions, action, isEdit = false) => {
-    const setter = isEdit ? setEditFormData : setAddFormData;
-    setter((prev) => ({
-      ...prev,
-      categories: selectedOptions || [],
-    }));
-  };
 
   // Add Tag
   const handleAddSubmit = async (e) => {
@@ -142,9 +111,6 @@ const Tags = () => {
     const submitData = new FormData();
     submitData.append("name", addFormData.name);
     submitData.append("is_active", addFormData.is_active ? "1" : "0");
-    addFormData.categories.forEach((cat, index) => {
-      submitData.append(`categories[${index}]`, cat.value);
-    });
 
     try {
       const response = await fetch("https://api.sablle.ng/api/tags", {
@@ -160,7 +126,7 @@ const Tags = () => {
 
       toast.success("Tag added!", { autoClose: 3000 });
       setIsAddModalOpen(false);
-      setAddFormData({ name: "", is_active: true, categories: [] });
+      setAddFormData({ name: "", is_active: true });
       fetchTags(searchQuery);
     } catch (err) {
       toast.error(`Error: ${err.message}`, { autoClose: 5000 });
@@ -175,29 +141,7 @@ const Tags = () => {
     setEditFormData({
       name: tag.name,
       is_active: tag.status === "Active",
-      categories: [], // Will populate below
     });
-
-    // Fetch full tag with categories
-    try {
-      const res = await fetch(`https://api.sablle.ng/api/tags/${tag.id}`, {
-        headers: { Authorization: `Bearer ${auth.token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const selectedCats = data.categories?.map((c) => ({
-          value: c.id,
-          label: c.name,
-        }));
-        setEditFormData((prev) => ({
-          ...prev,
-          categories: selectedCats || [],
-        }));
-      }
-    } catch (err) {
-      console.error("Failed to load tag details:", err);
-      toast.error("Failed to load tag details.");
-    }
 
     setIsEditModalOpen(true);
   };
@@ -210,9 +154,6 @@ const Tags = () => {
     submitData.append("_method", "PATCH");
     submitData.append("name", editFormData.name);
     submitData.append("is_active", editFormData.is_active ? "1" : "0");
-    editFormData.categories.forEach((cat, index) => {
-      submitData.append(`categories[${index}]`, cat.value);
-    });
 
     try {
       const response = await fetch(
@@ -406,21 +347,6 @@ const Tags = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#414245] mb-1">
-                  Categories
-                </label>
-                <Select
-                  isMulti
-                  options={categories}
-                  value={addFormData.categories}
-                  onChange={(opts) => handleSelectChange(opts, null, false)}
-                  placeholder="Select categories..."
-                  className="react-select-container"
-                  classNamePrefix="react-select"
-                />
-              </div>
-
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -489,21 +415,6 @@ const Tags = () => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
                   required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#414245] mb-1">
-                  Categories
-                </label>
-                <Select
-                  isMulti
-                  options={categories}
-                  value={editFormData.categories}
-                  onChange={(opts) => handleSelectChange(opts, null, true)}
-                  placeholder="Select categories..."
-                  className="react-select-container"
-                  classNamePrefix="react-select"
                 />
               </div>
 

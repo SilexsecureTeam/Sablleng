@@ -11,7 +11,6 @@ const ProductForm = ({ onSave, onCancel }) => {
     category: "",
     skuNumber: "",
     price: "",
-    // availableStock: "",
     allowCustomization: false,
     description: "",
     colors: [""],
@@ -19,6 +18,7 @@ const ProductForm = ({ onSave, onCancel }) => {
     supplier: "",
     couponCode: "",
   });
+  const [sizes, setSizes] = useState([""]);
   const [images, setImages] = useState({
     primary: null,
     thumbnail1: null,
@@ -28,11 +28,16 @@ const ProductForm = ({ onSave, onCancel }) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [isLoadingBrands, setIsLoadingBrands] = useState(false);
+  const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
 
+  // === FETCH CATEGORIES, BRANDS, SUPPLIERS ===
   useEffect(() => {
     const fetchCategories = async () => {
-      if (!auth.token) {
+      if (!auth?.token) {
         toast.error("Please log in again.");
         onCancel();
         return;
@@ -48,8 +53,28 @@ const ProductForm = ({ onSave, onCancel }) => {
           },
         });
 
-        if (response.status === 401) throw new Error("Unauthorized.");
-        if (!response.ok) throw new Error(`Failed: ${response.statusText}`);
+        console.log("[Categories] Status:", response.status);
+        const contentType = response.headers.get("content-type");
+
+        if (!response.ok) {
+          const text = await response.text();
+          console.error("[Categories] Error HTML:", text.substring(0, 300));
+          if (response.status === 401) {
+            toast.error("Session expired. Redirecting to login...");
+            onCancel();
+            return;
+          }
+          throw new Error(`Failed to load categories: ${response.status}`);
+        }
+
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await response.text();
+          console.error(
+            "[Categories] Expected JSON, got:",
+            text.substring(0, 300)
+          );
+          throw new Error("Server returned invalid data (not JSON)");
+        }
 
         const data = await response.json();
         const activeCategories = Array.isArray(data)
@@ -59,15 +84,59 @@ const ProductForm = ({ onSave, onCancel }) => {
           : [];
         setCategories(activeCategories);
       } catch (error) {
+        console.error("[Categories] Fetch error:", error);
         toast.error(`Error: ${error.message}`);
       } finally {
         setIsLoadingCategories(false);
       }
     };
 
-    fetchCategories();
-  }, [auth.token, onCancel]);
+    const fetchBrands = async () => {
+      setIsLoadingBrands(true);
+      try {
+        const res = await fetch("https://api.sablle.ng/api/brand", {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        });
+        if (!res.ok) throw new Error("Failed to load brands");
+        const data = await res.json();
+        const active = data.brands
+          .filter((b) => b.is_active)
+          .map((b) => ({ value: b.id, label: b.name }));
+        setBrands(active);
+      } catch (err) {
+        console.error("[Brands] Fetch error:", err);
+        toast.error("Failed to load brands");
+      } finally {
+        setIsLoadingBrands(false);
+      }
+    };
 
+    const fetchSuppliers = async () => {
+      setIsLoadingSuppliers(true);
+      try {
+        const res = await fetch("https://api.sablle.ng/api/suppliers", {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        });
+        if (!res.ok) throw new Error("Failed to load suppliers");
+        const data = await res.json();
+        const active = data
+          .filter((s) => s.is_active === 1)
+          .map((s) => ({ value: s.id, label: s.name }));
+        setSuppliers(active);
+      } catch (err) {
+        console.error("[Suppliers] Fetch error:", err);
+        toast.error("Failed to load suppliers");
+      } finally {
+        setIsLoadingSuppliers(false);
+      }
+    };
+
+    if (auth?.token) {
+      Promise.all([fetchCategories(), fetchBrands(), fetchSuppliers()]);
+    }
+  }, [auth?.token, onCancel]);
+
+  // === INPUT HANDLERS ===
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -83,6 +152,16 @@ const ProductForm = ({ onSave, onCancel }) => {
       category: selectedOption ? selectedOption.value : "",
     }));
     setErrors((prev) => ({ ...prev, category: null, api: null }));
+  };
+
+  const handleBrandChange = (opt) => {
+    setFormData((prev) => ({ ...prev, brand: opt ? opt.value : "" }));
+    setErrors((prev) => ({ ...prev, brand: null }));
+  };
+
+  const handleSupplierChange = (opt) => {
+    setFormData((prev) => ({ ...prev, supplier: opt ? opt.value : "" }));
+    setErrors((prev) => ({ ...prev, supplier: null }));
   };
 
   const handleColorChange = (index, value) => {
@@ -102,13 +181,29 @@ const ProductForm = ({ onSave, onCancel }) => {
     }));
   };
 
+  const handleSizeChange = (index, value) => {
+    const newSizes = [...sizes];
+    newSizes[index] = value;
+    setSizes(newSizes);
+  };
+
+  const addSizeField = () => setSizes((prev) => [...prev, ""]);
+  const removeSizeField = (index) =>
+    setSizes((prev) => prev.filter((_, i) => i !== index));
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
-      toast.error("Only images (JPEG, PNG) under 5MB are allowed");
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only image files are allowed");
       return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
     const reader = new FileReader();
     reader.onloadend = () => {
       const newImage = { file, url: reader.result };
@@ -136,6 +231,7 @@ const ProductForm = ({ onSave, onCancel }) => {
     toast.success("Coupon applied!");
   };
 
+  // === FORM VALIDATION ===
   const validateForm = () => {
     const newErrors = {};
     if (!formData.productName.trim())
@@ -145,56 +241,92 @@ const ProductForm = ({ onSave, onCancel }) => {
       newErrors.skuNumber = "SKU number is required";
     if (!formData.price || parseFloat(formData.price) <= 0)
       newErrors.price = "Valid price is required";
-    // if (formData.availableStock && parseInt(formData.availableStock) < 0) newErrors.availableStock = "Stock cannot be negative";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // === SAVE PRODUCT ===
   const handleSaveProduct = async () => {
     if (!validateForm()) {
       Object.values(errors).forEach((error) => toast.error(error));
       return;
     }
 
-    if (!auth.token) {
-      toast.error("Please log in again.");
+    if (!auth?.token) {
+      toast.error("Authentication required. Please log in.");
       onCancel();
       return;
     }
 
     setIsSubmitting(true);
-    try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("name", formData.productName);
-      formDataToSend.append("product_code", formData.skuNumber);
-      formDataToSend.append("category_id", formData.category);
-      formDataToSend.append("sale_price_inc_tax", formData.price);
-      // formDataToSend.append("stock_quantity", formData.availableStock);
-      formDataToSend.append("customize", formData.allowCustomization ? 1 : 0);
-      formDataToSend.append("description", formData.description);
-      formData.colors.forEach((color, index) => {
-        if (color.trim())
-          formDataToSend.append(`colours[${index}]`, color.trim());
-      });
-      const imageKeys = ["primary", "thumbnail1", "thumbnail2", "thumbnail3"];
-      imageKeys.forEach((key, index) => {
-        if (images[key]) {
-          formDataToSend.append(`images[${index}]`, images[key].file);
-        }
-      });
-      formDataToSend.append("brand", formData.brand);
-      formDataToSend.append("supplier", formData.supplier);
-      formDataToSend.append("coupon_code", formData.couponCode);
+    const formDataToSend = new FormData();
 
+    formDataToSend.append("name", formData.productName);
+    formDataToSend.append("product_code", formData.skuNumber);
+    formDataToSend.append("category_id", formData.category);
+    formDataToSend.append("sale_price_inc_tax", formData.price);
+    formDataToSend.append("customize", formData.allowCustomization ? 1 : 0);
+    formDataToSend.append("description", formData.description);
+
+    // Sizes
+    sizes.forEach((size, i) => {
+      if (size.trim()) formDataToSend.append(`size[${i}]`, size.trim());
+    });
+
+    // Colors
+    formData.colors.forEach((color, index) => {
+      if (color.trim()) {
+        formDataToSend.append(`colours[${index}]`, color.trim());
+      }
+    });
+
+    // Brand & Supplier
+    if (formData.brand) formDataToSend.append("brand_id", formData.brand);
+    if (formData.supplier)
+      formDataToSend.append("supplier_id", formData.supplier);
+
+    // Images
+    const imageKeys = ["primary", "thumbnail1", "thumbnail2", "thumbnail3"];
+    imageKeys.forEach((key, index) => {
+      if (images[key]?.file) {
+        formDataToSend.append(`images[${index}]`, images[key].file);
+      }
+    });
+
+    formDataToSend.append("coupon_code", formData.couponCode);
+
+    try {
       const response = await fetch("https://api.sablle.ng/api/products", {
         method: "POST",
-        headers: { Authorization: `Bearer ${auth.token}` },
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+        },
         body: formDataToSend,
       });
 
-      const data = await response.json();
+      console.log("[Product Save] Status:", response.status);
+      let data;
+      const responseText = await response.text();
+
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error("[Product Save] JSON Parse Failed:", parseError);
+        console.error(
+          "[Product Save] Raw HTML:",
+          responseText.substring(0, 500)
+        );
+        throw new Error("Server returned invalid data (not JSON)");
+      }
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast.error("Session expired. Please log in again.");
+          onCancel();
+          return;
+        }
+
         if (response.status === 422) {
           const serverErrors = data.errors || {};
           const formattedErrors = {};
@@ -204,26 +336,30 @@ const ProductForm = ({ onSave, onCancel }) => {
               product_code: "skuNumber",
               category_id: "category",
               sale_price_inc_tax: "price",
-              // stock_quantity: "availableStock",
-              brand: "brand",
-              supplier: "supplier",
+              brand_id: "brand",
+              supplier_id: "supplier",
               coupon_code: "couponCode",
             };
             const formField = fieldMap[key] || key;
-            formattedErrors[formField] = messages.join(", ");
-            toast.error(`${formField}: ${messages.join(", ")}`);
+            const msg = Array.isArray(messages)
+              ? messages.join(", ")
+              : messages;
+            formattedErrors[formField] = msg;
+            toast.error(`${formField}: ${msg}`);
           });
-          setErrors(formattedErrors);
+          setErrors({ ...errors, ...formattedErrors });
           throw new Error("Validation failed");
-        } else {
-          throw new Error(data.message || "Failed to create product");
         }
+
+        const errorMsg = data.message || `HTTP ${response.status}`;
+        throw new Error(errorMsg);
       }
 
-      toast.success("Product created!");
+      toast.success("Product created successfully!");
       const selectedCategory = categories.find(
         (cat) => cat.value === parseInt(formData.category)
       );
+
       onSave({
         id: data.product.id,
         sku: data.product.product_code || formData.skuNumber,
@@ -234,14 +370,13 @@ const ProductForm = ({ onSave, onCancel }) => {
         price: `₦${parseFloat(
           data.product.sale_price_inc_tax || formData.price
         ).toLocaleString()}`,
-        // stock: data.product.stock_quantity || formData.availableStock,
       });
+
       setFormData({
         productName: "",
         category: "",
         skuNumber: "",
         price: "",
-        // availableStock: "",
         allowCustomization: false,
         description: "",
         colors: [""],
@@ -249,6 +384,7 @@ const ProductForm = ({ onSave, onCancel }) => {
         supplier: "",
         couponCode: "",
       });
+      setSizes([""]);
       setImages({
         primary: null,
         thumbnail1: null,
@@ -257,8 +393,15 @@ const ProductForm = ({ onSave, onCancel }) => {
       });
       setErrors({});
     } catch (error) {
+      console.error("[Product Save] Error:", error);
       if (error.message !== "Validation failed") {
-        toast.error(`Error: ${error.message}`);
+        const isHtmlError =
+          /<!DOCTYPE/i.test(error.message) || /html/i.test(error.message);
+        toast.error(
+          isHtmlError
+            ? "Server error or unauthorized. Check login status."
+            : `Error: ${error.message}`
+        );
         setErrors((prev) => ({ ...prev, api: error.message }));
       }
     } finally {
@@ -266,6 +409,7 @@ const ProductForm = ({ onSave, onCancel }) => {
     }
   };
 
+  // === RENDER ===
   return (
     <div className="min-h-screen bg-[#FAF7F5] p-6">
       <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-sm">
@@ -295,6 +439,7 @@ const ProductForm = ({ onSave, onCancel }) => {
                     </p>
                   )}
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     SKU Number
@@ -313,35 +458,59 @@ const ProductForm = ({ onSave, onCancel }) => {
                     </p>
                   )}
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Brand
                   </label>
-                  <input
-                    type="text"
-                    name="brand"
-                    value={formData.brand}
-                    onChange={handleInputChange}
-                    placeholder="Enter Brand"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
-                    disabled={isSubmitting}
+                  <Select
+                    options={brands}
+                    value={brands.find((b) => b.value === formData.brand)}
+                    onChange={handleBrandChange}
+                    placeholder="Select Brand"
+                    isLoading={isLoadingBrands}
+                    isDisabled={isSubmitting || isLoadingBrands}
+                    className="text-sm"
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        borderColor: "#d1d5db",
+                        "&:hover": { borderColor: "#9ca3af" },
+                        "&:focus-within": {
+                          borderColor: "#5F1327",
+                          boxShadow: "0 0 0 1px #5F1327",
+                        },
+                      }),
+                    }}
                   />
                   {errors.brand && (
                     <p className="text-red-600 text-sm mt-1">{errors.brand}</p>
                   )}
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Supplier
                   </label>
-                  <input
-                    type="text"
-                    name="supplier"
-                    value={formData.supplier}
-                    onChange={handleInputChange}
-                    placeholder="Enter Supplier"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
-                    disabled={isSubmitting}
+                  <Select
+                    options={suppliers}
+                    value={suppliers.find((s) => s.value === formData.supplier)}
+                    onChange={handleSupplierChange}
+                    placeholder="Select Supplier"
+                    isLoading={isLoadingSuppliers}
+                    isDisabled={isSubmitting || isLoadingSuppliers}
+                    className="text-sm"
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        borderColor: "#d1d5db",
+                        "&:hover": { borderColor: "#9ca3af" },
+                        "&:focus-within": {
+                          borderColor: "#5F1327",
+                          boxShadow: "0 0 0 1px #5F1327",
+                        },
+                      }),
+                    }}
                   />
                   {errors.supplier && (
                     <p className="text-red-600 text-sm mt-1">
@@ -384,6 +553,7 @@ const ProductForm = ({ onSave, onCancel }) => {
                     </p>
                   )}
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Price
@@ -403,24 +573,6 @@ const ProductForm = ({ onSave, onCancel }) => {
                     <p className="text-red-600 text-sm mt-1">{errors.price}</p>
                   )}
                 </div>
-                {/* <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Available Stock
-                  </label>
-                  <input
-                    type="number"
-                    name="availableStock"
-                    value={formData.availableStock}
-                    onChange={handleInputChange}
-                    placeholder="0"
-                    min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
-                    disabled={isSubmitting}
-                  />
-                  {errors.availableStock && (
-                    <p className="text-red-600 text-sm mt-1">{errors.availableStock}</p>
-                  )}
-                </div> */}
               </div>
 
               <div className="flex items-center">
@@ -437,6 +589,44 @@ const ProductForm = ({ onSave, onCancel }) => {
                 </label>
               </div>
 
+              {/* === SIZES === */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Sizes
+                </label>
+                {sizes.map((size, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={size}
+                      onChange={(e) => handleSizeChange(index, e.target.value)}
+                      placeholder="e.g. Small, Medium, Large"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
+                      disabled={isSubmitting}
+                    />
+                    {sizes.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeSizeField(index)}
+                        className="px-2 py-1 text-red-600 hover:text-red-800"
+                        disabled={isSubmitting}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addSizeField}
+                  className="text-sm text-[#5F1327] hover:text-[#B54F5E]"
+                  disabled={isSubmitting}
+                >
+                  + Add Size
+                </button>
+              </div>
+
+              {/* === COLORS === */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Colors
@@ -521,6 +711,7 @@ const ProductForm = ({ onSave, onCancel }) => {
               </div>
             </div>
 
+            {/* RIGHT: Image Upload */}
             <div className="lg:col-span-1">
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <h2 className="text-base font-medium text-gray-900 mb-4">
@@ -545,52 +736,39 @@ const ProductForm = ({ onSave, onCancel }) => {
                         </button>
                       </>
                     ) : (
-                      <div className="w-full h-full bg-[#5F1327]" />
+                      <div className="w-full h-full bg-[#5F1327] flex items-center justify-center">
+                        <Image className="w-12 h-12 text-white opacity-50" />
+                      </div>
                     )}
                   </div>
                 </div>
 
                 <div className="flex gap-3 mb-4">
-                  <div className="relative w-20 h-20 bg-[#5F1327] rounded-md overflow-hidden">
-                    {images.thumbnail1 ? (
-                      <>
-                        <img
-                          src={images.thumbnail1.url}
-                          alt="Thumbnail 1"
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          onClick={() => removeImage("thumbnail1")}
-                          disabled={isSubmitting}
-                          className="absolute top-1 right-1 p-0.5 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
-                        >
-                          <X className="w-3 h-3 text-gray-700" />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="w-full h-full bg-[#5F1327]" />
-                    )}
-                  </div>
-                  <div className="relative w-20 h-20 bg-[#5F1327] rounded-md overflow-hidden">
-                    {images.thumbnail2 ? (
-                      <>
-                        <img
-                          src={images.thumbnail2.url}
-                          alt="Thumbnail 2"
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          onClick={() => removeImage("thumbnail2")}
-                          disabled={isSubmitting}
-                          className="absolute top-1 right-1 p-0.5 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
-                        >
-                          <X className="w-3 h-3 text-gray-700" />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="w-full h-full bg-[#5F1327]" />
-                    )}
-                  </div>
+                  {[1, 2].map((n) => (
+                    <div
+                      key={n}
+                      className="relative w-20 h-20 bg-[#5F1327] rounded-md overflow-hidden"
+                    >
+                      {images[`thumbnail${n}`] ? (
+                        <>
+                          <img
+                            src={images[`thumbnail${n}`].url}
+                            alt={`Thumbnail ${n}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            onClick={() => removeImage(`thumbnail${n}`)}
+                            disabled={isSubmitting}
+                            className="absolute top-1 right-1 p-0.5 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
+                          >
+                            <X className="w-3 h-3 text-gray-700" />
+                          </button>
+                        </>
+                      ) : (
+                        <div className="w-full h-full bg-[#5F1327]" />
+                      )}
+                    </div>
+                  ))}
                 </div>
 
                 <div className="mb-4">
@@ -620,30 +798,33 @@ const ProductForm = ({ onSave, onCancel }) => {
                   <h3 className="text-sm font-medium text-gray-900 mb-3">
                     Upload New Images
                   </h3>
-                  <div className="space-y-2">
-                    <label
-                      className={`flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-md cursor-pointer transition-colors ${
-                        isSubmitting ? "" : "hover:border-gray-400"
-                      }`}
-                    >
-                      <Upload className="w-4 h-4 text-gray-600" />
-                      <span className="text-sm text-gray-600">Add Image</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        disabled={isSubmitting}
-                      />
-                    </label>
-                  </div>
+                  <label
+                    className={`flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-md cursor-pointer transition-colors ${
+                      isSubmitting ? "" : "hover:border-gray-400"
+                    }`}
+                  >
+                    <Upload className="w-4 h-4 text-gray-600" />
+                    <span className="text-sm text-gray-600">Add Image</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={isSubmitting}
+                    />
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Max 4 images, 5MB each
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
           {errors.api && (
-            <p className="text-red-600 text-sm mt-1">{errors.api}</p>
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-700">{errors.api}</p>
+            </div>
           )}
 
           <div className="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
@@ -656,7 +837,7 @@ const ProductForm = ({ onSave, onCancel }) => {
             </button>
             <button
               onClick={handleSaveProduct}
-              className="px-6 py-2.5 bg-[#5F1327] text-white rounded-md hover:bg-[#B54F5E] transition-colors font-medium"
+              className="px-6 py-2.5 bg-[#5F1327] text-white rounded-md hover:bg-[#B54F5E] transition-colors font-medium disabled:opacity-70"
               disabled={isSubmitting}
             >
               {isSubmitting ? "Saving..." : "Save Product"}
