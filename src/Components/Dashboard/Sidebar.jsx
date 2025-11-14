@@ -17,31 +17,19 @@ import {
   UserCog,
   Archive,
   LogOut,
+  Menu,
 } from "lucide-react";
 import { AuthContext } from "../../context/AuthContextObject";
 import SignOutModal from "./SignOutModal";
 import logo from "../../assets/logo-d.png";
 
-// Custom scrollbar styles
+// Custom scrollbar
 const scrollbarStyles = `
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #B34949;
-    border-radius: 4px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #3A0E0F;
-  }
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #B34949 #f1f1f1;
-  }
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #B34949; border-radius: 3px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3A0E0F; }
+  .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #B34949 #f1f1f1; }
 `;
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -71,12 +59,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: List,
       path: "/dashboard/product-list",
     },
-    {
-      id: "tags",
-      label: "Tags",
-      icon: Box,
-      path: "/dashboard/tags",
-    },
+    { id: "tags", label: "Tags", icon: Box, path: "/dashboard/tags" },
     {
       id: "categories",
       label: "Categories",
@@ -101,18 +84,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: Tag,
       path: "/dashboard/coupon-code",
     },
-
-    {
-      id: "brand",
-      label: "Brand",
-      icon: Archive,
-      path: "/dashboard/brand",
-    },
+    { id: "brand", label: "Brand", icon: Archive, path: "/dashboard/brand" },
     {
       id: "supplier",
       label: "Supplier",
       icon: FileText,
       path: "/dashboard/suppliers",
+    },
+    {
+      id: "report",
+      label: "Report",
+      icon: FileText,
+      path: "/dashboard/report",
     },
     {
       id: "customization",
@@ -154,26 +137,26 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     return item.path ? (
       <Link
         to={item.path}
-        className={`w-full flex items-center gap-3 px-5 py-3 text-left transition-all duration-200 ${
+        className={`flex items-center gap-3 px-1.5 py-1.5 text-sm font-medium transition-all duration-200 rounded-lg mx-2 ${
           isActive
-            ? "bg-white/10 text-white"
-            : "text-white/90 hover:bg-white/5 hover:text-white"
+            ? "bg-white text-[#B34949]"
+            : "text-white/90 hover:bg-white/10"
         }`}
       >
-        <Icon size={18} strokeWidth={2} />
-        <span className="text-sm font-medium">{item.label}</span>
+        <Icon size={20} />
+        {isOpen && <span>{item.label}</span>}
       </Link>
     ) : (
       <button
         onClick={item.action}
-        className={`w-full flex items-center gap-3 px-5 py-3 text-left transition-all duration-200 ${
+        className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200 rounded-lg mx-2 w-full ${
           isActive
-            ? "bg-white/10 text-white"
-            : "text-white/90 hover:bg-white/5 hover:text-white"
+            ? "bg-white text-[#B34949]"
+            : "text-white/90 hover:bg-white/10"
         }`}
       >
-        <Icon size={18} strokeWidth={2} />
-        <span className="text-sm font-medium">{item.label}</span>
+        <Icon size={18} />
+        {isOpen && <span>{item.label}</span>}
       </button>
     );
   };
@@ -186,26 +169,39 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   return (
     <>
       <style>{scrollbarStyles}</style>
+
+      {/* Collapsed Sidebar (Icons Only) */}
       <aside
-        className={`fixed inset-y-0 left-0 w-64 py-6 bg-gradient-to-b from-[#B34949] via-[#bd2f31] to-[#9e0205] text-white transform ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 transition-transform duration-300 ease-in-out z-50 custom-scrollbar overflow-y-auto`}
+        className={`fixed inset-y-0 left-0 bg-gradient-to-b from-[#B34949] via-[#bd2f31] to-[#9e0205] text-white transition-all duration-300 z-50 flex flex-col ${
+          isOpen ? "w-64" : "w-16"
+        } custom-scrollbar overflow-y-auto`}
       >
-        {/* Brand and Close Button */}
-        <div className="flex items-center justify-between md:justify-center mb-6 p-4 md:p-2">
-          <img src={logo} alt="Sabilay Logo" className="h-10 w-auto" />
-          <button
-            className="md:hidden text-white focus:outline-none"
-            onClick={toggleSidebar}
-            aria-label="Close sidebar"
+        {/* Header: Logo + Toggle */}
+        <div className="flex items-center justify-between p-3 border-b border-white/10">
+          <div
+            className={`flex items-center gap-3 ${
+              isOpen ? "" : "justify-center"
+            }`}
           >
-            <XMarkIcon className="h-6 w-6" />
+            <img src={logo} alt="Logo" className="h-8 w-auto" />
+            {/* {isOpen && <span className="font-bold text-lg">Sabilay</span>} */}
+          </div>
+          <button
+            onClick={toggleSidebar}
+            className="text-white hover:bg-white/10 p-1.5 rounded-lg transition-colors"
+            aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            {isOpen ? (
+              <XMarkIcon className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </button>
         </div>
 
         {/* Menu Items */}
-        <nav className="flex-1">
-          <div className="space-y-0.5">
+        <nav className="flex-1 py-4">
+          <div className="space-y-1">
             {menuItems.map((item) => (
               <MenuItem
                 key={item.id}
@@ -214,8 +210,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               />
             ))}
           </div>
-          <div className="border-t border-white/10 mt-auto">
-            <div className="space-y-0.5 py-2">
+
+          <div className="border-t border-white/10 mt-4 pt-4">
+            <div className="space-y-1">
               {bottomItems.map((item) => (
                 <MenuItem
                   key={item.id}
@@ -227,6 +224,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </div>
         </nav>
       </aside>
+
+      {/* Overlay for mobile (if needed) */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={toggleSidebar}
+        />
+      )}
+
       <SignOutModal
         isOpen={isSignOutModalOpen}
         onClose={() => setIsSignOutModalOpen(false)}

@@ -14,6 +14,7 @@ import {
   StyleSheet,
   Image,
 } from "@react-pdf/renderer";
+import logo from "../assets/logo-d.png";
 
 const OrderSuccess = () => {
   const { auth } = useContext(AuthContext);
@@ -294,8 +295,15 @@ const OrderSuccess = () => {
       <Page size="A4" style={pdfStyles.page}>
         <View style={pdfStyles.section}>
           {/* Success Section */}
-          <View style={pdfStyles.successIcon}>
-            <Text style={pdfStyles.checkIcon}>✓</Text>
+          <View style={{ width: 60, height: 60, margin: "0 auto 20px" }}>
+            <Image
+              source={{ uri: "/logo-d.png" }}
+              style={{
+                width: 60,
+                height: 60,
+                objectFit: "contain",
+              }}
+            />
           </View>
           <Text style={pdfStyles.title}>Order Placed Successfully!</Text>
           <Text style={pdfStyles.subtitle}>
@@ -483,8 +491,12 @@ const OrderSuccess = () => {
       <ToastContainer position="top-right" autoClose={3000} />
       {/* Success Icon with Animation */}
       <div className="text-center mb-6 animate-fade-in">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4 transform transition-transform hover:scale-110">
-          <Check className="w-8 h-8 text-green-600" />
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-[#5F1327] rounded-full mb-4 border-2 border-green-[#5F1327]/40 p-2 transform transition-transform hover:scale-110">
+          <img
+            src={logo}
+            alt="Success"
+            className="w-full h-full object-contain"
+          />
         </div>
         <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">
           Order Placed Successfully!

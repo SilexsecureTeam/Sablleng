@@ -7,104 +7,84 @@ import { CartContext } from "../context/CartContextObject";
 
 const Product = () => {
   const [filter, setFilter] = useState("All");
-  const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [allCustomProducts, setAllCustomProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const { addToWishlist, isInWishlist } = useContext(CartContext);
+  const PRODUCTS_PER_PAGE = 30;
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchAllData = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        let formattedProducts = [];
-        let newTotalPages = 1;
+        const [allResponse, customResponse] = await Promise.all([
+          fetch(`https://api.sablle.ng/api/products`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }),
+          fetch("https://api.sablle.ng/api/product/customized"),
+        ]);
 
-        if (filter === "Customizable") {
-          // USE CUSTOM ENDPOINT FOR "Customizable" FILTER
-          const response = await fetch(
-            "https://api.sablle.ng/api/product/customized"
+        if (!allResponse.ok) {
+          throw new Error(
+            `Failed to fetch products: ${allResponse.statusText}`
           );
-
-          if (!response.ok) {
-            throw new Error(`Failed to fetch customized products`);
-          }
-
-          const data = await response.json();
-          const productsArray = Array.isArray(data.products)
-            ? data.products
-            : [];
-
-          formattedProducts = productsArray.map((item) => {
-            // const latestCust = item.customization?.[0] || {};
-
-            return {
-              id: item.id,
-              name: item.name || "",
-              price: item.price
-                ? `₦${parseFloat(item.price).toLocaleString()}`
-                : "₦0", // or item.price if available
-              category: item.category || "Customized",
-              badge: "Customizable",
-              image:
-                item.images?.[0]?.url ||
-                (item.images?.[0]?.path
-                  ? `https://api.sablle.ng/storage/${item.images[0].path}`
-                  : "/placeholder-image.jpg"),
-              customize: true,
-            };
-          });
-
-          // Client-side pagination for customized products
-          newTotalPages = Math.ceil(formattedProducts.length / 12) || 1;
-        } else {
-          // ALL OTHER FILTERS: Use original /api/products
-          const response = await fetch(
-            `https://api.sablle.ng/api/products?page=${currentPage}`,
-            {
-              method: "GET",
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error(`Failed to fetch products: ${response.statusText}`);
-          }
-
-          const data = await response.json();
-          const productsArray = Array.isArray(data.data) ? data.data : [];
-
-          formattedProducts = productsArray.map((item) => ({
-            id: item.id,
-            name: item.name || "",
-            price: item.sale_price_inc_tax
-              ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-              : "Price Unavailable",
-            category: item.category?.name,
-            badge: item.customize ? "Customizable" : null,
-            image:
-              item.images?.[0]?.url ||
-              (item.images?.[0]?.path
-                ? `https://api.sablle.ng/storage/${item.images[0].path}`
-                : "/placeholder-image.jpg"),
-            customize: item.customize,
-          }));
-
-          newTotalPages = data.last_page || 1;
+        }
+        if (!customResponse.ok) {
+          throw new Error(`Failed to fetch customized products`);
         }
 
-        setProducts(formattedProducts);
-        setTotalPages(newTotalPages);
+        const allData = await allResponse.json();
+        const customData = await customResponse.json();
 
-        toast.success(
-          filter === "Customizable"
-            ? "Custom designs loaded!"
-            : `Products fetched for page ${currentPage}`,
-          { position: "top-right", autoClose: 3000 }
-        );
+        const productsArray = Array.isArray(allData) ? allData : [];
+        const customProductsArray = Array.isArray(customData.products)
+          ? customData.products
+          : [];
+
+        const formattedAllProducts = productsArray.map((item) => ({
+          id: item.id,
+          name: item.name || "",
+          price: item.sale_price_inc_tax
+            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+            : "Price Unavailable",
+          category: item.category?.name,
+          badge: item.customize ? "Customizable" : null,
+          image:
+            item.images?.[0]?.url ||
+            (item.images?.[0]?.path
+              ? `https://api.sablle.ng/storage/${item.images[0].path}`
+              : "/placeholder-image.jpg"),
+          customize: item.customize,
+        }));
+
+        const formattedCustomProducts = customProductsArray.map((item) => ({
+          id: item.id,
+          name: item.name || "",
+          price: item.price
+            ? `₦${parseFloat(item.price).toLocaleString()}`
+            : "₦0",
+          category: item.category || "Customized",
+          badge: "Customizable",
+          image:
+            item.images?.[0]?.url ||
+            (item.images?.[0]?.path
+              ? `https://api.sablle.ng/storage/${item.images[0].path}`
+              : "/placeholder-image.jpg"),
+          customize: true,
+        }));
+
+        setAllProducts(formattedAllProducts);
+        setAllCustomProducts(formattedCustomProducts);
+
+        toast.success("Products loaded!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
       } catch (err) {
         console.error("Fetch error:", err);
         setError(err.message);
@@ -112,38 +92,45 @@ const Product = () => {
           position: "top-right",
           autoClose: 5000,
         });
-        setProducts([]);
+        setAllProducts([]);
+        setAllCustomProducts([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProducts();
-  }, [currentPage, filter]); // Re-run on page OR filter change
-
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
+    fetchAllData();
+  }, []); // Run once on mount
 
   // Client-side filtering for All / Non-Customizable
   const filteredProducts =
     filter === "Customizable"
-      ? products
-      : products.filter((product) => {
+      ? allCustomProducts
+      : allProducts.filter((product) => {
           if (filter === "All") return true;
           if (filter === "Non-Customizable") return product.customize === false;
           return true;
         });
 
   // Client-side pagination slice
-  const startIndex = (currentPage - 1) * 12;
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + 12);
+  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+  const paginatedProducts = filteredProducts.slice(
+    startIndex,
+    startIndex + PRODUCTS_PER_PAGE
+  );
   const displayTotalPages =
-    filter === "Customizable"
-      ? Math.ceil(filteredProducts.length / 12) || 1
-      : totalPages;
+    Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE) || 1;
+
+  useEffect(() => {
+    setCurrentPage(1); // Reset to page 1 when filteredProducts change
+  }, [filteredProducts.length]);
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= displayTotalPages) {
+      setCurrentPage(page);
+      window.scrollTo(0, 0);
+    }
+  };
 
   return (
     <div className="py-12 md:py-16">
@@ -175,7 +162,7 @@ const Product = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {isLoading ? (
             <div className="col-span-full text-center text-gray-600">
               Loading products...
@@ -207,7 +194,7 @@ const Product = () => {
                 <div className="p-4">
                   <div className="flex items-center justify-between">
                     <Link to={`/product/${product.id}`}>
-                      <h3 className="font-medium text-gray-900 text-sm">
+                      <h3 className="font-medium line-clamp-2 text-gray-900 text-sm">
                         {product.name}
                       </h3>
                     </Link>

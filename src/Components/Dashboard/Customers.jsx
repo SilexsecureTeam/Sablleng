@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Search, Settings, Zap, Bell } from "lucide-react";
+import { Search, Settings, Bell, Plus, Edit2, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContextObject";
 import { toast, ToastContainer } from "react-toastify";
@@ -15,7 +15,13 @@ const Customers = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const customersPerPage = 10;
+
+  // Modals
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   const API_BASE = "https://api.sablle.ng/api";
 
@@ -58,6 +64,7 @@ const Customers = () => {
               year: "numeric",
             })
           : "N/A",
+        raw: user,
       }));
 
       setCustomers(formatted);
@@ -93,11 +100,19 @@ const Customers = () => {
   }, [searchQuery, customers]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredCustomers.length / customersPerPage);
-  const startIndex = (currentPage - 1) * customersPerPage;
+  useEffect(() => {
+    const newTotalPages = Math.ceil(
+      filteredCustomers.length / customersPerPage
+    );
+    setTotalPages(newTotalPages || 1);
+    if (currentPage > newTotalPages && newTotalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [filteredCustomers, currentPage]);
+
   const paginatedCustomers = filteredCustomers.slice(
-    startIndex,
-    startIndex + customersPerPage
+    (currentPage - 1) * customersPerPage,
+    currentPage * customersPerPage
   );
 
   const handlePrevPage = () => setCurrentPage((p) => Math.max(1, p - 1));
@@ -114,9 +129,95 @@ const Customers = () => {
     return pages;
   };
 
+  // === CRUD OPERATIONS ===
+
+  const handleAddUser = () => {
+    setSelectedCustomer(null);
+    setIsAddModalOpen(true);
+  };
+
+  const handleEdit = (customer) => {
+    setSelectedCustomer(customer);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/users/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to delete");
+      }
+
+      toast.success("User deleted!");
+      fetchCustomers();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleSaveUser = async (formData) => {
+    const isEdit = !!formData.id;
+    const url = isEdit
+      ? `${API_BASE}/admin/users/${formData.id}`
+      : `${API_BASE}/admin/users`;
+    const method = "POST";
+
+    const payload = new FormData();
+    payload.append("name", formData.name);
+    payload.append("email", formData.email);
+    payload.append("phone", formData.phone);
+    payload.append("role", formData.role.toLowerCase());
+
+    if (isEdit) {
+      payload.append("_method", "PATCH"); // Laravel-style spoofing
+    } else {
+      payload.append("password", formData.password);
+      payload.append("password_confirmation", formData.password);
+    }
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { Authorization: `Bearer ${auth.token}` },
+        body: payload,
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.message || "Operation failed");
+      }
+
+      toast.success(isEdit ? "User updated!" : "User created!");
+      setIsAddModalOpen(false);
+      setIsEditModalOpen(false);
+      setSelectedCustomer(null);
+      fetchCustomers();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF7F5] p-6">
       <ToastContainer position="top-right" autoClose={3000} />
+
+      <div className="flex w-full justify-end mb-6">
+        <button
+          onClick={handleAddUser}
+          className="flex items-center gap-2 bg-[#5F1327] hover:bg-[#B54F5E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          New User
+        </button>
+      </div>
 
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -135,12 +236,6 @@ const Customers = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden">
-              <button className="flex items-center gap-2 bg-[#5F1327] hover:bg-[#B54F5E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                <Zap className="w-4 h-4" />
-                Quick Action
-              </button>
-            </div>
             <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <Bell className="w-5 h-5 text-gray-600" />
             </button>
@@ -152,14 +247,12 @@ const Customers = () => {
 
         {/* Main Card */}
         <div className="bg-white rounded-lg shadow-sm">
-          {/* Title */}
           <div className="px-6 py-5">
             <h2 className="text-lg font-semibold text-gray-900">
               All Customers
             </h2>
           </div>
 
-          {/* Search */}
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -173,7 +266,6 @@ const Customers = () => {
             </div>
           </div>
 
-          {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -193,6 +285,9 @@ const Customers = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                     Joined
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -201,7 +296,7 @@ const Customers = () => {
                     .fill(0)
                     .map((_, i) => (
                       <tr key={i}>
-                        <td colSpan={5} className="px-6 py-4">
+                        <td colSpan={6} className="px-6 py-4">
                           <div className="animate-pulse flex space-x-4">
                             <div className="flex-1 space-y-2">
                               <div className="h-4 bg-gray-200 rounded"></div>
@@ -214,7 +309,7 @@ const Customers = () => {
                 ) : error ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="px-6 py-12 text-center text-red-600"
                     >
                       {error}
@@ -223,7 +318,7 @@ const Customers = () => {
                 ) : paginatedCustomers.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="px-6 py-12 text-center text-gray-500"
                     >
                       No customers found.
@@ -232,7 +327,7 @@ const Customers = () => {
                 ) : (
                   paginatedCustomers.map((customer) => (
                     <tr key={customer.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#141718]">
                         {customer.name}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
@@ -243,7 +338,7 @@ const Customers = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             customer.role === "Admin"
                               ? "bg-[#5F1327] text-white"
                               : "bg-gray-100 text-gray-700"
@@ -255,6 +350,24 @@ const Customers = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {customer.joined}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEdit(customer)}
+                            className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-[#5F1327] hover:bg-gray-200 transition-colors"
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(customer.id)}
+                            className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Delete
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -262,7 +375,6 @@ const Customers = () => {
             </table>
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
               <p className="text-sm text-gray-700">
@@ -308,6 +420,141 @@ const Customers = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Add/Edit Modal */}
+      {(isAddModalOpen || isEditModalOpen) && (
+        <CustomerFormModal
+          customer={isEditModalOpen ? selectedCustomer : null}
+          onSave={handleSaveUser}
+          onCancel={() => {
+            setIsAddModalOpen(false);
+            setIsEditModalOpen(false);
+            setSelectedCustomer(null);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// === MODAL FORM ===
+const CustomerFormModal = ({ customer, onSave, onCancel }) => {
+  const isEdit = !!customer;
+  const [formData, setFormData] = useState({
+    id: customer?.id || "",
+    name: customer?.name || "",
+    email: customer?.email || "",
+    phone: customer?.phone || "",
+    role: customer?.role || "Customer",
+    password: "",
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!isEdit && !formData.password) {
+      toast.error("Password is required for new users");
+      return;
+    }
+    onSave(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <h3 className="text-lg font-semibold text-[#141718] mb-4">
+          {isEdit ? "Edit User" : "Add New User"}
+        </h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Phone
+            </label>
+            <input
+              type="text"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Role
+            </label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
+            >
+              <option value="Customer">Customer</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+          {!isEdit && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required={!isEdit}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
+              />
+            </div>
+          )}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-[#5F1327] text-white rounded-md hover:bg-[#B54F5E]"
+            >
+              {isEdit ? "Update" : "Create"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
+// Updated GroupedCategoryPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { getSubCategories } from "../utils/categoryGroups";
+// import { toast, ToastContainer } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
+import { getTagCategories } from "../utils/categoryGroups";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
 import Noti from "../Components/Noti";
@@ -10,101 +11,134 @@ import Noti from "../Components/Noti";
 const GroupedCategoryPage = () => {
   const { mainSlug } = useParams();
   const navigate = useNavigate();
+  // eslint-disable-next-line no-unused-vars
+  const [tags, setTags] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [tagName, setTagName] = useState("");
 
   useEffect(() => {
-    const fetchAllCategories = async () => {
+    const CACHE_KEY = "sablle_tags";
+    // const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+    const CACHE_EXPIRY = 30 * 1000; // 30 seconds
+
+    const fetchTags = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        let cachedCategories = localStorage.getItem("categories");
-        let formattedCategories = [];
+        // Check cache first
+        const cached = localStorage.getItem(CACHE_KEY);
+        const now = new Date().getTime();
+        let formattedTags = [];
 
-        if (cachedCategories) {
-          formattedCategories = JSON.parse(cachedCategories);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (now - timestamp < CACHE_EXPIRY) {
+            formattedTags = data;
+          } else {
+            // Cache expired, fetch fresh
+            const response = await fetch("https://api.sablle.ng/api/tags", {
+              method: "GET",
+              headers: { "Content-Type": "application/json" },
+            });
+
+            if (!response.ok) {
+              throw new Error(`Failed to fetch tags: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            formattedTags = Array.isArray(data)
+              ? data.filter((item) => item.is_active === true)
+              : [];
+
+            // Cache fresh data
+            localStorage.setItem(
+              CACHE_KEY,
+              JSON.stringify({
+                data: formattedTags,
+                timestamp: now,
+              })
+            );
+          }
         } else {
-          const response = await fetch("https://api.sablle.ng/api/categories", {
+          // No cache, fetch
+          const response = await fetch("https://api.sablle.ng/api/tags", {
             method: "GET",
             headers: { "Content-Type": "application/json" },
           });
 
           if (!response.ok) {
-            throw new Error(
-              `Failed to fetch categories: ${response.statusText}`
-            );
+            throw new Error(`Failed to fetch tags: ${response.statusText}`);
           }
 
           const data = await response.json();
-          const categoriesArray = Array.isArray(data) ? data : [];
+          formattedTags = Array.isArray(data)
+            ? data.filter((item) => item.is_active === true)
+            : [];
 
-          formattedCategories = categoriesArray
-            .filter((item) => item.is_active === 1)
-            .map((item) => ({
-              id: item.id,
-              name: item.name,
-              slug: item.name
-                .toLowerCase()
-                .replace(/\s+/g, "-")
-                .replace(/[^\w-]/g, ""),
-            }));
-
+          // Cache it
           localStorage.setItem(
-            "categories",
-            JSON.stringify(formattedCategories)
+            CACHE_KEY,
+            JSON.stringify({
+              data: formattedTags,
+              timestamp: now,
+            })
           );
         }
 
-        const subs = getSubCategories(mainSlug, formattedCategories);
-        setSubCategories(subs);
+        setTags(formattedTags);
 
-        if (subs.length > 0) {
-          toast.success(`Loaded ${subs.length} subcategories!`, {
-            position: "top-right",
-            autoClose: 3000,
-          });
+        // Find the tag matching the slug
+        const matchedTag = formattedTags.find((tag) => tag.slug === mainSlug);
+
+        if (matchedTag) {
+          setTagName(matchedTag.name);
+          const subs = getTagCategories(matchedTag);
+          setSubCategories(subs);
+
+          if (subs.length > 0) {
+            // toast.success(`Loaded ${subs.length} categories!`, {
+            //   position: "top-right",
+            //   autoClose: 3000,
+            // });
+          } else {
+            // toast.info("No categories found—check back soon!", {
+            //   position: "top-right",
+            //   autoClose: 5000,
+            // });
+          }
         } else {
-          toast.info("No subcategories found—check back soon!", {
-            position: "top-right",
-            autoClose: 5000,
-          });
+          throw new Error("Tag not found");
         }
       } catch (err) {
-        console.error("Fetch categories error:", err);
+        console.error("Fetch tags error:", err);
         setError(err.message);
-        toast.error(`Error: ${err.message}`, {
-          position: "top-right",
-          autoClose: 5000,
-        });
+        // toast.error(`Error: ${err.message}`, {
+        //   position: "top-right",
+        //   autoClose: 5000,
+        // });
+        setSubCategories([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchAllCategories();
+    fetchTags();
   }, [mainSlug]);
-
-  const mainTitle = mainSlug
-    .replace(/-/g, " ")
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center text-gray-600">
-          Loading subcategories...
-        </div>
+        <div className="text-center text-gray-600">Loading categories...</div>
       </div>
     );
   }
 
   return (
     <div>
-      <ToastContainer />
+      {/* <ToastContainer /> */}
       <Noti />
       <Header />
       <section className="py-12 md:py-16 bg-white">
@@ -118,14 +152,14 @@ const GroupedCategoryPage = () => {
           {/* Title */}
           <div className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#5F1327] mb-4">
-              {mainTitle} Collections
+              {tagName} Collections
             </h2>
             <p className="text-gray-600">
-              Discover our curated subcategories below.
+              Discover our curated categories below.
             </p>
           </div>
 
-          {/* Subcategory Grid */}
+          {/* Category Grid */}
           {error ? (
             <div className="text-center text-red-500 mb-12">{error}</div>
           ) : subCategories.length > 0 ? (
@@ -153,7 +187,7 @@ const GroupedCategoryPage = () => {
             </div>
           ) : (
             <div className="text-center text-gray-600 mb-12">
-              No subcategories available yet.
+              No categories available yet.
             </div>
           )}
         </div>

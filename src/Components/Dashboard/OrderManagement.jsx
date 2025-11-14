@@ -22,7 +22,16 @@ const OrderManagement = () => {
   const { auth } = useContext(AuthContext);
 
   // ONLY THESE FILTERS
-  const filters = ["All", "Paid", "Pending"];
+  const filters = [
+    "All",
+    "Paid",
+    "Order Placed",
+    "Processing",
+    "Packed",
+    "Shipped",
+    "Out for Delivery",
+    "Delivered",
+  ];
 
   // Fetch orders
   const fetchOrders = async () => {
@@ -55,7 +64,8 @@ const OrderManagement = () => {
       if (response.ok) {
         const mappedOrders = data.data.map((order) => {
           const status = order.status.toLowerCase();
-          const displayStatus = status === "paid" ? "Paid" : "Pending";
+          const displayStatus =
+            order.order_status || (status === "paid" ? "Paid" : "Pending");
 
           // Calculate total number of items (sum of quantities)
           const totalItems = order.items.reduce(
@@ -90,10 +100,26 @@ const OrderManagement = () => {
   }, [auth?.isAuthenticated, auth?.token]);
 
   // Status Style
+  // Status Style - Updated with unique colors per status
   const getStatusStyle = (status) => {
-    return status === "Paid"
-      ? "bg-[#E8FAE7] text-[#01993C]"
-      : "bg-[#DAD3BC] text-[#414245]";
+    switch (status) {
+      case "Paid":
+        return "bg-[#E8FAE7] text-[#01993C]"; // Green
+      case "Order Placed":
+        return "bg-blue-100 text-blue-700"; // Light Blue
+      case "Processing":
+        return "bg-yellow-100 text-yellow-700"; // Yellow
+      case "Packed":
+        return "bg-purple-100 text-purple-700"; // Purple
+      case "Shipped":
+        return "bg-indigo-100 text-indigo-700"; // Indigo
+      case "Out for Delivery":
+        return "bg-orange-100 text-orange-700"; // Orange
+      case "Delivered":
+        return "bg-green-100 text-green-800"; // Dark Green
+      default:
+        return "bg-[#DAD3BC] text-[#414245]"; // Fallback (Pending)
+    }
   };
 
   // Filter Logic

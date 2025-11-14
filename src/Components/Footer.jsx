@@ -149,19 +149,27 @@ const Footer = () => {
         <div className="space-y-2 text-sm ">
           <p className="font-semibold text-white">+2348187230200</p>
           <p>info@sablle.ng</p>
-          <p>Victoria Island, Lagos, Nigeria</p>
+          <p>2A Adebayo Doherty Road Lekki Phase 1 Lagos, Nigeria.</p>
         </div>
         <div className=" flex justify-end space-x-6">
-          <a href="#" className="hover:text-white">
+          <a href="#" className="hover:text-white hidden">
             <Linkedin size={18} />
           </a>
-          <a href="#" className="hover:text-white">
+          <a
+            href="https://www.instagram.com/sablleluxury?igsh=aHVvbmFuN2RoNHZ3"
+            target="_blank"
+            className="hover:text-white"
+          >
             <Instagram size={18} />
           </a>
-          <a href="#" className="hover:text-white">
+          <a
+            href="https://www.facebook.com/profile.php?id=100092503805566"
+            target="_blank"
+            className="hover:text-white"
+          >
             <Facebook size={18} />
           </a>
-          <a href="#" className="hover:text-white">
+          <a href="#" className="hover:text-white hidden">
             <Twitter size={18} />
           </a>
         </div>

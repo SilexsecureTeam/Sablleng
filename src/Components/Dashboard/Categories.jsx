@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Bell, Settings, Zap, X, Edit2, Eye, Search } from "lucide-react";
+import {
+  Bell,
+  Settings,
+  Zap,
+  X,
+  Edit2,
+  Eye,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthContext } from "../../context/AuthContextObject";
@@ -9,8 +18,10 @@ import Select from "react-select";
 const Categories = () => {
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  const [allCategories, setAllCategories] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [tags, setTags] = useState([]); // For dropdown
+  const [tags, setTags] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,7 +32,7 @@ const Categories = () => {
     name: "",
     description: "",
     image: null,
-    tag: null, // { value: id, label: name }
+    tag: null,
   });
   const [addImagePreview, setAddImagePreview] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -37,103 +48,16 @@ const Categories = () => {
   const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Fetch tags for select
-  const fetchTagsForSelect = async () => {
-    if (!auth.token) return;
-    try {
-      const res = await fetch("https://api.sablle.ng/api/tags", {
-        headers: { Authorization: `Bearer ${auth.token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const tgs = Array.isArray(data.data) ? data.data : data;
-        setTags(tgs.map((t) => ({ value: t.id, label: t.name })));
-      }
-    } catch (err) {
-      console.error("Failed to load tags for select:", err);
-    }
-  };
+  // Delete Modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deletingName, setDeletingName] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch categories with search only (no pagination)
-  const fetchCategories = async (search = "") => {
-    if (!auth.token) {
-      toast.error("Please verify OTP to continue.", { autoClose: 3000 });
-      setTimeout(() => navigate("/admin/otp"), 2000);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // 1. Fetch main categories list
-      const url = `https://api.sablle.ng/api/categories`;
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.token}`,
-        },
-      });
-
-      if (response.status === 401) throw new Error("Unauthorized.");
-      if (!response.ok) throw new Error(`Failed: ${response.statusText}`);
-
-      const data = await response.json();
-      let categoriesArray = Array.isArray(data.data) ? data.data : data;
-
-      // 2. Search filter
-      if (search.trim()) {
-        const lowerSearch = search.toLowerCase();
-        categoriesArray = categoriesArray.filter((cat) =>
-          cat.name?.toLowerCase().includes(lowerSearch)
-        );
-      }
-
-      if (categoriesArray.length === 0) {
-        setCategories([]);
-        setIsLoading(false);
-        return;
-      }
-
-      // 3. Build tag name map from dropdown (already loaded in tags state)
-      const tagNameMap = {};
-      tags.forEach((t) => (tagNameMap[t.value] = t.label));
-
-      // 4. Format categories — no extra API calls
-      const formattedCategories = categoriesArray.map((item) => ({
-        id: item.id,
-        name: item.name,
-        productCount: 0, // Optional: enhance later with ?with=products
-        tagName: item.tag_id ? tagNameMap[item.tag_id] || "Unknown" : "None",
-        status: item.is_active ? "Active" : "Inactive",
-      }));
-
-      setCategories(formattedCategories);
-      toast.success(`Loaded ${formattedCategories.length} categories!`, {
-        autoClose: 2000,
-      });
-    } catch (err) {
-      setError(err.message);
-      toast.error(`Error: ${err.message}`, { autoClose: 5000 });
-      setCategories([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCategories(searchQuery);
-    fetchTagsForSelect();
-  }, [auth.token, navigate, searchQuery]);
-
-  // Handle Tag Select Change
+  // Handle Tag Change
   const handleTagChange = (selectedOption, isEdit = false) => {
     const setter = isEdit ? setEditFormData : setAddFormData;
-    setter((prev) => ({
-      ...prev,
-      tag: selectedOption || null,
-    }));
+    setter((prev) => ({ ...prev, tag: selectedOption || null }));
   };
 
   // Add Category
@@ -152,14 +76,8 @@ const Categories = () => {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
-    if (!addFormData.name.trim()) {
-      toast.error("Category name is required.");
-      return;
-    }
-    if (!addFormData.tag) {
-      toast.error("Tag is required.");
-      return;
-    }
+    if (!addFormData.name.trim()) return toast.error("Name required.");
+    if (!addFormData.tag) return toast.error("Tag required.");
 
     setIsAdding(true);
     const submitData = new FormData();
@@ -169,92 +87,51 @@ const Categories = () => {
     if (addFormData.image) submitData.append("image", addFormData.image);
 
     try {
-      const response = await fetch("https://api.sablle.ng/api/categories", {
+      const res = await fetch("https://api.sablle.ng/api/categories", {
         method: "POST",
         headers: { Authorization: `Bearer ${auth.token}` },
         body: submitData,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed: ${response.statusText}`);
-      }
-
-      toast.success("Category added!", { autoClose: 3000 });
+      if (!res.ok) throw new Error((await res.json()).message || "Failed");
+      toast.success("Category added!");
       setIsAddModalOpen(false);
       setAddFormData({ name: "", description: "", image: null, tag: null });
       setAddImagePreview(null);
-      fetchCategories(searchQuery);
+      loadData();
     } catch (err) {
-      toast.error(`Error: ${err.message}`, { autoClose: 5000 });
+      toast.error(err.message);
     } finally {
       setIsAdding(false);
     }
   };
 
   // Edit Category
-  const handleEdit = async (category) => {
+  const handleEdit = (category) => {
+    setEditingId(category.id);
     setEditFormData({
       name: category.name,
-      description: category.description,
-      is_active: category.status === "Active",
-      tag: null, // Will populate below
+      description: category.description || "",
+      is_active: category.is_active,
+      tag: tags.find((t) => t.value === category.tag_id) || null,
     });
-    setEditingId(category.id);
     setIsEditModalOpen(true);
-
-    // Fetch full category with tag
-    try {
-      const res = await fetch(
-        `https://api.sablle.ng/api/categories/${category.id}`,
-        {
-          headers: { Authorization: `Bearer ${auth.token}` },
-        }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const selectedTag = data.tag
-          ? { value: data.tag.id, label: data.tag.name }
-          : null;
-        setEditFormData((prev) => ({
-          ...prev,
-          tag: selectedTag,
-        }));
-      }
-    } catch (err) {
-      console.error("Failed to load category details:", err);
-      toast.error("Failed to load category details.");
-    }
-  };
-
-  const handleEditInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setEditFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    if (!editFormData.name.trim()) {
-      toast.error("Category name is required.");
-      return;
-    }
-    if (!editFormData.tag) {
-      toast.error("Tag is required.");
-      return;
-    }
-    setIsEditing(true);
+    if (!editFormData.name.trim()) return toast.error("Name required.");
+    if (!editFormData.tag) return toast.error("Tag required.");
 
+    setIsEditing(true);
     const submitData = {
-      ...editFormData,
+      name: editFormData.name,
+      description: editFormData.description,
+      is_active: editFormData.is_active,
       tag_id: editFormData.tag.value,
     };
-    delete submitData.tag; // Remove the object, keep only id in payload
 
     try {
-      const response = await fetch(
+      const res = await fetch(
         `https://api.sablle.ng/api/categories/${editingId}`,
         {
           method: "PATCH",
@@ -265,27 +142,135 @@ const Categories = () => {
           body: JSON.stringify(submitData),
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed: ${response.statusText}`);
-      }
-
-      toast.success("Category updated!", { autoClose: 3000 });
+      if (!res.ok) throw new Error((await res.json()).message || "Failed");
+      toast.success("Category updated!");
       setIsEditModalOpen(false);
-      fetchCategories(searchQuery);
+      loadData();
     } catch (err) {
-      toast.error(`Error: ${err.message}`, { autoClose: 5000 });
+      toast.error(err.message);
     } finally {
       setIsEditing(false);
     }
   };
 
+  // DELETE: Open Confirm Modal
+  const confirmDelete = (id, name) => {
+    setDeletingId(id);
+    setDeletingName(name);
+    setIsDeleteModalOpen(true);
+  };
+
+  // DELETE: Confirm Action
+  const handleDelete = async () => {
+    if (!deletingId) return;
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch(
+        `https://api.sablle.ng/api/categories/${deletingId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${auth.token}` },
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to delete");
+      }
+
+      toast.success(`"${deletingName}" deleted!`);
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+      setDeletingName("");
+      loadData(); // Refresh list
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Main Load Function
+  const loadData = async () => {
+    if (!auth.token) {
+      toast.error("Please verify OTP to continue.", { autoClose: 3000 });
+      setTimeout(() => navigate("/admin/otp"), 2000);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const tagsRes = await fetch("https://api.sablle.ng/api/tags", {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
+      if (!tagsRes.ok) throw new Error("Failed to load tags");
+      const tagsData = await tagsRes.json();
+      const tagsArray = Array.isArray(tagsData.data) ? tagsData.data : tagsData;
+      const tagOptions = tagsArray.map((t) => ({ value: t.id, label: t.name }));
+      setTags(tagOptions);
+
+      const tagNameMap = {};
+      tagOptions.forEach((t) => (tagNameMap[t.value] = t.label));
+
+      const catsRes = await fetch("https://api.sablle.ng/api/categories", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`,
+        },
+      });
+      if (!catsRes.ok) throw new Error("Failed to load categories");
+      const catsData = await catsRes.json();
+      const catsArray = Array.isArray(catsData.data) ? catsData.data : catsData;
+
+      const formatted = catsArray.map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description || "",
+        tag_id: item.tag_id,
+        tagName: item.tag_id ? tagNameMap[item.tag_id] || "Unknown" : "None",
+        status: item.is_active ? "Active" : "Inactive",
+        is_active: item.is_active,
+      }));
+
+      setAllCategories(formatted);
+      setCategories(formatted);
+      toast.success(`Loaded ${formatted.length} categories!`, {
+        autoClose: 2000,
+      });
+    } catch (err) {
+      setError(err.message);
+      toast.error(err.message);
+      setAllCategories([]);
+      setCategories([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Search
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setCategories(allCategories);
+      return;
+    }
+    const filtered = allCategories.filter((cat) =>
+      cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setCategories(filtered);
+  }, [searchQuery, allCategories]);
+
+  // Initial Load
+  useEffect(() => {
+    loadData();
+  }, [auth.token, navigate]);
+
   return (
     <div className="min-h-screen bg-[#FAF7F5] p-6">
       <ToastContainer position="top-right" autoClose={3000} />
 
-      {/* Top Bar */}
       <div className="flex justify-end items-center mb-6 gap-3">
         <button
           onClick={() => setIsAddModalOpen(true)}
@@ -303,13 +288,11 @@ const Categories = () => {
         </button>
       </div>
 
-      {/* Main Card */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h1 className="text-lg font-semibold text-[#141718] mb-6">
           Products Category
         </h1>
 
-        {/* Search */}
         <div className="mb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -323,7 +306,6 @@ const Categories = () => {
           </div>
         </div>
 
-        {/* Loading / Error / Empty */}
         {isLoading ? (
           <div className="text-center py-12">
             <p className="text-sm text-gray-500">Loading categories...</p>
@@ -337,61 +319,62 @@ const Categories = () => {
             <p className="text-sm text-gray-500">No categories found.</p>
           </div>
         ) : (
-          <>
-            {/* Category Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {categories.map((category) => (
-                <div
-                  key={category.id}
-                  className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow relative bg-white"
-                >
-                  <div className="absolute top-4 right-4 space-y-1">
-                    <span
-                      className={`px-3 py-1 text-xs font-medium rounded block ${
-                        category.status === "Active"
-                          ? "bg-[#EAFFD8] text-[#1B8401]"
-                          : "bg-gray-200 text-gray-600"
-                      }`}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {categories.map((category) => (
+              <div
+                key={category.id}
+                className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow relative bg-white"
+              >
+                <div className="absolute top-4 right-4 space-y-1">
+                  <span
+                    className={`px-3 py-1 text-xs font-medium rounded block ${
+                      category.status === "Active"
+                        ? "bg-[#EAFFD8] text-[#1B8401]"
+                        : "bg-gray-200 text-gray-600"
+                    }`}
+                  >
+                    {category.status}
+                  </span>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => handleEdit(category)}
+                      className="p-1 text-blue-600 hover:text-blue-800"
+                      title="Edit"
                     >
-                      {category.status}
-                    </span>
-                    <div className="flex gap-2 mt-2">
-                      <button
-                        onClick={() => handleEdit(category)}
-                        className="p-1 text-blue-600 hover:text-blue-800"
-                        title="Edit"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() =>
-                          navigate(
-                            `/dashboard/categories/${category.id}/products`
-                          )
-                        }
-                        className="p-1 text-green-600 hover:text-green-800"
-                        title="View Products"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="pr-20">
-                    <h2 className="text-base font-semibold text-[#141718] mb-1">
-                      {category.name}
-                    </h2>
-                    <p className="text-sm text-[#6C7275] mb-1">
-                      Tag: {category.tagName}
-                    </p>
-                    {/* <p className="text-sm font-medium text-[#5F1327]">
-                      {category.productCount} products
-                    </p> */}
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => confirmDelete(category.id, category.name)}
+                      className="p-1 text-red-600 hover:text-red-800"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        navigate(
+                          `/dashboard/categories/${category.id}/products`
+                        )
+                      }
+                      className="p-1 text-green-600 hover:text-green--800"
+                      title="View Products"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </>
+
+                <div className="pr-20">
+                  <h2 className="text-base font-semibold text-[#141718] mb-1">
+                    {category.name}
+                  </h2>
+                  <p className="text-sm text-[#6C7275] mb-1">
+                    Tag: {category.tagName}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -449,6 +432,7 @@ const Categories = () => {
                   placeholder="Select a tag..."
                   className="react-select-container"
                   classNamePrefix="react-select"
+                  isClearable
                 />
               </div>
               <div>
@@ -535,9 +519,13 @@ const Categories = () => {
                 </label>
                 <input
                   type="text"
-                  name="name"
                   value={editFormData.name}
-                  onChange={handleEditInputChange}
+                  onChange={(e) =>
+                    setEditFormData((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
                   required
                 />
@@ -547,9 +535,13 @@ const Categories = () => {
                   Description
                 </label>
                 <textarea
-                  name="description"
                   value={editFormData.description}
-                  onChange={handleEditInputChange}
+                  onChange={(e) =>
+                    setEditFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327] resize-none"
                 />
@@ -565,14 +557,19 @@ const Categories = () => {
                   placeholder="Select a tag..."
                   className="react-select-container"
                   classNamePrefix="react-select"
+                  isClearable
                 />
               </div>
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  name="is_active"
                   checked={editFormData.is_active}
-                  onChange={handleEditInputChange}
+                  onChange={(e) =>
+                    setEditFormData((prev) => ({
+                      ...prev,
+                      is_active: e.target.checked,
+                    }))
+                  }
                   className="mr-2"
                 />
                 <label className="text-sm font-medium text-[#414245]">
@@ -597,6 +594,42 @@ const Categories = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRM MODAL */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-[#141718]">
+                Delete Category?
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to delete <strong>"{deletingName}"</strong>?
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
           </div>
         </div>
       )}

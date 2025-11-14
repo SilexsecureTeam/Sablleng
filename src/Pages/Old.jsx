@@ -1,4 +1,3 @@
-// Updated Header.jsx
 import React, {
   useState,
   useEffect,
@@ -20,12 +19,12 @@ import {
   Package,
   Heart,
   LogOut,
-} from "lucide-react";
+} from "lucide-react"; // Assuming lazy loading via dynamic import in your bundler setup
 import { CartContext } from "../context/CartContextObject";
 import { AuthContext } from "../context/AuthContextObject";
 import logo from "../assets/logo-d.png";
 import { toast } from "react-toastify";
-import { getTagCategories } from "../utils/categoryGroups";
+import { getSubCategories } from "../utils/categoryGroups";
 
 const Header = React.memo(() => {
   const location = useLocation();
@@ -34,21 +33,26 @@ const Header = React.memo(() => {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
-  // eslint-disable-next-line no-unused-vars
   const [categories, setCategories] = useState([]);
-  const [tags, setTags] = useState([]);
-  // eslint-disable-next-line no-unused-vars
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  const [isLoadingTags, setIsLoadingTags] = useState(true);
-  // eslint-disable-next-line no-unused-vars
   const [errorCategories, setErrorCategories] = useState(null);
-  const [errorTags, setErrorTags] = useState(null);
   const timeoutRef = useRef(null);
-  const profileRefDesktop = useRef(null);
-  const profileRefMobile = useRef(null);
+  const profileRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const overlayRef = useRef(null);
   const navigate = useNavigate();
+
+  // Static main categories (matching Category1.jsx)
+  const mainCategories = [
+    { id: 1, name: "Christmas", slug: "christmas" },
+    { id: 2, name: "Hampers", slug: "hampers" },
+    { id: 3, name: "Corporate", slug: "corporate" },
+    { id: 4, name: "Exclusive at sabblle", slug: "exclusive-at-sabblle" },
+    { id: 5, name: "For Him", slug: "for-him" },
+    { id: 6, name: "For Her", slug: "for-her" },
+    { id: 7, name: "Birthday", slug: "birthday" },
+    { id: 8, name: "Confectionery", slug: "confectionery" },
+  ];
 
   // Memoized cart item count
   const cartItemCount = useMemo(
@@ -74,8 +78,7 @@ const Header = React.memo(() => {
   // Fetch all active categories with localStorage caching
   useEffect(() => {
     const CACHE_KEY = "sablle_categories";
-    // const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
-    const CACHE_EXPIRY = 30 * 1000; // 30 seconds
+    const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
     const fetchData = async () => {
       setIsLoadingCategories(true);
@@ -150,75 +153,6 @@ const Header = React.memo(() => {
     fetchData();
   }, []);
 
-  // Fetch all active tags with localStorage caching
-  useEffect(() => {
-    const CACHE_KEY = "sablle_tags";
-    const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
-
-    const fetchData = async () => {
-      setIsLoadingTags(true);
-      setErrorTags(null);
-
-      // Check cache first
-      const cached = localStorage.getItem(CACHE_KEY);
-      const now = new Date().getTime();
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (now - timestamp < CACHE_EXPIRY) {
-          setTags(data);
-          setIsLoadingTags(false);
-          return;
-        }
-      }
-
-      try {
-        const tagsResponse = await fetch("https://api.sablle.ng/api/tags", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
-
-        if (!tagsResponse.ok) {
-          throw new Error(`Failed to fetch tags: ${tagsResponse.statusText}`);
-        }
-
-        const tagsData = await tagsResponse.json();
-        const tagsArray = Array.isArray(tagsData) ? tagsData : [];
-
-        const formattedTags = tagsArray
-          .filter((item) => item.is_active === true)
-          .map((item) => ({
-            id: item.id,
-            name: item.name,
-            slug: item.slug,
-            categories: item.categories || [],
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name));
-
-        // Cache it
-        localStorage.setItem(
-          CACHE_KEY,
-          JSON.stringify({
-            data: formattedTags,
-            timestamp: now,
-          })
-        );
-
-        setTags(formattedTags);
-      } catch (err) {
-        console.error("Fetch tags error:", err);
-        setErrorTags(err.message);
-        toast.error(`Error loading tags: ${err.message}`, {
-          position: "top-right",
-          autoClose: 5000,
-        });
-      } finally {
-        setIsLoadingTags(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
   // Close profile dropdown when location changes
   useEffect(() => {
     setProfileOpen(false);
@@ -229,31 +163,23 @@ const Header = React.memo(() => {
     setProfileOpen((prev) => !prev);
   }, []);
 
-  // 2. Update useEffect
+  // Close mobile menu and profile dropdown when clicking outside + focus trap
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
         mobileMenuRef.current &&
         !mobileMenuRef.current.contains(event.target) &&
-        overlayRef.current &&
         !overlayRef.current.contains(event.target)
       ) {
         setMobileMenu(false);
         setActiveDropdown(null);
       }
-
-      const isOutsideDesktop =
-        profileRefDesktop.current &&
-        !profileRefDesktop.current.contains(event.target);
-      const isOutsideMobile =
-        profileRefMobile.current &&
-        !profileRefMobile.current.contains(event.target);
-
-      if (isOutsideDesktop && isOutsideMobile) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
         setProfileOpen(false);
       }
     };
 
+    // Focus trap for mobile menu
     const handleKeyDown = (event) => {
       if (mobileMenu && event.key === "Escape") {
         setMobileMenu(false);
@@ -261,16 +187,15 @@ const Header = React.memo(() => {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
-
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [mobileMenu]);
 
-  // Toggle dropdown for specific tag (mobile)
+  // Toggle dropdown for specific main category (mobile)
   const toggleDropdown = useCallback((slug) => {
     setActiveDropdown((prev) => (prev === slug ? null : slug));
   }, []);
@@ -317,7 +242,7 @@ const Header = React.memo(() => {
           {/* Desktop: Phone Left, Logo Center, Icons Right */}
           <div className="hidden md:flex items-center justify-between py-1.5 xs:py-2">
             {/* Left: Phone/Email */}
-            <div className="text-white hidden text-xs xs:text-sm font-semibold flex items-center gap-4">
+            <div className="text-white text-xs xs:text-sm font-semibold flex items-center gap-4">
               <span>+2348187230200</span>
               <span>|</span>
               <span className="underline">info@sablle.ng</span>
@@ -328,7 +253,7 @@ const Header = React.memo(() => {
               <img
                 src={logo}
                 alt="Sablle Logo"
-                className="w-[120px] h-[35px]"
+                className="w-[120px] h-[25px]"
               />
             </Link>
 
@@ -342,11 +267,11 @@ const Header = React.memo(() => {
               </button>
 
               {/* Profile Section */}
-              <div className="relative z-10" ref={profileRefDesktop}>
+              <div className="relative" ref={profileRef}>
                 {auth.isAuthenticated ? (
                   <button
                     onClick={toggleProfileDropdown}
-                    className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors duration-200 relative z-20"
+                    className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors duration-200"
                     aria-label="User Profile"
                     aria-expanded={profileOpen}
                     role="button"
@@ -492,28 +417,15 @@ const Header = React.memo(() => {
               </button>
 
               {/* Profile Section - Mobile */}
-              {/* Profile Section */}
-              <div className="relative z-10" ref={profileRefMobile}>
+              <div className="relative" ref={profileRef}>
                 {auth.isAuthenticated ? (
                   <button
                     onClick={toggleProfileDropdown}
-                    className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors duration-200 relative z-20"
+                    className="text-white hover:text-gray-200 transition-colors duration-200"
                     aria-label="User Profile"
                     aria-expanded={profileOpen}
-                    role="button"
                   >
-                    <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#5F1327] font-semibold text-sm">
-                      {getInitials(auth.user?.name)}
-                    </div>
-                    <span className="text-sm font-medium">
-                      {auth.user?.name || "User"}
-                    </span>
-                    <ChevronDown
-                      size={16}
-                      className={`transition-transform duration-200 ${
-                        profileOpen ? "rotate-180" : ""
-                      }`}
-                    />
+                    <UserCircle size={20} />
                   </button>
                 ) : (
                   <Link
@@ -525,27 +437,11 @@ const Header = React.memo(() => {
                   </Link>
                 )}
                 {auth.isAuthenticated && profileOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-64 bg-white shadow-lg rounded-lg py-2 border border-gray-100 z-50 max-h-[70vh] overflow-y-auto">
-                    {/* User Info Section */}
-                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-[#5F1327] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                        {getInitials(auth.user?.name)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate">
-                          {auth.user?.name || "N/A"}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {auth.user?.email || "N/A"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Menu Items */}
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white shadow-lg rounded-lg py-2 border border-gray-100 z-50">
                     <div className="py-1" role="menu">
                       <Link
                         to="/profile"
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
                         role="menuitem"
                         onClick={() => setProfileOpen(false)}
                       >
@@ -555,7 +451,7 @@ const Header = React.memo(() => {
 
                       <Link
                         to="/orders"
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
                         role="menuitem"
                         onClick={() => setProfileOpen(false)}
                       >
@@ -567,7 +463,7 @@ const Header = React.memo(() => {
 
                       <Link
                         to="/wishlist"
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
+                        className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
                         role="menuitem"
                         onClick={() => setProfileOpen(false)}
                       >
@@ -583,7 +479,7 @@ const Header = React.memo(() => {
                           setProfileOpen(false);
                           setMobileMenu(false);
                         }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors duration-200"
+                        className="flex items-center gap-3 w-full px-4 py-2 text-red-600 hover:bg-red-50 transition-colors duration-200"
                         role="menuitem"
                       >
                         <LogOut size={18} />
@@ -611,7 +507,7 @@ const Header = React.memo(() => {
           </div>
 
           {/* Mobile: Phone/Email Bottom Center Row */}
-          <div className="hidden  justify-center py-2">
+          <div className="md:hidden flex justify-center py-2">
             <div className="text-white text-xs xs:text-sm font-semibold flex items-center gap-4">
               <span>+2348187230200</span>
               <span>|</span>
@@ -652,97 +548,83 @@ const Header = React.memo(() => {
             </button>
           </div>
 
-          {/* Mobile Tags */}
+          {/* Mobile Categories */}
           <div className="space-y-1 pt-4">
-            {isLoadingTags ? (
-              <div className="px-4 py-4">
-                <p className="text-sm text-gray-300">Loading tags...</p>
-              </div>
-            ) : errorTags ? (
-              <div className="px-4 py-4">
-                <p className="text-sm text-red-300">Error loading tags</p>
-              </div>
-            ) : tags.length > 0 ? (
-              tags.map((tag) => {
-                const subs = getTagCategories(tag);
-                return (
-                  <div
-                    key={tag.id}
-                    className="border-t border-[#5F1327]/20 first:border-t-0"
+            {mainCategories.map((main) => {
+              const subs = getSubCategories(main.slug, categories);
+              return (
+                <div
+                  key={main.id}
+                  className="border-t border-[#5F1327]/20 first:border-t-0"
+                >
+                  <button
+                    onClick={() => toggleDropdown(main.slug)}
+                    className="flex items-center justify-between w-full px-4 py-3 hover:bg-[#5F1327]/20 transition-colors duration-200"
+                    aria-expanded={activeDropdown === main.slug}
+                    role="button"
                   >
-                    <button
-                      onClick={() => toggleDropdown(tag.slug)}
-                      className="flex items-center justify-between w-full px-4 py-3 hover:bg-[#5F1327]/20 transition-colors duration-200"
-                      aria-expanded={activeDropdown === tag.slug}
-                      role="button"
-                    >
-                      <span className="text-sm font-medium truncate max-w-[80%] line-clamp-1">
-                        {tag.name}
-                      </span>
-                      <ChevronDown
-                        size={18}
-                        className={`transition-transform duration-200 ${
-                          activeDropdown === tag.slug ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-                    {activeDropdown === tag.slug && (
-                      <div className="bg-[#5F1327]/10 space-y-1 px-4 pb-3 max-h-[50vh] overflow-y-auto">
-                        {/* View All - First, Actionable */}
-                        <Link
-                          to={`/groups/${tag.slug}`}
-                          className="block py-2.5 text-sm font-semibold text-white hover:text-yellow-300 border-b border-[#5F1327]/20 truncate text-center"
-                          onClick={() => {
-                            setMobileMenu(false);
-                            closeAllDropdowns();
-                          }}
-                        >
-                          View All in {tag.name}
-                        </Link>
-
-                        {subs.length > 0 ? (
-                          <div className="space-y-1 pt-2">
-                            {subs.slice(0, 6).map((sub) => (
-                              <Link
-                                key={sub.id}
-                                to={`/categories/${sub.slug}`}
-                                className="block py-2 text-sm text-gray-100 hover:text-white pl-4 border-l-2 border-transparent hover:border-yellow-300 transition-colors truncate"
-                                onClick={() => {
-                                  setMobileMenu(false);
-                                  closeAllDropdowns();
-                                }}
-                              >
-                                Shop {sub.name}
-                              </Link>
-                            ))}
-                            {subs.length > 6 && (
-                              <Link
-                                to={`/groups/${tag.slug}`}
-                                className="block py-2 text-sm text-gray-300 hover:text-white text-center"
-                                onClick={() => {
-                                  setMobileMenu(false);
-                                  closeAllDropdowns();
-                                }}
-                              >
-                                More Categories...
-                              </Link>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="py-2 text-gray-300 text-sm text-center">
-                            No categories yet
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            ) : (
-              <div className="px-4 py-4">
-                <p className="text-sm text-gray-300">No tags available</p>
-              </div>
-            )}
+                    <span className="text-sm font-medium truncate max-w-[80%] line-clamp-1">
+                      {main.name}
+                    </span>
+                    <ChevronDown
+                      size={18}
+                      className={`transition-transform duration-200 ${
+                        activeDropdown === main.slug ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  {activeDropdown === main.slug && (
+                    <div className="bg-[#5F1327]/10 space-y-1 px-4 pb-3 max-h-[50vh] overflow-y-auto">
+                      <Link
+                        to={`/groups/${main.slug}`}
+                        className="block py-2 text-sm font-semibold text-white hover:text-gray-200 border-b border-[#5F1327]/20 truncate"
+                        onClick={() => {
+                          setMobileMenu(false);
+                          closeAllDropdowns();
+                        }}
+                      >
+                        View All {main.name}
+                      </Link>
+                      {isLoadingCategories ? (
+                        // Skeleton Loader
+                        <div className="space-y-2 pt-2">
+                          {[...Array(3)].map((_, i) => (
+                            <div
+                              key={i}
+                              className="h-4 bg-gray-600 rounded animate-pulse"
+                            />
+                          ))}
+                        </div>
+                      ) : errorCategories ? (
+                        <div className="py-2 text-gray-300 text-sm">
+                          Error loading subcategories
+                        </div>
+                      ) : subs.length > 0 ? (
+                        <div className="space-y-1 pt-2">
+                          {subs.map((sub) => (
+                            <Link
+                              key={sub.id}
+                              to={`/categories/${sub.slug}`}
+                              className="block py-1.5 text-sm text-gray-200 hover:text-white pl-4 border-l border-gray-300 truncate line-clamp-1"
+                              onClick={() => {
+                                setMobileMenu(false);
+                                closeAllDropdowns();
+                              }}
+                            >
+                              {sub.name}
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-2 text-gray-300 text-sm">
+                          No subcategories available
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
           {auth.isAuthenticated ? (
             <>
@@ -821,87 +703,75 @@ const Header = React.memo(() => {
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8">
           {/* Desktop Nav - Centered */}
           <div className="hidden md:flex flex-wrap font-medium items-center justify-center gap-6 py-3 md:py-4">
-            {isLoadingTags ? (
-              <div className="space-x-6">
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-4 bg-gray-200 rounded animate-pulse w-20"
-                  />
-                ))}
-              </div>
-            ) : errorTags ? (
-              <div className="text-sm text-red-500">
-                Error loading navigation
-              </div>
-            ) : tags.length > 0 ? (
-              tags.map((tag) => {
-                const subs = getTagCategories(tag);
-                return (
-                  <div
-                    key={tag.id}
-                    className="relative group"
-                    onMouseEnter={() => handleMouseEnter(tag.slug)}
-                    onMouseLeave={handleMouseLeave}
+            {mainCategories.map((main) => {
+              const subs = getSubCategories(main.slug, categories);
+              return (
+                <div
+                  key={main.id}
+                  className="relative group"
+                  onMouseEnter={() => handleMouseEnter(main.slug)}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <Link
+                    to={`/groups/${main.slug}`}
+                    className="flex items-center gap-1 text-gray-700 hover:text-[#5F1327] transition-colors duration-200 whitespace-nowrap"
                   >
-                    <Link
-                      to={`/groups/${tag.slug}`}
-                      className="flex items-center gap-1 text-gray-700 hover:text-[#5F1327] transition-colors duration-200 whitespace-nowrap"
-                    >
-                      {tag.name}
-                      <ChevronDown
-                        size={18}
-                        className={`transition-transform duration-200 ${
-                          activeDropdown === tag.slug ? "rotate-180" : ""
-                        }`}
-                      />
-                    </Link>
-                    {activeDropdown === tag.slug && (
-                      <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-2 w-80 bg-white shadow-lg rounded-lg py-2 border border-gray-100 opacity-100 transition-all duration-300 ease-in-out scale-100 overflow-hidden max-h-[70vh] overflow-y-auto z-50">
-                        {/* View All - First, Actionable Title */}
-                        <Link
-                          to={`/groups/${tag.slug}`}
-                          className="block px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-[#5F1327] hover:text-white transition-colors duration-200 text-center border-b border-gray-100"
-                        >
-                          View All in {tag.name}
-                        </Link>
-
-                        {subs.length > 0 ? (
-                          <div className="space-y-1 py-2">
-                            {/* Rearranged: Top 6 subs (assume sorted by popularity in getTagCategories) */}
-                            {subs.slice(0, 6).map((sub) => (
-                              <Link
-                                key={sub.id}
-                                to={`/categories/${sub.slug}`}
-                                className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200 truncate"
-                              >
-                                Shop {sub.name}
-                              </Link>
-                            ))}
-
-                            {/* If more than 6, add "More..." link */}
-                            {subs.length > 6 && (
-                              <Link
-                                to={`/groups/${tag.slug}`}
-                                className="block px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200 text-center"
-                              >
-                                More Categories...
-                              </Link>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="px-4 py-4 text-gray-500 text-sm text-center">
-                            No categories available yet
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-sm text-gray-500">No tags available</div>
-            )}
+                    {main.name}
+                    <ChevronDown
+                      size={18}
+                      className={`transition-transform duration-200 ${
+                        activeDropdown === main.slug ? "rotate-180" : ""
+                      }`}
+                    />
+                  </Link>
+                  {activeDropdown === main.slug && (
+                    <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-2 w-80 bg-white shadow-lg rounded-lg py-2 border border-gray-100 opacity-100 transition-all duration-300 ease-in-out scale-100 overflow-hidden max-h-[70vh] overflow-y-auto z-50">
+                      {isLoadingCategories ? (
+                        // Skeleton for desktop too
+                        <div className="space-y-2 px-4 pt-2">
+                          {[...Array(3)].map((_, i) => (
+                            <div
+                              key={i}
+                              className="h-4 bg-gray-200 rounded animate-pulse"
+                            />
+                          ))}
+                        </div>
+                      ) : errorCategories ? (
+                        <div className="px-4 py-2 text-red-500 text-sm">
+                          Error loading subcategories
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Link
+                            to={`/groups/${main.slug}`}
+                            className="block px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-[#5F1327] hover:text-white transition-colors duration-200 text-center truncate"
+                          >
+                            View All {main.name}
+                          </Link>
+                          {subs.length > 0 ? (
+                            <div className="space-y-1">
+                              {subs.map((sub) => (
+                                <Link
+                                  key={sub.id}
+                                  to={`/categories/${sub.slug}`}
+                                  className="block px-4 py-1 text-xs text-gray-600 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200 truncate line-clamp-1"
+                                >
+                                  {sub.name}
+                                </Link>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="px-4 py-2 text-gray-500 text-sm text-center">
+                              No subcategories available
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </nav>
@@ -912,3 +782,190 @@ const Header = React.memo(() => {
 Header.displayName = "Header"; // For React DevTools
 
 export default Header;
+
+
+import React, { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { getSubCategories } from "../utils/categoryGroups";
+import Header from "../Components/Header";
+import Footer from "../Components/Footer";
+import Noti from "../Components/Noti";
+
+const GroupedCategoryPage = () => {
+  const { mainSlug } = useParams();
+  const navigate = useNavigate();
+  const [subCategories, setSubCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAllCategories = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        let cachedCategories = localStorage.getItem("categories");
+        let formattedCategories = [];
+
+        if (cachedCategories) {
+          formattedCategories = JSON.parse(cachedCategories);
+        } else {
+          const response = await fetch("https://api.sablle.ng/api/categories", {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          });
+
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch categories: ${response.statusText}`
+            );
+          }
+
+          const data = await response.json();
+          const categoriesArray = Array.isArray(data) ? data : [];
+
+          formattedCategories = categoriesArray
+            .filter((item) => item.is_active === 1)
+            .map((item) => ({
+              id: item.id,
+              name: item.name,
+              slug: item.name
+                .toLowerCase()
+                .replace(/\s+/g, "-")
+                .replace(/[^\w-]/g, ""),
+            }));
+
+          localStorage.setItem(
+            "categories",
+            JSON.stringify(formattedCategories)
+          );
+        }
+
+        const subs = getSubCategories(mainSlug, formattedCategories);
+        setSubCategories(subs);
+
+        if (subs.length > 0) {
+          toast.success(`Loaded ${subs.length} subcategories!`, {
+            position: "top-right",
+            autoClose: 3000,
+          });
+        } else {
+          toast.info("No subcategories found—check back soon!", {
+            position: "top-right",
+            autoClose: 5000,
+          });
+        }
+      } catch (err) {
+        console.error("Fetch categories error:", err);
+        setError(err.message);
+        toast.error(`Error: ${err.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAllCategories();
+  }, [mainSlug]);
+
+  const mainTitle = mainSlug
+    .replace(/-/g, " ")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-gray-600">
+          Loading subcategories...
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <ToastContainer />
+      <Noti />
+      <Header />
+      <section className="py-12 md:py-16 bg-white">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="mb-4 inline-flex items-center text-sm font-medium text-[#5F1327] hover:text-gray-700"
+          >
+            ← Back
+          </button>
+          {/* Title */}
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#5F1327] mb-4">
+              {mainTitle} Collections
+            </h2>
+            <p className="text-gray-600">
+              Discover our curated subcategories below.
+            </p>
+          </div>
+
+          {/* Subcategory Grid */}
+          {error ? (
+            <div className="text-center text-red-500 mb-12">{error}</div>
+          ) : subCategories.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {subCategories.map((sub) => (
+                <Link
+                  key={sub.id}
+                  to={`/categories/${sub.slug}`}
+                  className="group overflow-hidden duration-300 block"
+                >
+                  <div className="h-48 md:h-52 lg:h-56 overflow-hidden rounded-xl flex items-center justify-center bg-[#F4F2F2]">
+                    <img
+                      src="/placeholder-image.jpg"
+                      alt={sub.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                  <div className="p-4 text-center">
+                    <h3 className="text-sm md:text-base font-light text-[#333333] mt-2 hover:text-[#5F1327] transition-colors duration-300">
+                      {sub.name}
+                    </h3>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-gray-600 mb-12">
+              No subcategories available yet.
+            </div>
+          )}
+        </div>
+      </section>
+      <Footer />
+    </div>
+  );
+};
+
+export default GroupedCategoryPage;
+
+// src/utils/categoryGroups.js
+export const GROUP_MAP = {
+  christmas: [45, 96], // CHRISTMAS, Ornaments
+  hampers: [12, 64, 80, 81, 67], // GIFT SETS, Gift box - Marble, Gift Box - Confectioneries, Bottle & Mug Set, Kits
+  corporate: [26, 37, 19, 32, 28, 51, 63, 3, 14, 50], // SERVICES, DELIVERY, ACCESSORIES, Cufflinks, Ties, Wallets, Watches, Candles, Tableware, Kitchenware
+  "exclusive-at-sabblle": [103, 102, 66, 101], // New Testing, FRAGRANCE, SPECIALTY TOOLS, Cameras
+  "for-him": [100, 71, 78, 32, 28, 51, 63, 35, 86, 87, 17, 59, 84], // MENS GROOMING, All Mens Grooming, Mens Perfume, Cufflinks, Ties, Wallets, Watches, Socks, Cufflinks Set, Handkerchiefs, ELECTRONICS, Chargers, Headphones
+  "for-her": [65, 98, 79, 83, 36, 16, 33, 90, 91, 60, 38], // BEAUTY, Jewellery, Purses, Bracelets, Make up Accessories, PERFUMES, Jewellery case, Glasses Case, Glasses, Bags, KIDS (kid gifts for her?)
+  birthday: [1, 7, 48, 68, 69, 25, 40, 41, 15], // GREETING CARDS, GAMES, Toys, Puzzles, Books, Journals & Notebooks, Pens & Pencils, STATIONERY, SOCIAL STATIONARY
+  confectionery: [10, 27, 49, 77, 9, 21, 30, 52, 62, 95, 54, 55, 11, 18, 20, 53, 57, 85, 93, 99, 72, 73, 74, 56, 82, 88, 92, 2, 5, 24] // CONFECTIONARY, Chocolates, Sweets, Truffles, Biscuits, Nuts, Biscuits & Nuts, Honey, Crisps, Popcorn, Coffee, Hot Chocolate, Teas, BEVERAGES, SPIRITS, Rosè Wine, WINE, Red Wine, White Wine, Wine Cases, DRINKS, Bottles, Non Alcoholic, BATH & BODY, Room Sprays, Incense, Car Fragrance, HOME FRAGRANCE, Diffusers, Helium gas
+};
+
+// Helper to get subcategories for a main group
+export const getSubCategories = (mainSlug, allCategories) => {
+  const slug = mainSlug.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+  const subIds = GROUP_MAP[slug] || [];
+  return allCategories.filter(cat => subIds.includes(cat.id));
+};

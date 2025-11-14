@@ -25,6 +25,7 @@ const TaxManagement = lazy(() =>
   import("../Components/Dashboard/TaxManagement")
 );
 const BrandList = lazy(() => import("../Components/Dashboard/BrandList"));
+const Report = lazy(() => import("../Components/Dashboard/Report"));
 const ProductList = lazy(() => import("../Components/Dashboard/ProductList"));
 const ProductReviews = lazy(() =>
   import("../Components/Dashboard/ProductReviews")
@@ -53,7 +54,7 @@ const LoadingSpinner = () => (
 );
 
 const DashboardLayout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -65,9 +66,13 @@ const DashboardLayout = () => {
         {/* Sidebar */}
         <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col">
-          <main className="flex-1 md:ml-64">
+        {/* Main Content */}
+        <div
+          className={`flex-1 flex flex-col transition-all duration-300 ${
+            isSidebarOpen ? "md:ml-64" : "md:ml-16"
+          }`}
+        >
+          <main className="flex-1">
             <Routes>
               <Route
                 path="/"
@@ -186,6 +191,14 @@ const DashboardLayout = () => {
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
                     <Tags />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/report"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <Report />
                   </MainContent>
                 }
               />

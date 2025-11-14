@@ -16,12 +16,13 @@ const ProductList = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedProductIndex, setSelectedProductIndex] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
+  const PRODUCTS_PER_PAGE = 15;
 
-  const fetchProducts = async (page = currentPage) => {
+  const fetchProducts = async () => {
     if (!auth.token) {
       toast.error("Please verify OTP to continue.", { autoClose: 3000 });
       setTimeout(() => navigate("/admin/otp"), 2000);
@@ -30,22 +31,19 @@ const ProductList = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `https://api.sablle.ng/api/products?page=${page}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${auth.token}`,
-          },
-        }
-      );
+      const response = await fetch(`https://api.sablle.ng/api/products`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`,
+        },
+      });
 
       if (response.status === 401) throw new Error("Unauthorized.");
       if (!response.ok) throw new Error(`Failed: ${response.statusText}`);
 
       const data = await response.json();
-      const productsArray = Array.isArray(data.data) ? data.data : [];
+      const productsArray = Array.isArray(data) ? data : [];
 
       const formattedProducts = productsArray.map((item) => ({
         id: item.id || 0,
@@ -58,12 +56,12 @@ const ProductList = () => {
           : "N/A",
       }));
 
-      setProducts(formattedProducts);
-      setTotalPages(data.last_page || 1);
+      setAllProducts(formattedProducts);
+      setTotalPages(1); // Will be recalculated after filtering
     } catch (err) {
       setError(err.message);
       toast.error(`Error: ${err.message}`, { autoClose: 5000 });
-      setProducts([]);
+      setAllProducts([]);
       if (err.message.includes("Unauthorized")) {
         setTimeout(() => navigate("/admin/signin"), 2000);
       }
@@ -73,16 +71,37 @@ const ProductList = () => {
   };
 
   useEffect(() => {
-    fetchProducts(currentPage);
-  }, [currentPage, auth.token]);
+    fetchProducts();
+  }, [auth.token]);
+
+  const filteredProducts = allProducts.filter((product) =>
+    [product.product, product.sku, product.category].some((field) =>
+      field?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+
+  useEffect(() => {
+    const newTotalPages = Math.ceil(
+      filteredProducts.length / PRODUCTS_PER_PAGE
+    );
+    setTotalPages(newTotalPages || 1);
+    if (currentPage > newTotalPages && newTotalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [filteredProducts, currentPage]);
+
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * PRODUCTS_PER_PAGE,
+    currentPage * PRODUCTS_PER_PAGE
+  );
 
   const handleEdit = (index) => {
-    setSelectedProduct(products[index]);
+    setSelectedProduct(paginatedProducts[index]);
     setSelectedProductIndex(index);
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = async (productId, index) => {
+  const handleDelete = async (productId) => {
     if (!window.confirm("Are you sure you want to delete this product?"))
       return;
 
@@ -103,8 +122,7 @@ const ProductList = () => {
       }
 
       toast.success("Product deleted!", { autoClose: 3000 });
-      setProducts((prev) => prev.filter((_, i) => i !== index));
-      fetchProducts(currentPage);
+      fetchProducts();
     } catch (err) {
       toast.error(`Error: ${err.message}`, { autoClose: 5000 });
     }
@@ -128,33 +146,28 @@ const ProductList = () => {
       price: `₦${parseFloat(formData.price || 0).toLocaleString()}`,
     };
     // Show instantly at the top
-    setProducts((prev) => [newProduct, ...prev]);
+    setAllProducts((prev) => [newProduct, ...prev]);
     setIsModalOpen(false);
     toast.success("Product added!", { autoClose: 3000 });
 
-    // Refresh from server (page 1 so new product is on top)
-    setCurrentPage(1);
-    fetchProducts(1);
+    // Refresh from server
+    fetchProducts();
   };
 
-  const handleUpdateProduct = (updatedProduct, index) => {
-    setProducts((prev) =>
-      prev.map((item, i) => (i === index ? updatedProduct : item))
+  const handleUpdateProduct = (updatedProduct) => {
+    setAllProducts((prev) =>
+      prev.map((item) =>
+        item.id === updatedProduct.id ? updatedProduct : item
+      )
     );
     setIsEditModalOpen(false);
     setSelectedProduct(null);
     setSelectedProductIndex(null);
     toast.success("Product updated!", { autoClose: 3000 });
 
-    // Refresh from server (stay on current page)
-    fetchProducts(currentPage);
+    // Refresh from server
+    fetchProducts();
   };
-
-  const filteredProducts = products.filter((product) =>
-    [product.product, product.sku, product.category].some((field) =>
-      field?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  );
 
   const handleNextPage = () => {
     if (currentPage < totalPages) setCurrentPage((prev) => prev + 1);
@@ -244,15 +257,15 @@ const ProductList = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredProducts.map((product, index) => (
+                    {paginatedProducts.map((product, index) => (
                       <tr key={product.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
                           {product.sku}
                         </td>
-                        <td className="px-0 py-4 whitespace-nowrap text-sm font-medium">
+                        <td className="px-0 py-4 text-sm font-medium">
                           <Link
                             to={`/dashboard/product/${product.id}`}
-                            className="text-[#5F1327] hover:text-[#B54F5E] text-[14px] hover:underline max-w-[180px] inline-block break-words whitespace-normal"
+                            className="text-[#5F1327] hover:text-[#B54F5E] text-[14px] hover:underline max-w-[180px] block line-clamp-2 break-words whitespace-normal"
                           >
                             {product.product}
                           </Link>
@@ -302,13 +315,13 @@ const ProductList = () => {
                 </table>
               </div>
 
-              {filteredProducts.length === 0 && (
+              {paginatedProducts.length === 0 && (
                 <div className="px-6 py-12 text-center">
                   <p className="text-sm text-gray-500">No products found.</p>
                 </div>
               )}
 
-              {products.length > 0 && (
+              {filteredProducts.length > 0 && (
                 <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
                   <p className="text-sm text-gray-700">
                     Page {currentPage} of {totalPages}

@@ -21,7 +21,7 @@ const Experince = () => {
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row gap-8 mt-10 justify-center">
             <a
-              href="/shop"
+              href="/product"
               className="bg-[#5F1327] text-white flex space-x-4 items-center px-6 py-3 rounded-full font-light text-sm text-center hover:bg-[#b34f5c] transition-colors duration-200"
             >
               Start Your Gift Journey <ArrowRight className="w-4 h-4 ml-2" />
