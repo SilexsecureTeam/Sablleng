@@ -37,6 +37,9 @@ const TagCategories = lazy(() =>
 const EditSupplierForm = lazy(() =>
   import("../Components/Dashboard/EditSupplierForm")
 );
+const StockInventoryReportDetails = lazy(() =>
+  import("../Components/Dashboard/StockInventoryReportDetails")
+);
 const SupplierList = lazy(() => import("../Components/Dashboard/SupplierList"));
 const Settings = lazy(() => import("../Components/Dashboard/Settings"));
 const AdminRole = lazy(() => import("../Components/Dashboard/AdminRole"));
@@ -199,6 +202,14 @@ const DashboardLayout = () => {
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
                     <Report />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/report/:id"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <StockInventoryReportDetails />
                   </MainContent>
                 }
               />

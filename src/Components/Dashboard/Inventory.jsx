@@ -1,285 +1,243 @@
-import React, { useState, useEffect } from "react";
-import { Search, Settings, Zap, Bell } from "lucide-react";
+import React, { useState } from "react";
+import { ChevronDown, CreditCard } from "lucide-react";
 
-const Inventory = () => {
-  const [activeFilter, setActiveFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+const Dashboard = () => {
+  const [activeTab, setActiveTab] = useState("Sales");
 
-  const inventoryData = [
+  const tabs = ["Sales", "Products", "Customers", "Inventory"];
+
+  const metrics = [
     {
-      product: "Branded Pen",
-      sku: "BP-001",
-      stock: 320,
-      reorderPoint: "< 50",
-      lastRestocked: "2025-08-28",
-      status: "In Stock",
+      label: "Total Sales",
+      value: "20,000,000",
+      change: "+23.5% vs Previous 30 days",
+      positive: true,
     },
     {
-      product: "Corporate Mug",
-      sku: "BP-002",
-      stock: 30,
-      reorderPoint: "< 100",
-      lastRestocked: "2025-08-28",
-      status: "Low Stock",
+      label: "Total Orders",
+      value: "120",
+      change: "8.2% vs vs Previous 30 days",
+      positive: true,
     },
     {
-      product: "USB Drive",
-      sku: "BP-003",
-      stock: 320,
-      reorderPoint: "< 50",
-      lastRestocked: "2025-09-28",
-      status: "In Stock",
-    },
-    {
-      product: "Branded Pen",
-      sku: "BP-004",
-      stock: 320,
-      reorderPoint: "< 50",
-      lastRestocked: "2025-08-28",
-      status: "Low Stock",
-    },
-    {
-      product: "Notebook",
-      sku: "BP-005",
-      stock: 320,
-      reorderPoint: "< 50",
-      lastRestocked: "2025-08-28",
-      status: "In Stock",
-    },
-    {
-      product: "Branded Pen",
-      sku: "BP-006",
-      stock: 320,
-      reorderPoint: "< 50",
-      lastRestocked: "2025-08-28",
-      status: "In Stock",
+      label: "New Customers",
+      value: "100",
+      change: "+65.0% vs Previous 30 days",
+      positive: true,
     },
   ];
 
-  const getFilteredData = () => {
-    let filtered = inventoryData;
+  const products = [
+    { name: "Branded Pen", unitsSold: 80, price: 2500, revenue: 200000 },
+    { name: "Corporate Mug", unitsSold: 80, price: 2500, revenue: 200000 },
+    { name: "Branded Pen", unitsSold: 80, price: 2500, revenue: 200000 },
+  ];
 
-    if (activeFilter === "instock") {
-      filtered = filtered.filter((item) => item.status === "In Stock");
-    } else if (activeFilter === "outofstock") {
-      filtered = filtered.filter((item) => item.status === "Low Stock");
-    }
+  // Chart data points for the line
+  const chartPoints = [
+    { x: 8, y: 85 },
+    { x: 15, y: 82 },
+    { x: 22, y: 80 },
+    { x: 30, y: 78 },
+    { x: 38, y: 83 },
+    { x: 48, y: 75 },
+    { x: 58, y: 72 },
+    { x: 68, y: 70 },
+    { x: 78, y: 68 },
+    { x: 88, y: 65 },
+    { x: 100, y: 55 },
+    { x: 112, y: 48 },
+    { x: 125, y: 42 },
+    { x: 140, y: 35 },
+    { x: 158, y: 25 },
+    { x: 175, y: 15 },
+  ];
 
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (item) =>
-          item.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.sku.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    return filtered;
-  };
-
-  // Pagination logic
-  const filteredData = getFilteredData();
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedData = filteredData.slice(startIndex, endIndex);
-
-  // Reset to page 1 when search or filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, activeFilter]);
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage((prev) => prev + 1);
-    }
-  };
-
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
-    }
-  };
+  const pathData = chartPoints
+    .map((point, i) => `${i === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
 
   return (
-    <div className="min-h-screen bg-[#FAF7F5]">
-      <div className="px-10 pt-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-semibold text-[#1a1a1a] mb-1">
-              Inventory
-            </h1>
-            <p className="text-[13px] text-[#6b7280]">
-              Wednesday, October 6, 2025
-            </p>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Navigation Tabs */}
+        <div className="flex gap-8 border-b border-gray-200 mb-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+                activeTab === tab
+                  ? "text-gray-900"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab}
+              {activeTab === tab && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900" />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Metrics Cards */}
+        <div className="grid grid-cols-3 gap-6 mb-8">
+          {metrics.map((metric, idx) => (
+            <div key={idx} className="bg-white rounded-lg p-6 shadow-sm">
+              <div className="text-sm text-gray-600 mb-2">{metric.label}</div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">
+                {metric.value}
+              </div>
+              <div
+                className={`text-xs ${
+                  metric.positive ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {metric.change}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Chart Section with Payment Card Overlay */}
+        <div className="relative mb-8">
+          <div className="bg-white rounded-lg p-6 shadow-sm">
+            {/* Month Selector */}
+            <div className="flex items-center gap-2 mb-6">
+              <span className="text-sm font-semibold text-gray-900">
+                October
+              </span>
+              <ChevronDown className="w-4 h-4 text-gray-600" />
+            </div>
+
+            {/* Chart */}
+            <div className="relative h-48">
+              {/* Y-axis labels */}
+              <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-gray-400 pr-4">
+                <span>$20k</span>
+                <span>$15k</span>
+                <span>$10k</span>
+                <span>$5k</span>
+                <span>$0</span>
+              </div>
+
+              {/* Chart area */}
+              <div className="ml-12 h-full relative">
+                <svg
+                  className="w-full h-full"
+                  viewBox="0 0 180 100"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d={pathData}
+                    fill="none"
+                    stroke="#1F2937"
+                    strokeWidth="2"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
+
+                {/* X-axis labels */}
+                <div className="absolute -bottom-6 left-0 right-0 flex justify-between text-xs text-gray-400">
+                  <span>First Week</span>
+                  <span>Second Week</span>
+                  <span>Last Week</span>
+                  <span>Third Week</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-[#C3B7B9] text-gray-700 rounded-md hover:bg-[#C3B7B9]/80 cursor-pointer transition-colors text-sm font-medium">
-              <Zap className="w-4 h-4" />
-              Quick Action
+
+          {/* Payment Card Overlay */}
+          <div className="absolute right-6 top-6 bg-gradient-to-br from-[#7C2D3E] to-[#5A1F2E] rounded-xl p-6 w-80 shadow-lg">
+            <div className="text-white mb-4">
+              <div className="text-sm font-medium mb-3">Payment</div>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-pink-400 opacity-80"></div>
+                <div className="w-10 h-10 rounded-full bg-pink-300 opacity-80 -ml-5"></div>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
+                  <span>370+ m2 of Payments</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
+                  <span>370 Static Transfer</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Export Section */}
+        <div className="mb-8">
+          <div className="text-sm font-semibold text-gray-900 mb-2">
+            Export Reports
+          </div>
+          <div className="text-xs text-gray-500 mb-4">
+            Download detailed reports in various formats
+          </div>
+          <div className="flex gap-3">
+            <button className="bg-[#7C2D3E] hover:bg-[#6A2635] text-white text-sm font-medium px-6 py-2.5 rounded-md transition-colors">
+              Export CSV
             </button>
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <Bell className="w-5 h-5 text-gray-600" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <Settings className="w-5 h-5 text-gray-600" />
+            <button className="bg-[#D4B5BB] hover:bg-[#C9A5AC] text-[#7C2D3E] text-sm font-medium px-6 py-2.5 rounded-md transition-colors">
+              Export PDF
             </button>
           </div>
         </div>
 
-        {/* Main Card */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="px-6 py-5">
-            <h2 className="text-lg font-semibold text-gray-900">Inventory</h2>
+        {/* Products Table */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Top Selling Products
+            </h2>
           </div>
-
-          {/* Search Bar */}
-          <div className="relative mb-5">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#9ca3af]" />
-            <input
-              type="text"
-              placeholder="Search by Name or SKU"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-[#e5e7eb] rounded-full text-sm text-[#1f2937] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#7c1d1d]/20 focus:border-[#7c1d1d]"
-            />
-          </div>
-
-          {/* Filter Pills */}
-          <div className="flex gap-2 mb-6">
-            <button
-              onClick={() => setActiveFilter("all")}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeFilter === "all"
-                  ? "bg-[#5F1327] text-white"
-                  : "bg-[#DFDFDF] text-[#4b5563] hover:bg-[#d1d5db]"
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setActiveFilter("instock")}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeFilter === "instock"
-                  ? "bg-[#5F1327] text-white"
-                  : "bg-[#DFDFDF] text-[#4b5563] hover:bg-[#d1d5db]"
-              }`}
-            >
-              Instock
-            </button>
-            <button
-              onClick={() => setActiveFilter("outofstock")}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeFilter === "outofstock"
-                  ? "bg-[#5F1327] text-white"
-                  : "bg-[#DFDFDF] text-[#4b5563] hover:bg-[#d1d5db]"
-              }`}
-            >
-              Out of stock
-            </button>
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#e5e7eb]">
-                  <th className="text-left py-3 px-3 text-[13px] font-medium text-[#4b5563]">
-                    Product
-                  </th>
-                  <th className="text-left py-3 px-3 text-[13px] font-medium text-[#4b5563]">
-                    SKU
-                  </th>
-                  <th className="text-left py-3 px-3 text-[13px] font-medium text-[#4b5563]">
-                    Stock
-                  </th>
-                  <th className="text-left py-3 px-3 text-[13px] font-medium text-[#4b5563]">
-                    Reorder Point
-                  </th>
-                  <th className="text-left py-3 px-3 text-[13px] font-medium text-[#4b5563]">
-                    Last Restocked
-                  </th>
-                  <th className="text-left py-3 px-3 text-[13px] font-medium text-[#4b5563]">
-                    Status
-                  </th>
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600">
+                  Product Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600">
+                  Unit Sold
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600">
+                  Price
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600">
+                  Total Revenue
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product, idx) => (
+                <tr
+                  key={idx}
+                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {product.name}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {product.unitsSold}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {product.price}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {product.revenue.toLocaleString()}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {paginatedData.map((item, index) => (
-                  <tr
-                    key={startIndex + index}
-                    className="border-b border-[#f3f4f6] hover:bg-[#fafafa] transition-colors cursor-pointer"
-                  >
-                    <td className="py-3.5 px-3 text-sm text-[#414245]">
-                      {item.product}
-                    </td>
-                    <td className="py-3.5 px-3 text-sm text-[#414245]">
-                      {item.sku}
-                    </td>
-                    <td className="py-3.5 px-3 text-sm text-[#414245]">
-                      {item.stock}
-                    </td>
-                    <td className="py-3.5 px-3 text-sm text-[#414245]">
-                      {item.reorderPoint}
-                    </td>
-                    <td className="py-3.5 px-3 text-sm text-[#414245]">
-                      {item.lastRestocked}
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <span
-                        className={`text-sm font-medium ${
-                          item.status === "In Stock"
-                            ? "text-[#069E22]"
-                            : "text-[#B81C07]"
-                        }`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination Controls */}
-          {filteredData.length > 0 && (
-            <div className="px-6 py-4 flex items-center justify-between border-t border-[#e5e7eb]">
-              <p className="text-sm text-[#4b5563]">
-                Page {currentPage} of {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                  className={`px-4 py-2 border border-[#e5e7eb] rounded-md text-sm font-medium ${
-                    currentPage === 1
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-white text-[#4b5563] hover:bg-gray-50"
-                  }`}
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                  className={`px-4 py-2 border border-[#e5e7eb] rounded-md text-sm font-medium ${
-                    currentPage === totalPages
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-white text-[#4b5563] hover:bg-gray-50"
-                  }`}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   );
 };
 
-export default Inventory;
+export default Dashboard;

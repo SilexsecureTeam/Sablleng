@@ -97,33 +97,33 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: FileText,
       path: "/dashboard/report",
     },
-    {
-      id: "customization",
-      label: "Customization",
-      icon: Box,
-      path: "/dashboard/customization",
-    },
-    {
-      id: "product-reviews",
-      label: "Product Reviews",
-      icon: Star,
-      path: "/dashboard/product-reviews",
-    },
+    // {
+    //   id: "customization",
+    //   label: "Customization",
+    //   icon: Box,
+    //   path: "/dashboard/customization",
+    // },
+    // {
+    //   id: "product-reviews",
+    //   label: "Product Reviews",
+    //   icon: Star,
+    //   path: "/dashboard/product-reviews",
+    // },
   ];
 
   const bottomItems = [
-    {
-      id: "settings",
-      label: "Settings",
-      icon: Settings,
-      path: "/dashboard/settings",
-    },
-    {
-      id: "admin-role",
-      label: "Admin Role",
-      icon: UserCog,
-      path: "/dashboard/admin-role",
-    },
+    // {
+    //   id: "settings",
+    //   label: "Settings",
+    //   icon: Settings,
+    //   path: "/dashboard/settings",
+    // },
+    // {
+    //   id: "admin-role",
+    //   label: "Admin Role",
+    //   icon: UserCog,
+    //   path: "/dashboard/admin-role",
+    // },
     {
       id: "logout",
       label: "Log Out",
@@ -137,13 +137,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     return item.path ? (
       <Link
         to={item.path}
-        className={`flex items-center gap-3 px-1.5 py-1.5 text-sm font-medium transition-all duration-200 rounded-lg mx-2 ${
+        className={`flex items-center gap-3 px-1.5 py-3 text-sm font-medium transition-all duration-200 rounded-lg mx-2 ${
           isActive
             ? "bg-white text-[#B34949]"
             : "text-white/90 hover:bg-white/10"
         }`}
       >
-        <Icon size={20} />
+        <Icon size={18} />
         {isOpen && <span>{item.label}</span>}
       </Link>
     ) : (
