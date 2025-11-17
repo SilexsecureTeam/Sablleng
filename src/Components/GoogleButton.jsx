@@ -106,7 +106,7 @@ const GoogleButton = () => {
   };
 
   return (
-    <div className="my-8">
+    <div className="my-8 w-[80%] mx-auto">
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-300" />
