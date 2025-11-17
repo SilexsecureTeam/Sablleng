@@ -16,10 +16,10 @@ const StockInventoryReportForm = ({ onSave, onCancel }) => {
     category_id: "",
     brand_id: "",
     supplier_id: "",
-    total_cost: "",
-    total_value: "",
-    margin: "",
-    margin_percentage: "",
+    // total_cost: "",
+    // total_value: "",
+    // margin: "",
+    // margin_percentage: "",
   });
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
@@ -297,8 +297,8 @@ const StockInventoryReportForm = ({ onSave, onCancel }) => {
             />
           </div>
 
-          {/* Total Cost */}
-          <div>
+   
+          {/* <div>
             <label className="block text-sm font-medium text-gray-700">
               Total Cost
             </label>
@@ -314,7 +314,7 @@ const StockInventoryReportForm = ({ onSave, onCancel }) => {
             />
           </div>
 
-          {/* Total Value */}
+
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Total Value
@@ -331,7 +331,7 @@ const StockInventoryReportForm = ({ onSave, onCancel }) => {
             />
           </div>
 
-          {/* Margin */}
+
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Margin
@@ -347,7 +347,7 @@ const StockInventoryReportForm = ({ onSave, onCancel }) => {
             />
           </div>
 
-          {/* Margin Percentage */}
+
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Margin %
@@ -361,7 +361,7 @@ const StockInventoryReportForm = ({ onSave, onCancel }) => {
               }
               className="mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
             />
-          </div>
+          </div> */}
 
           {/* Category */}
           <div>
@@ -414,6 +414,12 @@ const StockInventoryReportForm = ({ onSave, onCancel }) => {
             />
           </div>
         </div>
+
+        <p className="text-sm text-gray-500 col-span-2">
+  Total Cost, Total Value, Margin & Margin % are calculated automatically.
+</p>
+
+
 
         <div className="flex justify-end gap-3 mt-8">
           <button

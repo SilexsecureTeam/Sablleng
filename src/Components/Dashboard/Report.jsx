@@ -33,6 +33,40 @@ const Report = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  // Add this useEffect — it will "fix" any missing names using the IDs
+// FIX: Properly copy names from newly added items to old ones
+useEffect(() => {
+  if (data.length === 0) return;
+
+  // Find any items that HAVE the names (these are the ones we just added)
+  const itemsWithNames = data.filter(item => 
+    item.category_name && item.brand_name && item.supplier_name
+  );
+
+  if (itemsWithNames.length === 0) return;
+
+  setData(prevData =>
+    prevData.map(item => {
+      // If item already has names, leave it
+      if (item.category_name && item.brand_name && item.supplier_name) {
+        return item;
+      }
+
+      // Find a matching item (by ID) that has the correct names
+      const match = itemsWithNames.find(x => x.id === item.id);
+      if (match) {
+        return {
+          ...item,
+          category_name: match.category_name,
+          brand_name: match.brand_name,
+          supplier_name: match.supplier_name,
+        };
+      }
+
+      return item; // no match found, leave as-is
+    })
+  );
+}, [data]);
   const PRODUCTS_PER_PAGE = 15;
 
   const currentMonth = new Date().toLocaleString("en-US", {
@@ -479,19 +513,20 @@ const Report = () => {
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <StockInventoryReportForm
-              onSave={() => {
-                setIsModalOpen(false);
-                window.location.reload();
-              }}
-              onCancel={() => setIsModalOpen(false)}
-            />
-          </div>
-        </div>
-      )}
+     {isModalOpen && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <StockInventoryReportForm
+        onSave={(newItem) => {
+          setData((oldItems) => [newItem, ...oldItems]);
+          setIsModalOpen(false);
+          toast.success("Item added successfully!");
+        }}
+        onCancel={() => setIsModalOpen(false)}
+      />
+    </div>
+  </div>
+)}
     </div>
   );
 };

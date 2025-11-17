@@ -25,7 +25,7 @@ const GoogleButton = () => {
       const res = await fetch("https://api.sablle.ng/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credential }),
+        body: JSON.stringify({ id_token: credential }),
       });
 
       const data = await res.json();
