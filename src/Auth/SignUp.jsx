@@ -5,6 +5,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import auth from "../assets/auth1.png";
 import logo from "../assets/logo.png";
+import GoogleButton from "../Components/GoogleButton";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -333,6 +334,7 @@ const SignUp = () => {
               {isLoading ? "Signing Up..." : "Sign Up"}
             </button>
           </form>
+          <GoogleButton />
         </div>
       </div>
     </div>

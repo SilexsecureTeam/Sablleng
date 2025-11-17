@@ -8,6 +8,7 @@ import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
 import auth from "../assets/auth1.png";
 import logo from "../assets/logo.png";
+import GoogleButton from "../Components/GoogleButton";
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -308,6 +309,7 @@ const SignIn = () => {
               {isLoading ? "Signing In..." : "Sign In"}
             </button>
           </form>
+          <GoogleButton />
         </div>
       </div>
     </div>
