@@ -19,7 +19,7 @@ const CategoryPage = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const productsPerPage = 10;
+  const productsPerPage = 30;
   const { addToWishlist, isInWishlist } = useContext(CartContext);
 
   useEffect(() => {
@@ -241,20 +241,20 @@ const CategoryPage = () => {
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, behavior: "smooth" }); // smoother than scrollTo(0,0)
     }
   };
 
-  const getPageNumbers = () => {
-    const maxPagesToShow = 5;
-    const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-    const pages = [];
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-    return pages;
-  };
+  // const getPageNumbers = () => {
+  //   const maxPagesToShow = 5;
+  //   const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+  //   const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+  //   const pages = [];
+  //   for (let i = startPage; i <= endPage; i++) {
+  //     pages.push(i);
+  //   }
+  //   return pages;
+  // };
 
   return (
     <div>
@@ -295,7 +295,7 @@ const CategoryPage = () => {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {isLoading ? (
               <div className="col-span-full text-center text-gray-600">
                 Loading products...
@@ -367,50 +367,63 @@ const CategoryPage = () => {
           </div>
           {totalPages > 1 && (
             <div className="mt-8 flex flex-col items-center space-y-4">
-              <div className="flex items-center space-x-2">
+              <div className="text-gray-600">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex space-x-2">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                     currentPage === 1
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-gray-100 text-gray-700 hover:bg-[#5F1327] hover:text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                   aria-label="Previous page"
                 >
                   Previous
                 </button>
-                {getPageNumbers().map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                      currentPage === page
-                        ? "bg-[#5F1327] text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-[#5F1327] hover:text-white"
-                    }`}
-                    aria-label={`Page ${page}`}
-                    aria-current={currentPage === page ? "page" : undefined}
-                  >
-                    {page}
-                  </button>
-                ))}
+
+                {[...Array(totalPages).keys()]
+                  .filter((page) =>
+                    totalPages <= 10
+                      ? true
+                      : page + 1 === 1 ||
+                        page + 1 === totalPages ||
+                        (page + 1 >= currentPage - 2 &&
+                          page + 1 <= currentPage + 2)
+                  )
+                  .map((page) => (
+                    <button
+                      key={page + 1}
+                      onClick={() => handlePageChange(page + 1)}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                        currentPage === page + 1
+                          ? "bg-[#5F1327] text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                      aria-label={`Page ${page + 1}`}
+                      aria-current={
+                        currentPage === page + 1 ? "page" : undefined
+                      }
+                    >
+                      {page + 1}
+                    </button>
+                  ))}
+
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
                     currentPage === totalPages
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-gray-100 text-gray-700 hover:bg-[#5F1327] hover:text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                   aria-label="Next page"
                 >
                   Next
                 </button>
               </div>
-              <p className="text-sm text-gray-600">
-                Page {currentPage} of {totalPages}
-              </p>
             </div>
           )}
         </div>

@@ -42,10 +42,10 @@ const Create = () => {
             </h2>
             <Link
               to="/product"
-              onClick={(e) => e.preventDefault()}
+              // onClick={(e) => e.preventDefault()}
               className="hidden md:inline-block mb-10 bg-[#5F1327] text-white px-4 py-2 rounded-full shadow hover:bg-[#b34f5c] transition-colors duration-200"
             >
-              Customize Item
+              Shop Now
             </Link>
 
             {/* Flex: Image + Text */}

@@ -126,13 +126,13 @@ export const CartProvider = ({ children }) => {
           }
           // NEW: Gate toast—only on non-empty or after init (skips "0 items" on reload)
           if (formattedWishlist.length > 0 || isInitialized) {
-            toast.success(
-              `Wishlist loaded with ${formattedWishlist.length} items`,
-              {
-                position: "top-right",
-                autoClose: 3000,
-              }
-            );
+            // toast.success(
+            //   `Wishlist loaded with ${formattedWishlist.length} items`,
+            //   {
+            //     position: "top-right",
+            //     autoClose: 3000,
+            //   }
+            // );
           }
           // NEW: Mark as initialized after first run
           setIsInitialized(true);
@@ -275,10 +275,11 @@ export const CartProvider = ({ children }) => {
       console.log("🛒 Wishlist add response:", data);
 
       if (response.ok) {
-        toast.success(data.message || `${product.name} added to wishlist`, {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        console.log("🛒 Successfully added to wishlist");
+        // toast.success(data.message || `${product.name} added to wishlist`, {
+        //   position: "top-right",
+        //   autoClose: 3000,
+        // });
 
         // FIXED: Store new session_id IMMEDIATELY if provided (for guests)
         if (!auth?.isAuthenticated && data.session_id) {

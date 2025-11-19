@@ -140,32 +140,36 @@ const Contact = () => {
 
           {/* Social Media Links */}
           <div className="flex space-x-3">
-            <a
+            {/* <a
               href="#"
               className="hover:bg-[#D57A86]/70 bg-[#D57A86] hover:text-black text-white p-2 rounded-lg transition-colors duration-200"
             >
               <Linkedin className="w-5 h-5" />
-            </a>
+            </a> */}
             <a
-              href="#"
+              href="https://www.instagram.com/sablleluxury?igsh=aHVvbmFuN2RoNHZ3"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hover:bg-[#D57A86]/70 bg-[#D57A86] hover:text-black text-white p-2 rounded-lg transition-colors duration-200"
             >
               <Instagram className="w-5 h-5" />
             </a>
             <a
-              href="#"
+              href="https://www.facebook.com/profile.php?id=100092503805566"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hover:bg-[#D57A86]/70 bg-[#D57A86] hover:text-black text-white p-2 rounded-lg transition-colors duration-200"
             >
               <Facebook className="w-5 h-5" />
             </a>
-            <a
+            {/* <a
               href="#"
               className="hover:bg-[#D57A86]/70 bg-[#D57A86] hover:text-black text-white p-2 rounded-lg transition-colors duration-200"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
               </svg>
-            </a>
+            </a> */}
           </div>
         </div>
       </div>

@@ -317,7 +317,7 @@ const Header = React.memo(() => {
           {/* Desktop: Phone Left, Logo Center, Icons Right */}
           <div className="hidden md:flex items-center justify-between py-1.5 xs:py-2">
             {/* Left: Phone/Email */}
-            <div className="text-white hidden text-xs xs:text-sm font-semibold flex items-center gap-4">
+            <div className="text-white hidden text-xs xs:text-sm font-semibold fle items-center gap-4">
               <span>+2348187230200</span>
               <span>|</span>
               <span className="underline">info@sablle.ng</span>
@@ -335,7 +335,7 @@ const Header = React.memo(() => {
             {/* Right: Icons */}
             <div className="flex items-center gap-3 md:gap-4 flex-shrink-0">
               <button
-                className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200"
+                className="text-white hidden cursor-pointer hover:text-gray-200 transition-colors duration-200"
                 aria-label="Search"
               >
                 <Search size={20} />
@@ -485,7 +485,7 @@ const Header = React.memo(() => {
             {/* Right: Icons */}
             <div className="flex items-center gap-3 flex-shrink-0">
               <button
-                className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200"
+                className="text-white hidden cursor-pointer hover:text-gray-200 transition-colors duration-200"
                 aria-label="Search"
               >
                 <Search size={20} />

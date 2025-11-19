@@ -15,7 +15,7 @@ const Hero = () => {
       setCurrentImageIndex((prevIndex) =>
         prevIndex === images.length - 1 ? 0 : prevIndex + 1
       );
-    }, 5000); // Change image every 5 seconds
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [images.length]);

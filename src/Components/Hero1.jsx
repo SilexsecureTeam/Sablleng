@@ -27,7 +27,7 @@ export default function Hero1() {
           return prev + direction;
         }
       });
-    }, 3000); // slide interval time in ms
+    }, 9000); // slide interval time in ms
 
     return () => clearInterval(interval);
   }, [direction, totalSlides]);

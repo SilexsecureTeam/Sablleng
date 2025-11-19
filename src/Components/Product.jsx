@@ -8,7 +8,7 @@ import { CartContext } from "../context/CartContextObject";
 const Product = () => {
   const [filter, setFilter] = useState("All");
   const [allProducts, setAllProducts] = useState([]);
-  const [allCustomProducts, setAllCustomProducts] = useState([]);
+  // const [allCustomProducts, setAllCustomProducts] = useState([]); // ← Commented out
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -21,65 +21,40 @@ const Product = () => {
       setError(null);
 
       try {
-        const [allResponse, customResponse] = await Promise.all([
-          fetch(`https://api.sablle.ng/api/products`, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-          }),
-          fetch("https://api.sablle.ng/api/product/customized"),
-        ]);
+        const allResponse = await fetch(`https://api.sablle.ng/api/products`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
 
         if (!allResponse.ok) {
           throw new Error(
             `Failed to fetch products: ${allResponse.statusText}`
           );
         }
-        if (!customResponse.ok) {
-          throw new Error(`Failed to fetch customized products`);
-        }
 
         const allData = await allResponse.json();
-        const customData = await customResponse.json();
-
         const productsArray = Array.isArray(allData) ? allData : [];
-        const customProductsArray = Array.isArray(customData.products)
-          ? customData.products
-          : [];
 
         const formattedAllProducts = productsArray.map((item) => ({
           id: item.id,
-          name: item.name || "",
-          price: item.sale_price_inc_tax
-            ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-            : "Price Unavailable",
-          category: item.category?.name,
+          name: item.name || "Unnamed Product",
+          price:
+            item.sale_price_inc_tax && parseFloat(item.sale_price_inc_tax) > 0
+              ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+              : item.customize
+              ? "Custom Quote"
+              : "Price Unavailable",
+          category: item.category?.name || "Uncategorized",
           badge: item.customize ? "Customizable" : null,
           image:
             item.images?.[0]?.url ||
             (item.images?.[0]?.path
               ? `https://api.sablle.ng/storage/${item.images[0].path}`
               : "/placeholder-image.jpg"),
-          customize: item.customize,
-        }));
-
-        const formattedCustomProducts = customProductsArray.map((item) => ({
-          id: item.id,
-          name: item.name || "",
-          price: item.price
-            ? `₦${parseFloat(item.price).toLocaleString()}`
-            : "₦0",
-          category: item.category || "Customized",
-          badge: "Customizable",
-          image:
-            item.images?.[0]?.url ||
-            (item.images?.[0]?.path
-              ? `https://api.sablle.ng/storage/${item.images[0].path}`
-              : "/placeholder-image.jpg"),
-          customize: true,
+          customize: !!item.customize, // ensure boolean
         }));
 
         setAllProducts(formattedAllProducts);
-        setAllCustomProducts(formattedCustomProducts);
 
         toast.success("Products loaded!", {
           position: "top-right",
@@ -93,26 +68,23 @@ const Product = () => {
           autoClose: 5000,
         });
         setAllProducts([]);
-        setAllCustomProducts([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAllData();
-  }, []); // Run once on mount
+  }, []);
 
-  // Client-side filtering for All / Non-Customizable
-  const filteredProducts =
-    filter === "Customizable"
-      ? allCustomProducts
-      : allProducts.filter((product) => {
-          if (filter === "All") return true;
-          if (filter === "Non-Customizable") return product.customize === false;
-          return true;
-        });
+  // Unified filtering using only allProducts + customize flag
+  const filteredProducts = allProducts.filter((product) => {
+    if (filter === "All") return true;
+    if (filter === "Customizable") return product.customize === true;
+    if (filter === "Non-Customizable") return product.customize === false;
+    return true;
+  });
 
-  // Client-side pagination slice
+  // Pagination
   const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
   const paginatedProducts = filteredProducts.slice(
     startIndex,
@@ -122,13 +94,13 @@ const Product = () => {
     Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE) || 1;
 
   useEffect(() => {
-    setCurrentPage(1); // Reset to page 1 when filteredProducts change
+    setCurrentPage(1);
   }, [filteredProducts.length]);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= displayTotalPages) {
       setCurrentPage(page);
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -136,6 +108,7 @@ const Product = () => {
     <div className="py-12 md:py-16">
       <ToastContainer />
       <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 mx-auto">
+        {/* Filter Buttons */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Filter Products
@@ -144,17 +117,12 @@ const Product = () => {
             {["All", "Customizable", "Non-Customizable"].map((option) => (
               <button
                 key={option}
-                onClick={() => {
-                  setFilter(option);
-                  setCurrentPage(1); // Reset to page 1 on filter change
-                }}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                onClick={() => setFilter(option)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                   filter === option
                     ? "bg-[#5F1327] text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
-                aria-label={`Filter by ${option} products`}
-                aria-pressed={filter === option}
               >
                 {option}
               </button>
@@ -162,27 +130,28 @@ const Product = () => {
           </div>
         </div>
 
+        {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {isLoading ? (
-            <div className="col-span-full text-center text-gray-600">
-              Loading products...
+            <div className="col-span-full text-center py-12">
+              <div className="text-gray-600">Loading products...</div>
             </div>
           ) : error ? (
-            <div className="col-span-full text-center text-red-500">
+            <div className="col-span-full text-center text-red-500 py-12">
               {error}
             </div>
           ) : paginatedProducts.length > 0 ? (
             paginatedProducts.map((product) => (
               <div
                 key={product.id}
-                className="bg-white overflow-hidden block hover:shadow-lg transition-shadow duration-200 animate-fade-in"
+                className="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300"
               >
                 <Link to={`/product/${product.id}`} className="block relative">
                   <div className="relative bg-[#F4F2F2] p-4 h-48 md:h-80 flex items-center justify-center">
                     {product.badge && (
-                      <div className="absolute top-6 left-0 bg-[#5F1327] text-white px-8 py-2 rounded text-sm font-medium">
+                      <span className="absolute top-6 left-0 bg-[#5F1327] text-white px-6 py-1.5 rounded-r-full text-xs font-medium">
                         {product.badge}
-                      </div>
+                      </span>
                     )}
                     <img
                       src={product.image}
@@ -191,16 +160,17 @@ const Product = () => {
                     />
                   </div>
                 </Link>
+
                 <div className="p-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex justify-between items-start mb-2">
                     <Link to={`/product/${product.id}`}>
-                      <h3 className="font-medium line-clamp-2 text-gray-900 text-sm">
+                      <h3 className="font-medium text-gray-900 text-sm line-clamp-2">
                         {product.name}
                       </h3>
                     </Link>
                     <button
                       onClick={() => addToWishlist(product)}
-                      className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+                      className="p-2 rounded-full hover:bg-gray-100"
                       aria-label={
                         isInWishlist(product.id)
                           ? "Remove from wishlist"
@@ -217,77 +187,72 @@ const Product = () => {
                       />
                     </button>
                   </div>
-                  <span className="text-lg font-semibold text-gray-900">
+
+                  <p className="text-lg font-semibold text-gray-900">
                     {product.price}
-                  </span>
-                  <div className="flex items-center justify-between">
-                    <span className="text-base font-bold text-[#5F1327] py-1 rounded">
-                      {product.category}
-                    </span>
-                  </div>
+                  </p>
+
+                  <p className="text-sm font-bold text-[#5F1327] mt-2">
+                    {product.category}
+                  </p>
                 </div>
               </div>
             ))
           ) : (
-            <div className="col-span-full text-center text-gray-600">
-              No products available.
+            <div className="col-span-full text-center py-12 text-gray-600">
+              No products found.
             </div>
           )}
         </div>
 
+        {/* Pagination */}
         {displayTotalPages > 1 && (
-          <div className="mt-8 flex flex-col items-center space-y-4">
-            <div className="text-gray-600">
-              Page {currentPage} of {displayTotalPages}
-            </div>
-            <div className="flex space-x-2">
+          <div className="mt-12 flex justify-center">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                  currentPage === 1
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-                aria-label="Previous page"
+                className="px-4 py-2 rounded bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
 
-              {[...Array(displayTotalPages).keys()]
-                .filter((page) =>
-                  displayTotalPages <= 10
-                    ? true
-                    : page + 1 === 1 ||
-                      page + 1 === displayTotalPages ||
-                      (page + 1 >= currentPage - 2 &&
-                        page + 1 <= currentPage + 2)
-                )
-                .map((page) => (
-                  <button
-                    key={page + 1}
-                    onClick={() => handlePageChange(page + 1)}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                      currentPage === page + 1
-                        ? "bg-[#5F1327] text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                    aria-label={`Page ${page + 1}`}
-                    aria-current={currentPage === page + 1 ? "page" : undefined}
-                  >
-                    {page + 1}
-                  </button>
-                ))}
+              {[...Array(displayTotalPages)].map((_, i) => {
+                const page = i + 1;
+                if (
+                  displayTotalPages <= 7 ||
+                  page === 1 ||
+                  page === displayTotalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`px-4 py-2 rounded ${
+                        currentPage === page
+                          ? "bg-[#5F1327] text-white"
+                          : "bg-gray-100"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+                if (
+                  (page === 2 && currentPage > 3) ||
+                  (page === displayTotalPages - 1 &&
+                    currentPage < displayTotalPages - 2)
+                ) {
+                  return <span key={page}>...</span>;
+                }
+                return null;
+              })}
 
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === displayTotalPages}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                  currentPage === displayTotalPages
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-                aria-label="Next page"
+                className="px-4 py-2 rounded bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
