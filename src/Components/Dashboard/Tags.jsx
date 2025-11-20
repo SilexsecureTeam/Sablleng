@@ -8,6 +8,8 @@ import {
   Trash2,
   Search,
   Eye,
+  Upload,
+  Image as ImageIcon,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -27,6 +29,8 @@ const Tags = () => {
   const [addFormData, setAddFormData] = useState({
     name: "",
     is_active: true,
+    image: null,
+    imagePreview: null,
   });
   const [isAdding, setIsAdding] = useState(false);
 
@@ -35,6 +39,8 @@ const Tags = () => {
   const [editFormData, setEditFormData] = useState({
     name: "",
     is_active: true,
+    image: null,
+    imagePreview: null,
   });
   const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -73,13 +79,13 @@ const Tags = () => {
         );
       }
 
-      // Format with category names
       const formattedTags = tagsArray.map((tag) => ({
         id: tag.id,
         name: tag.name,
         is_active: tag.is_active,
         status: tag.is_active ? "Active" : "Inactive",
         categoryNames: tag.categories?.map((c) => c.name).join(", ") || "None",
+        image_url: tag.image_url || null,
       }));
 
       setTags(formattedTags);
@@ -99,6 +105,39 @@ const Tags = () => {
     fetchTags(searchQuery);
   }, [auth.token, navigate, searchQuery]);
 
+  // Handle image change (shared for add & edit)
+  const handleImageChange = (e, setForm) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setForm((prev) => ({
+        ...prev,
+        image: file,
+        imagePreview: reader.result,
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = (setForm) => {
+    setForm((prev) => ({
+      ...prev,
+      image: null,
+      imagePreview: null,
+    }));
+  };
+
   // Add Tag
   const handleAddSubmit = async (e) => {
     e.preventDefault();
@@ -111,6 +150,9 @@ const Tags = () => {
     const submitData = new FormData();
     submitData.append("name", addFormData.name);
     submitData.append("is_active", addFormData.is_active ? "1" : "0");
+    if (addFormData.image) {
+      submitData.append("image", addFormData.image);
+    }
 
     try {
       const response = await fetch("https://api.sablle.ng/api/tags", {
@@ -126,7 +168,12 @@ const Tags = () => {
 
       toast.success("Tag added!", { autoClose: 3000 });
       setIsAddModalOpen(false);
-      setAddFormData({ name: "", is_active: true });
+      setAddFormData({
+        name: "",
+        is_active: true,
+        image: null,
+        imagePreview: null,
+      });
       fetchTags(searchQuery);
     } catch (err) {
       toast.error(`Error: ${err.message}`, { autoClose: 5000 });
@@ -136,13 +183,14 @@ const Tags = () => {
   };
 
   // Edit Tag
-  const handleEdit = async (tag) => {
+  const handleEdit = (tag) => {
     setEditingId(tag.id);
     setEditFormData({
       name: tag.name,
       is_active: tag.status === "Active",
+      image: null,
+      imagePreview: tag.image_url || null,
     });
-
     setIsEditModalOpen(true);
   };
 
@@ -154,6 +202,9 @@ const Tags = () => {
     submitData.append("_method", "PATCH");
     submitData.append("name", editFormData.name);
     submitData.append("is_active", editFormData.is_active ? "1" : "0");
+    if (editFormData.image) {
+      submitData.append("image", editFormData.image);
+    }
 
     try {
       const response = await fetch(
@@ -241,7 +292,7 @@ const Tags = () => {
           </div>
         </div>
 
-        {/* Loading / Error / Empty */}
+        {/* Tags Grid */}
         {isLoading ? (
           <div className="text-center py-12">
             <p className="text-sm text-gray-500">Loading tags...</p>
@@ -259,8 +310,31 @@ const Tags = () => {
             {tags.map((tag) => (
               <div
                 key={tag.id}
-                className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow relative bg-white"
+                className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow relative bg-white flex items-start gap-4"
               >
+                {/* Tag Image */}
+                <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border">
+                  {tag.image_url ? (
+                    <img
+                      src={tag.image_url}
+                      alt={tag.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Tag Info */}
+                <div className="flex-1">
+                  <h2 className="text-base font-semibold text-[#141718] mb-1">
+                    {tag.name}
+                  </h2>
+                </div>
+
+                {/* Status & Actions */}
                 <div className="absolute top-4 right-4 space-y-1">
                   <span
                     className={`px-3 py-1 text-xs font-medium rounded block ${
@@ -296,15 +370,6 @@ const Tags = () => {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                </div>
-
-                <div className="pr-20">
-                  <h2 className="text-base font-semibold text-[#141718] mb-1">
-                    {tag.name}
-                  </h2>
-                  {/* <p className="text-sm text-[#6C7275] mb-2">
-                    {tag.categoryNames}
-                  </p> */}
                 </div>
               </div>
             ))}
@@ -342,9 +407,50 @@ const Tags = () => {
                     }))
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
-                  placeholder="e.g. Sale"
+                  placeholder="e.g. Christmas"
                   required
                 />
+              </div>
+
+              {/* Image Upload */}
+              <div>
+                <label className="block text-sm font-medium text-[#414245] mb-2">
+                  Tag Image <span className="text-gray-500">(Optional)</span>
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+                    {addFormData.imagePreview ? (
+                      <img
+                        src={addFormData.imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ImageIcon className="w-10 h-10 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">
+                      <Upload className="w-4 h-4" />
+                      Choose Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageChange(e, setAddFormData)}
+                        className="hidden"
+                      />
+                    </label>
+                    {addFormData.imagePreview && (
+                      <button
+                        type="button"
+                        onClick={() => removeImage(setAddFormData)}
+                        className="mt-2 text-xs text-red-600 hover:text-red-800"
+                      >
+                        Remove Image
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center">
@@ -416,6 +522,47 @@ const Tags = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
                   required
                 />
+              </div>
+
+              {/* Image Upload */}
+              <div>
+                <label className="block text-sm font-medium text-[#414245] mb-2">
+                  Tag Image
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+                    {editFormData.imagePreview ? (
+                      <img
+                        src={editFormData.imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ImageIcon className="w-10 h-10 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">
+                      <Upload className="w-4 h-4" />
+                      Change Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageChange(e, setEditFormData)}
+                        className="hidden"
+                      />
+                    </label>
+                    {editFormData.imagePreview && (
+                      <button
+                        type="button"
+                        onClick={() => removeImage(setEditFormData)}
+                        className="mt-2 block text-xs text-red-600 hover:text-red-800"
+                      >
+                        Remove Image
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center">

@@ -1,31 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
-// Keep your placeholder images (we'll map them manually for now)
-import cat1 from "../assets/cat1.png";
-import cat2 from "../assets/cat2.png";
-import cat3 from "../assets/cat3.png";
-import cat4 from "../assets/cat4.png";
-import cat5 from "../assets/cat5.png";
-import cat6 from "../assets/cat6.png";
-import cat7 from "../assets/cat7.png";
-import cat8 from "../assets/cat8.png";
-
-// Manual mapping: tag.slug → image (temporary until API supports images)
-const tagImageMap = {
-  christmas: cat1,
-  hampers: cat2,
-  corporate: cat3,
-  "exclusive-at-sabblle": cat4,
-  "for-him": cat5,
-  "for-her": cat6,
-  birthday: cat7,
-  confectionery: cat8,
-  // Add more as needed, fallback below
-};
-
-const fallbackImage = cat1; // or a default one
-
 export default function Category1() {
   const [tags, setTags] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,8 +37,8 @@ export default function Category1() {
           throw new Error(`Failed to fetch tags: ${response.statusText}`);
         }
 
-        const tagsData = await response.json();
-        const tagsArray = Array.isArray(tagsData) ? tagsData : [];
+        const result = await response.json();
+        const tagsArray = Array.isArray(result.data) ? result.data : result;
 
         const activeTags = tagsArray
           .filter((tag) => tag.is_active === true)
@@ -71,10 +46,11 @@ export default function Category1() {
             id: tag.id,
             name: tag.name,
             slug: tag.slug,
+            image_url: tag.image_url, // Use real API image
           }))
-          .sort((a, b) => a.name.localeCompare(b.name)); // optional: sort alphabetically
+          .sort((a, b) => a.name.localeCompare(b.name));
 
-        // Cache it
+        // Cache the processed data
         localStorage.setItem(
           CACHE_KEY,
           JSON.stringify({ data: activeTags, timestamp: now })
@@ -91,11 +67,6 @@ export default function Category1() {
 
     fetchTags();
   }, []);
-
-  // Helper to get image
-  const getTagImage = (slug) => {
-    return tagImageMap[slug] || fallbackImage;
-  };
 
   return (
     <section className="py-12 md:py-16 bg-white">
@@ -135,11 +106,14 @@ export default function Category1() {
                 to={`/groups/${tag.slug}`}
                 className="group overflow-hidden duration-300 block"
               >
-                <div className="h-48 md:h-52 lg:h-56 overflow-hidden">
+                <div className="h-48 md:h-52 lg:h-56 overflow-hidden rounded-xl bg-gray-50">
                   <img
-                    src={getTagImage(tag.slug)}
+                    src={tag.image_url}
                     alt={tag.name}
-                    className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    // onError={(e) => {
+                    //   e.target.src = FALLBACK_IMAGE;
+                    // }}
                   />
                 </div>
                 <div className="p-4 text-center">
