@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContextObject";
 import { AuthContext } from "../context/AuthContextObject";
 import { toast, ToastContainer } from "react-toastify";
@@ -10,7 +10,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const { addItem } = useContext(CartContext);
   const { auth } = useContext(AuthContext);
-
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +26,15 @@ const ProductDetail = () => {
     image: null,
   });
   const sliderRef = useRef(null);
+
+  const colorStyle = (value) => ({
+    backgroundColor: value,
+  });
+
+  // const capitalizeFirstLetter = (str) => {
+  //   if (!str) return "";
+  //   return str.charAt(0).toUpperCase() + str.slice(1);
+  // };
 
   // Define thumbnails using actual product images (up to 4, cycle bg colors if fewer)
   const bgColors = [
@@ -97,7 +106,9 @@ const ProductDetail = () => {
           customize: data.customize,
           sizes: data.size || null, // Keep as-is for now
           brand: data.brand?.name || "no brand", // From API brand
-          colours: data.colours || [], // From API colours
+          supplier: data.supplier?.name || "no supplier", // From API supplier
+          colours: data.colour || [], // From API colours
+          description: data.description || "", // From API description
         };
 
         setProduct(formattedProduct);
@@ -196,13 +207,13 @@ const ProductDetail = () => {
     setIsCustomizing(true);
   };
 
-  const handleOrderNow = () => {
-    toast.info("Order now feature coming soon!", {
-      position: "top-right",
-      autoClose: 3000,
-    });
-    console.log("Order Now clicked for", product?.name);
-  };
+  // const handleOrderNow = () => {
+  //   toast.info("Order now feature coming soon!", {
+  //     position: "top-right",
+  //     autoClose: 3000,
+  //   });
+  //   console.log("Order Now clicked for", product?.name);
+  // };
 
   const handleAddToCart = async () => {
     if (!product) {
@@ -243,6 +254,53 @@ const ProductDetail = () => {
         position: "top-right",
         autoClose: 5000,
       });
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!product) {
+      toast.error("Product not available");
+      return;
+    }
+
+    setIsAddingToCart(true);
+
+    try {
+      const price = product.rawPrice;
+
+      if (!price || price <= 0) {
+        toast.error("Invalid product price");
+        return;
+      }
+
+      // Add item to cart (same as normal add)
+      await addItem({
+        id: product.id,
+        name: product.name,
+        model: product.model,
+        price: price,
+        image: selectedThumbnail.image || product.image,
+        quantity: quantity,
+        color: selectedColor,
+        size: selectedSize,
+        customized: false,
+      });
+
+      // Success toast
+      toast.success(`1 item added! Taking you to checkout...`, {
+        position: "top-right",
+        autoClose: 2000,
+      });
+
+      // Redirect straight to delivery (skip cart page)
+      setTimeout(() => {
+        navigate("/delivery");
+      }, 800);
+    } catch (error) {
+      console.error("Buy Now failed:", error);
+      toast.error("Failed to process. Please try again.");
     } finally {
       setIsAddingToCart(false);
     }
@@ -322,40 +380,42 @@ const ProductDetail = () => {
                   ))}
                 </div>
               </div>
-              <div className="space-y-6">
+              <div className="space-y-3">
                 <h1 className="text-2xl font-semibold text-gray-900">
                   {product.name}
                 </h1>
-                <p className="text-gray-600 leading-relaxed">
-                  {product.badge
-                    ? `Customizable product: ${
-                        product.name
-                      }. Perfect for ${product.category.toLowerCase()}. Model: ${
-                        product.model
-                      }.`
-                    : `Explore the ${product.name}, a premium product in the ${product.category} category. Model: ${product.model}.`}
+                <p className="text-gray-600 text-xl leading-relaxed">
+                  {product.description
+                    ? product.description.charAt(0).toUpperCase() +
+                      product.description.slice(1).toLowerCase()
+                    : ""}
                 </p>
+
                 <div className="space-y-3">
                   <div className="flex">
                     <span className="text-gray-500 w-24">Color:</span>
                     <span className="text-gray-900">{selectedColor}</span>
                   </div>
-                  <div className="flex">
+                  {/* <div className="flex">
                     <span className="text-gray-500 w-24">Size:</span>
                     <span className="text-gray-900">
                       {product.sizes
-                        ? product.sizes[0] || "no size"
+                        ? product.sizes.join(", ") || "no size"
                         : "no size"}
                     </span>
-                  </div>
+                  </div> */}
                   <div className="flex">
                     <span className="text-gray-500 w-24">Brand:</span>
                     <span className="text-gray-900">{product.brand}</span>
                   </div>
                   <div className="flex">
+                    <span className="text-gray-500 w-24">Suppliers:</span>
+                    <span className="text-gray-900">{product.supplier}</span>
+                  </div>
+                  {/* <div className="flex">
                     <span className="text-gray-500 w-24">Material:</span>
                     <span className="text-gray-900">Premium</span>
-                  </div>
+                  </div> */}
                   <div className="flex">
                     <span className="text-gray-500 w-24">Category:</span>
                     <span className="text-gray-900">{product.category}</span>
@@ -369,35 +429,31 @@ const ProductDetail = () => {
                   <label className="text-gray-900 font-medium">
                     Select color:
                   </label>
+
                   <div className="flex space-x-3">
-                    {product.colours?.map((col) => {
-                      // Map API color names to Tailwind bg classes (add more mappings as needed)
-                      const colorMap = {
-                        green: "bg-green-500",
-                        yellow: "bg-yellow-400",
-                        white: "bg-white border",
-                        gray: "bg-gray-400",
-                        // Add defaults or more colors
-                      };
-                      const colorClass = colorMap[col.value] || "bg-gray-300";
-                      return (
-                        <button
-                          key={col.id}
-                          onClick={() => setSelectedColor(col.value)}
-                          className={`w-6 h-6 rounded-full border-2 ${colorClass} ${
-                            selectedColor === col.value
-                              ? "border-gray-800"
-                              : "border-gray-300"
-                          }`}
-                        />
-                      );
-                    }) || (
+                    {product.colours?.length > 0 ? (
+                      product.colours.map((col) => {
+                        return (
+                          <button
+                            key={col.id}
+                            onClick={() => setSelectedColor(col.value)}
+                            style={colorStyle(col.value)}
+                            className={`w-6 h-6 rounded-full border-2 ${
+                              selectedColor === col.value
+                                ? "border-gray-800"
+                                : "border-gray-300"
+                            }`}
+                          />
+                        );
+                      })
+                    ) : (
                       <span className="text-gray-500 text-sm">
                         No colors available
                       </span>
                     )}
                   </div>
                 </div>
+
                 {product.sizes && product.sizes.length > 0 && (
                   <div className="space-x-3 flex items-center">
                     <label className="text-gray-900 font-medium">
@@ -493,11 +549,11 @@ const ProductDetail = () => {
                     </button>
                   ) : (
                     <button
-                      className="bg-[#5F1327] hidden hover:bg-[#5F1327]/70 text-white font-medium py-3 px-8 rounded-lg transition-colors"
-                      onClick={handleOrderNow}
-                      disabled={isAddingToCart}
+                      className="flex-1 bg-[#5F1327] hover:bg-[#5F1327]/90 text-white font-bold py-3 px-8 rounded-lg transition-colors shadow-lg"
+                      onClick={handleBuyNow}
+                      disabled={isAddingToCart || !product.rawPrice}
                     >
-                      Order Now
+                      {isAddingToCart ? "Processing..." : "Buy Now"}
                     </button>
                   )}
                 </div>

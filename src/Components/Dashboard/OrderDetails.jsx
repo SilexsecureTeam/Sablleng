@@ -201,7 +201,7 @@ const OrderDetails = () => {
           Back to Orders
         </button>
         <h1 className="text-2xl font-semibold text-[#141718]">
-          Order Details - #{order?.id || reference}
+          Order Details - #{order?.id?.slice(0, 7) || reference}
         </h1>
       </div>
 

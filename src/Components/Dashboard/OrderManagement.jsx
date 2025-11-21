@@ -268,7 +268,7 @@ const OrderManagement = () => {
                       className="hover:bg-gray-50 text-[#414245]"
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {order.id}
+                        {order?.id?.slice(0, 7)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {order.customer}

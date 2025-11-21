@@ -272,7 +272,9 @@ const DashboardHome = () => {
                       key={idx}
                       className="border-b border-gray-100 last:border-0"
                     >
-                      <td className="py-3 px-4 text-sm ">{order.orderId}</td>
+                      <td className="py-3 px-4 text-sm ">
+                        {order?.orderId?.slice(0, 7)}
+                      </td>
                       <td className="py-3 px-4 text-sm ">{order.customer}</td>
                       <td className="py-3 px-4 text-sm ">{order.total}</td>
                       <td className="py-3 px-4">

@@ -225,7 +225,7 @@ const Orders = () => {
                       {getStatusIcon(order.status)}
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">
-                          {order.order_reference}
+                          {order?.order_reference?.slice(0, 7)}
                         </h3>
                         <p className="text-sm text-gray-600">
                           Ordered on{" "}

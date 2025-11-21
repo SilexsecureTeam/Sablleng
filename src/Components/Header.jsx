@@ -875,7 +875,7 @@ const Header = React.memo(() => {
                                 to={`/categories/${sub.slug}`}
                                 className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200 truncate"
                               >
-                                Shop {sub.name}
+                                Shop {sub.name.toUpperCase()}
                               </Link>
                             ))}
 

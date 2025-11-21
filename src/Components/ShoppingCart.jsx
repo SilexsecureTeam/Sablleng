@@ -167,7 +167,7 @@ export default function ShoppingCart() {
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-[#5F1327]"
                 />
               </div>
-              <div className="mb-4 sm:mb-6">
+              <div className="mb-4 sm:mb-6 hidden">
                 <label className="block text-xs sm:text-sm text-gray-600 mb-2">
                   Your bonus card number
                 </label>

@@ -518,7 +518,9 @@ const OrderSuccess = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="border border-gray-200 p-4 rounded-md">
             <p className="text-sm font-medium text-gray-900">Order Reference</p>
-            <p className="text-sm text-gray-600">{orderData.orderId}</p>
+            <p className="text-sm text-gray-600">
+              {orderData?.orderId?.slice(0, 7)}
+            </p>
           </div>
           <div className="border border-gray-200 p-4 rounded-md sm:text-right">
             <p className="text-sm font-medium text-gray-900">Payment</p>
