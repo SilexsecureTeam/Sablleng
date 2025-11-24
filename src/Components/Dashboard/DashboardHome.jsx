@@ -29,14 +29,28 @@ const DashboardHome = () => {
     { text: "Low stock alert", time: "System • 5 hours ago" },
   ];
 
+  // Clickable Quick Stats — using your exact routes
   const goals = [
-    { name: "Pending Orders", value: 45, color: "bg-[#3C4ADD]", width: "60%" },
-    { name: "Low Stock Items", value: 12, color: "bg-[#F8650A]", width: "30%" },
     {
-      name: "Pending Customizations",
+      name: "Orders",
+      value: 45,
+      color: "bg-[#3C4ADD]",
+      width: "60%",
+      onClick: () => navigate("/dashboard/orders"),
+    },
+    {
+      name: "Products",
+      value: 12,
+      color: "bg-[#F8650A]",
+      width: "30%",
+      onClick: () => navigate("/dashboard/product-list"),
+    },
+    {
+      name: "Reports",
       value: 18,
       color: "bg-[#16CF0C]",
       width: "45%",
+      onClick: () => navigate("/dashboard/report"),
     },
   ];
 
@@ -73,7 +87,7 @@ const DashboardHome = () => {
     },
   ];
 
-  // Fetch orders for total and recent
+  // Fetch orders (unchanged)
   useEffect(() => {
     const fetchOrders = async () => {
       if (!auth?.isAuthenticated || !auth?.token) {
@@ -109,10 +123,10 @@ const DashboardHome = () => {
               status: order.order_status,
               date: new Date(order.created_at).toLocaleDateString("en-GB"),
             }))
-            .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort recent first
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
 
           setTotalOrders(data.data.length);
-          setRecentOrders(mappedOrders.slice(0, 4)); // Take top 4 recent
+          setRecentOrders(mappedOrders.slice(0, 4));
         } else {
           throw new Error(data.message || `Error ${response.status}`);
         }
@@ -126,7 +140,6 @@ const DashboardHome = () => {
     fetchOrders();
   }, [auth?.isAuthenticated, auth?.token]);
 
-  // Status color map (adjust based on common statuses)
   const getStatusColor = (status) => {
     const lowerStatus = status.toLowerCase();
     if (lowerStatus.includes("shipped") || lowerStatus.includes("delivered")) {
@@ -148,22 +161,22 @@ const DashboardHome = () => {
   return (
     <div className="min-h-screen bg-[#FAF7F5] text-[#414245] p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header - unchanged */}
         <div className="flex justify-between items-center mb-2">
           <div>
             <h1 className="text-2xl font-medium">Dashboard Overview</h1>
-            <p className="text-sm md:text-base  mt-1">
+            <p className="text-sm md:text-base mt-1">
               Welcome back! Here's what's happening with your store today
             </p>
           </div>
-          <button className="flex items-center gap-1  text-sm font-medium bg-white px-4 py-2 rounded ">
+          <button className="flex items-center gap-1 text-sm font-medium bg-white px-4 py-2 rounded">
             New Category
           </button>
         </div>
 
+        {/* Top Metrics - unchanged */}
         <div className="grid grid-cols-4 gap-4 mb-6 mt-6">
           {metrics.map((metric, idx) => {
-            // Determine color based on text content
             const extraColor = metric.extra?.includes("↑")
               ? "text-green-600"
               : metric.extra?.includes("↓")
@@ -184,9 +197,9 @@ const DashboardHome = () => {
           })}
         </div>
 
-        {/* Recent Activity & Goals */}
+        {/* Recent Activity & Quick Stats */}
         <div className="grid grid-cols-2 gap-6 mb-6">
-          {/* Recent Activity */}
+          {/* Recent Activity - unchanged */}
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <h2 className="text-base font-semibold text-[#23272E] mb-4">
               Recent Activity
@@ -204,14 +217,18 @@ const DashboardHome = () => {
             </div>
           </div>
 
-          {/* Goals/Tasks */}
+          {/* Quick Stats - NOW CLICKABLE (only change) */}
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <h2 className="text-base font-semibold text-[#23272E] mb-4">
               Quick Stats
             </h2>
             <div className="space-y-4">
               {goals.map((goal, idx) => (
-                <div key={idx}>
+                <div
+                  key={idx}
+                  onClick={goal.onClick}
+                  className="cursor-pointer hover:bg-gray-50 rounded-lg transition-colors p-2 -mx-2"
+                >
                   <div className="flex justify-between items-center mb-1.5">
                     <p className="text-sm text-gray-700">{goal.name}</p>
                     <p className="text-sm font-medium text-gray-900">
@@ -230,6 +247,7 @@ const DashboardHome = () => {
           </div>
         </div>
 
+        {/* Rest of the page — 100% UNCHANGED */}
         {/* Recent Orders Table */}
         <div className="bg-white text-[#414245] rounded-lg p-6 shadow-sm mb-6">
           <h2 className="text-base font-semibold  mb-4">Recent Orders</h2>
@@ -307,7 +325,7 @@ const DashboardHome = () => {
           )}
         </div>
 
-        {/* Customization Requests */}
+        {/* Customization Requests - unchanged */}
         <div className="bg-white rounded-lg p-6 shadow-sm">
           <h2 className="text-base font-semibold text-[#414245] mb-4">
             Customization Requests
@@ -319,7 +337,6 @@ const DashboardHome = () => {
                 className="bg-white rounded-lg border border-gray-200 p-6 duration-200"
               >
                 <div className="flex items-center justify-between">
-                  {/* Left section - Company and Item info */}
                   <div className="flex-1">
                     <div className="text-gray-900 font-medium mb-1">
                       {request.company}
@@ -332,7 +349,6 @@ const DashboardHome = () => {
                     </div>
                   </div>
 
-                  {/* Middle section - Preview and Status */}
                   <div className="flex-1 px-8">
                     <div className="flex items-center gap-2 mb-1">
                       <Circle className={`w-2 h-2 ${request.bulletColor}`} />
@@ -353,7 +369,6 @@ const DashboardHome = () => {
                     </div>
                   </div>
 
-                  {/* Right section - Action buttons */}
                   <div className="flex gap-3">
                     <button className="px-6 py-2.5 bg-green-100 text-green-700 rounded-md text-sm font-medium hover:bg-green-200 transition-colors duration-150">
                       Approve

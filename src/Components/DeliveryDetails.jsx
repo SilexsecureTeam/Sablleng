@@ -14,6 +14,9 @@ const DeliveryDetail = () => {
     shipping_address: "",
     delivery_fee: 0,
     tax_rate: 0,
+    customer_name: "",
+    customer_email: "",
+    customer_phone: "",
   });
   const [errors, setErrors] = useState({});
   const [taxes, setTaxes] = useState([]);
@@ -36,6 +39,16 @@ const DeliveryDetail = () => {
   useEffect(() => {
     fetchStates();
   }, []);
+  useEffect(() => {
+    if (auth?.user) {
+      setFormData((prev) => ({
+        ...prev,
+        customer_name: auth.user.name || "",
+        customer_email: auth.user.email || "",
+        customer_phone: auth.user.phone || "",
+      }));
+    }
+  }, [auth?.user]);
 
   // Fetch active taxes on mount (after auth check)
   useEffect(() => {
@@ -230,6 +243,21 @@ const DeliveryDetail = () => {
     if (formData.tax_rate < 0 || formData.tax_rate === undefined) {
       newErrors.tax_rate = "No active tax rate available";
     }
+    if (!formData.customer_name.trim()) {
+      newErrors.customer_name = "Please enter your full name";
+    }
+    if (!formData.customer_email.trim()) {
+      newErrors.customer_email = "Please enter your email";
+    } else if (!/\S+@\S+\.\S+/.test(formData.customer_email)) {
+      newErrors.customer_email = "Email is invalid";
+    }
+    if (!formData.customer_phone.trim()) {
+      newErrors.customer_phone = "Please enter your phone number";
+    } else if (
+      !/^\d{10,15}$/.test(formData.customer_phone.replace(/\D/g, ""))
+    ) {
+      newErrors.customer_phone = "Phone number is invalid";
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -271,6 +299,9 @@ const DeliveryDetail = () => {
         shipping_address: formData.shipping_address,
         delivery_fee: formData.delivery_fee,
         tax_rate: parseFloat(formData.tax_rate),
+        customer_name: formData.customer_name.trim(),
+        customer_email: formData.customer_email.trim(),
+        customer_phone: formData.customer_phone.trim(),
       };
 
       console.log("Request payload:", JSON.stringify(payload, null, 2));
@@ -493,6 +524,78 @@ const DeliveryDetail = () => {
                     <p className="text-xs text-gray-500 mt-1">
                       Auto-updated based on location
                     </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-1">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.customer_name}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          customer_name: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent transition-all"
+                      placeholder="John Doe"
+                      required
+                    />
+                    {errors.customer_name && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.customer_name}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-1">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.customer_email}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          customer_email: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent transition-all"
+                      placeholder="john@example.com"
+                      required
+                    />
+                    {errors.customer_email && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.customer_email}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-1">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.customer_phone}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          customer_phone: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent transition-all"
+                      placeholder="08012345678"
+                      required
+                    />
+                    {errors.customer_phone && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.customer_phone}
+                      </p>
+                    )}
                   </div>
                 </div>
                 {fullAddress && (

@@ -1,319 +1,223 @@
-import React, { useState, useEffect } from "react";
-import { Check, Mail, Phone } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import React, { useState, useEffect, useContext } from "react";
+import { Check, ArrowLeft, Phone, Mail, MapPin } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContextObject";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const OrderTracking = () => {
   const location = useLocation();
-  const { orderId, address } = location.state || {};
-  const [trackingSteps, setTrackingSteps] = useState([]);
+  const navigate = useNavigate();
+  const { auth } = useContext(AuthContext);
+
+  const orderReference = location.state?.orderId;
+
+  const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showContactModal, setShowContactModal] = useState(false);
-  const [contactForm, setContactForm] = useState({
-    name: "",
-    email: "",
-    message: "",
-  });
-  const [formStatus, setFormStatus] = useState("");
 
-  // Simulate fetching tracking data
+  const API_BASE = "https://api.sablle.ng/api";
+
+  // Map order_status → step number (1 to 6)
+  const statusMap = {
+    "Order Pending": 1,
+    Processing: 2,
+    Packed: 3,
+    Shipped: 4,
+    "Out for Delivery": 5,
+    Delivered: 6,
+  };
+
+  const steps = [
+    { id: 1, title: "Order Placed" },
+    { id: 2, title: "Processing" },
+    { id: 3, title: "Packed" },
+    { id: 4, title: "Shipped" },
+    { id: 5, title: "Out for Delivery" },
+    { id: 6, title: "Delivered" },
+  ];
+
   useEffect(() => {
-    const fetchTrackingData = async () => {
+    if (!orderReference) {
+      toast.error("No order found");
+      navigate("/orders");
+      return;
+    }
+
+    const fetchOrder = async () => {
       setIsLoading(true);
-      setError("");
       try {
-        // Mock API response (replace with real API call if available)
-        const mockData = [
-          {
-            id: 1,
-            title: "Order Placed",
-            description: "We have received your order",
-            status: "completed",
-            time: "01/08/2025, 10:37:52",
-          },
-          {
-            id: 2,
-            title: "Processing",
-            description: "Checking your payment and other facilities",
-            status: "completed",
-            time: "01/08/2025, 12:15:30",
-          },
-          {
-            id: 3,
-            title: "Packed",
-            description: "We have packed and ready to ship",
-            status: "completed",
-            time: "02/08/2025, 09:00:00",
-          },
-          {
-            id: 4,
-            title: "Shipped",
-            description: "Package has left our facility",
-            status: "current",
-            time: "02/08/2025, 14:20:00",
-          },
-          {
-            id: 5,
-            title: "Out for Delivery",
-            description: "Driver is on the way to you",
-            status: "pending",
-          },
-          {
-            id: 6,
-            title: "Delivered",
-            description: "Package delivered. Thank you!",
-            status: "pending",
-          },
-        ];
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        setTrackingSteps(mockData);
-      } catch {
-        setError("Failed to load tracking information. Please try again.");
+        const res = await fetch(`${API_BASE}/orders/${orderReference}`, {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        });
+        const data = await res.json();
+
+        if (res.ok && data.order) {
+          setOrder(data.order);
+        } else {
+          throw new Error(data.message || "Order not found");
+        }
+      } catch (err) {
+        setError(err.message);
+        toast.error("Failed to load order");
       } finally {
         setIsLoading(false);
       }
     };
-    fetchTrackingData();
-  }, []);
 
-  const handleContactSubmit = (e) => {
-    e.preventDefault();
-    setFormStatus("submitting");
-    // Simulate form submission (replace with real API call)
-    setTimeout(() => {
-      if (contactForm.email && contactForm.message) {
-        setFormStatus("success");
-        setTimeout(() => {
-          setShowContactModal(false);
-          setContactForm({ name: "", email: "", message: "" });
-          setFormStatus("");
-        }, 2000);
-      } else {
-        setFormStatus("error");
-      }
-    }, 1000);
-  };
+    fetchOrder();
+  }, [orderReference, auth.token, navigate]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setContactForm((prev) => ({ ...prev, [name]: value }));
-  };
+  const currentStep = order ? statusMap[order.order_status] || 1 : 1;
+
+  const formatDate = (date) =>
+    new Date(date).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-stone-100">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#8b7355] border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-6 text-xl text-[#8b7355] font-medium">
+            Loading your order...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-stone-100">
+        <div className="text-center bg-white p-12 rounded-2xl shadow-2xl border-8 border-[#8b7355]">
+          <p className="text-2xl text-red-600 mb-6">
+            {error || "Order not found"}
+          </p>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-10 py-4 bg-[#8b7355] text-white text-lg font-bold rounded-xl hover:bg-[#6d5942] flex items-center gap-3 mx-auto"
+          >
+            <ArrowLeft size={24} /> Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8 my-8">
-      {/* Header */}
-      <div className="border-b pb-4 mb-4">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">
-          Order Tracking
-        </h2>
-        <p className="text-sm text-gray-600">
-          Order ID: {orderId || "SABIL-20250829-2724"}
-        </p>
-      </div>
+    <>
+      <ToastContainer />
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex justify-center items-center py-8">
-          <div className="w-8 h-8 border-4 border-t-indigo-500 border-gray-200 rounded-full animate-spin"></div>
-          <span className="ml-2 text-gray-600">Loading tracking...</span>
-        </div>
-      )}
-
-      {/* Error State */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-md text-center">
-          {error}
-        </div>
-      )}
-
-      {/* Tracking Steps */}
-      {!isLoading && !error && (
-        <div className="space-y-4">
-          <div className="space-y-1 mb-6">
-            <p className="text-sm font-medium text-gray-900">
-              Order ID: {orderId || "SABIL-20250829-2724"}
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-stone-100 p-6">
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl border-8 border-[#8b7355] p-10">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-5xl font-bold text-[#8b7355] tracking-wider">
+              Order Tracking
+            </h1>
+            <p className="text-2xl font-mono text-gray-800 mt-4">
+              {order.order_reference}
             </p>
-            <p className="text-xs text-gray-500">Status Timeline</p>
+            <p className="text-gray-600 mt-2">
+              Placed on {formatDate(order.created_at)}
+            </p>
           </div>
+
+          {/* Current Status */}
+          <div className="text-center mb-12">
+            <div className="inline-block px-10 py-4 bg-[#8b7355] text-white text-2xl font-bold rounded-full shadow-xl">
+              {order.order_status}
+            </div>
+          </div>
+
+          {/* Timeline */}
           <div className="relative">
-            {trackingSteps.map((step, index) => (
-              <div
-                key={step.id}
-                className="flex items-start space-x-4 pb-6 last:pb-0 animate-slide-in"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                {index < trackingSteps.length - 1 && (
-                  <div
-                    className={`absolute left-5 top-10 w-0.5 h-12 ${
-                      step.status === "completed" || step.status === "current"
-                        ? "bg-green-500"
-                        : "bg-gray-200"
-                    }`}
-                  ></div>
-                )}
+            {steps.map((step, index) => {
+              const isCompleted = step.id <= currentStep;
+              const isLast = index === steps.length - 1;
+
+              return (
                 <div
-                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    step.status === "completed"
-                      ? "bg-green-500 text-white"
-                      : step.status === "current"
-                      ? "bg-[#5F1327] text-white"
-                      : "bg-gray-300 text-gray-500"
-                  }`}
+                  key={step.id}
+                  className="flex items-center mb-10 last:mb-0"
                 >
-                  {step.status === "completed" ? (
-                    <Check className="w-5 h-5" />
-                  ) : (
-                    <span className="text-sm font-medium">{step.id}</span>
+                  {/* Connecting Line */}
+                  {!isLast && (
+                    <div
+                      className={`absolute left-8 top-20 w-0.5 h-32 -z-10 ${
+                        isCompleted ? "bg-green-500" : "bg-gray-300"
+                      }`}
+                    />
                   )}
+
+                  {/* Circle */}
+                  <div
+                    className={`flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center text-white text-3xl font-bold transition-all duration-500 shadow-2xl border-4 border-white ${
+                      isCompleted
+                        ? "bg-green-500 ring-8 ring-green-100 scale-110"
+                        : "bg-gray-300"
+                    }`}
+                  >
+                    <Check className="w-10 h-10" />
+                  </div>
+
+                  {/* Text */}
+                  <div className="ml-8 flex-1">
+                    <h3
+                      className={`text-2xl font-bold ${
+                        isCompleted ? "text-green-600" : "text-gray-400"
+                      }`}
+                    >
+                      {step.title}
+                      {step.id === currentStep && (
+                        <span className="ml-4 text-lg font-normal text-amber-600">
+                          ← Current Status
+                        </span>
+                      )}
+                    </h3>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
-                    {step.title}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {step.description}
-                  </p>
-                  {step.time && (
-                    <p className="text-xs text-gray-400 mt-1">{step.time}</p>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Delivery Address */}
-          <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-900 mb-2">
-              Delivery Address
-            </h3>
-            <div className="text-sm text-gray-600">
-              {address ? (
-                <>
-                  <p>{address.name}</p>
-                  <p>{address.address}</p>
-                </>
-              ) : (
-                <>
-                  <p>John O. - +2348037358599</p>
-                  <p>17 Adesola Odeku St, Victoria Island, Lagos</p>
-                </>
-              )}
+          {/* Delivery Details - One Line */}
+          <div className="mt-16 bg-[#fefdfb] p-8 rounded-2xl border-4 border-[#8b7355] text-center">
+            <div className="flex flex-wrap items-center justify-center gap-6 text-gray-700 text-lg font-medium">
+              <span className="flex items-center gap-2">
+                <strong>{order.customer_name}</strong>
+              </span>
+              <span className="flex items-center gap-2">
+                <Phone size={20} /> {order.customer_phone}
+              </span>
+              <span className="flex items-center gap-2">
+                <Mail size={20} /> {order.customer_email}
+              </span>
+              <span className="flex items-center gap-2">
+                <MapPin size={20} /> {order.shipping_address}
+              </span>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Contact Support Button */}
-      <button
-        onClick={() => setShowContactModal(true)}
-        className="w-full mt-6 bg-[#5F1327] hover:bg-[#5F1327]/80 text-white font-medium py-3 px-4 rounded-md transition-colors flex items-center justify-center gap-2"
-        aria-label="Contact support"
-      >
-        <Mail size={16} />
-        Contact Support
-      </button>
-
-      {/* Contact Support Modal */}
-      {showContactModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Contact Support
-              </h3>
-              <button
-                onClick={() => setShowContactModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-                aria-label="Close contact form"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-            <form onSubmit={handleContactSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={contactForm.name}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
-                  placeholder="Your name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={contactForm.email}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
-                  placeholder="your.email@example.com"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Message
-                </label>
-                <textarea
-                  name="message"
-                  value={contactForm.message}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
-                  rows="4"
-                  placeholder="Describe your issue or question"
-                  required
-                ></textarea>
-              </div>
-              {formStatus === "error" && (
-                <p className="text-red-500 text-sm">
-                  Please fill in all required fields.
-                </p>
-              )}
-              {formStatus === "success" && (
-                <p
-                  className="text-green-500 text-smთ
-
-System: sm"
-                >
-                  Your message has been sent successfully!
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={formStatus === "submitting"}
-                className={`w-full py-2 px-4 rounded-md text-white font-medium transition-colors ${
-                  formStatus === "submitting"
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-[#5F1327] hover:bg-[#5F1327]/80"
-                }`}
-              >
-                {formStatus === "submitting" ? "Submitting..." : "Submit"}
-              </button>
-            </form>
+          {/* Back Button */}
+          <div className="mt-12 text-center">
+            <button
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-4 px-12 py-5 bg-[#8b7355] text-white text-xl font-bold rounded-full hover:bg-[#6d5942] transform hover:scale-105 transition-all shadow-2xl"
+            >
+              <ArrowLeft size={28} />
+              Back to Orders
+            </button>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 };
 
