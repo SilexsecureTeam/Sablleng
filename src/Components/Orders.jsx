@@ -114,19 +114,22 @@ const Orders = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "delivered":
-        return "bg-green-100 text-green-800";
-      case "shipped":
-        return "bg-blue-100 text-blue-800";
-      case "processing":
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "paid":
-        return "bg-green-100 text-green-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
+      case "Paid":
+        return "bg-[#E8FAE7] text-[#01993C]"; // Green
+      case "Order Placed":
+        return "bg-blue-100 text-blue-700"; // Light Blue
+      case "Processing":
+        return "bg-yellow-100 text-yellow-700"; // Yellow
+      case "Packed":
+        return "bg-purple-100 text-purple-700"; // Purple
+      case "Shipped":
+        return "bg-indigo-100 text-indigo-700"; // Indigo
+      case "Out for Delivery":
+        return "bg-orange-100 text-orange-700"; // Orange
+      case "Delivered":
+        return "bg-green-100 text-green-800"; // Dark Green
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-[#DAD3BC] text-[#414245]"; // Fallback (Pending)
     }
   };
 
@@ -222,7 +225,7 @@ const Orders = () => {
                 <div className="p-6 border-b border-gray-100">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      {getStatusIcon(order.status)}
+                      {getStatusIcon(order.order_status)}
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">
                           {order?.order_reference?.slice(0, 7)}
@@ -236,10 +239,10 @@ const Orders = () => {
                     <div className="flex items-center gap-4">
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(
-                          order.status
+                          order.order_status
                         )}`}
                       >
-                        {order.status}
+                        {order.order_status}
                       </span>
                       <button
                         onClick={() => handleViewDetails(order.order_reference)}
