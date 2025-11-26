@@ -184,7 +184,7 @@ const CategoryPage = () => {
           </h1>
 
           {/* Filters + Product Grid */}
-          <div className="flex gap-8">
+          <div className="flex flex-col md:flex-row gap-8">
             {/* REUSABLE FILTERS */}
             <ProductFilters
               products={rawProducts}

@@ -49,9 +49,9 @@ const HeaderSearch = () => {
   }, []);
 
   return (
-    <div className="relative w-full max-w-xl">
+    <div className="relative w-full md:max-w-xl max-w-[80px]">
       <div className="relative">
-        <div className="w-full max-w-[300px]">
+        <div className="w-full ">
           <Search size={18} className="absolute left-3 top-3 text-gray-400" />
           <input
             ref={inputRef}
