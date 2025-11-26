@@ -26,6 +26,8 @@ import { AuthContext } from "../context/AuthContextObject";
 import logo from "../assets/logo-d.png";
 import { toast } from "react-toastify";
 import { getTagCategories } from "../utils/categoryGroups";
+import { useTags } from "../context/TagContext";
+import HeaderSearch from "./HeaderSearch";
 
 const Header = React.memo(() => {
   const location = useLocation();
@@ -36,20 +38,20 @@ const Header = React.memo(() => {
   const [profileOpen, setProfileOpen] = useState(false);
   // eslint-disable-next-line no-unused-vars
   const [categories, setCategories] = useState([]);
-  const [tags, setTags] = useState([]);
+  // const [tags, setTags] = useState([]);
   // eslint-disable-next-line no-unused-vars
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  const [isLoadingTags, setIsLoadingTags] = useState(true);
+  // const [isLoadingTags, setIsLoadingTags] = useState(true);
   // eslint-disable-next-line no-unused-vars
   const [errorCategories, setErrorCategories] = useState(null);
-  const [errorTags, setErrorTags] = useState(null);
+  // const [errorTags, setErrorTags] = useState(null);
   const timeoutRef = useRef(null);
   const profileRefDesktop = useRef(null);
   const profileRefMobile = useRef(null);
   const mobileMenuRef = useRef(null);
   const overlayRef = useRef(null);
   const navigate = useNavigate();
-
+  const { tags, isLoading: isLoadingTags, error: errorTags } = useTags();
   // Memoized cart item count
   const cartItemCount = useMemo(
     () => items.reduce((sum, item) => sum + item.quantity, 0),
@@ -74,14 +76,12 @@ const Header = React.memo(() => {
   // Fetch all active categories with localStorage caching
   useEffect(() => {
     const CACHE_KEY = "sablle_categories";
-    // const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
     const CACHE_EXPIRY = 30 * 1000; // 30 seconds
 
     const fetchData = async () => {
       setIsLoadingCategories(true);
       setErrorCategories(null);
 
-      // Check cache first
       const cached = localStorage.getItem(CACHE_KEY);
       const now = new Date().getTime();
       if (cached) {
@@ -125,7 +125,6 @@ const Header = React.memo(() => {
           }))
           .sort((a, b) => a.name.localeCompare(b.name));
 
-        // Cache it
         localStorage.setItem(
           CACHE_KEY,
           JSON.stringify({
@@ -151,73 +150,102 @@ const Header = React.memo(() => {
   }, []);
 
   // Fetch all active tags with localStorage caching
-  useEffect(() => {
-    const CACHE_KEY = "sablle_tags";
-    const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+  // useEffect(() => {
+  //   const CACHE_KEY = "sablle_tags";
+  //   const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
-    const fetchData = async () => {
-      setIsLoadingTags(true);
-      setErrorTags(null);
+  //   const fetchData = async () => {
+  //     setIsLoadingTags(true);
+  //     setErrorTags(null);
 
-      // Check cache first
-      const cached = localStorage.getItem(CACHE_KEY);
-      const now = new Date().getTime();
-      if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (now - timestamp < CACHE_EXPIRY) {
-          setTags(data);
-          setIsLoadingTags(false);
-          return;
-        }
-      }
+  //     // Check cache first
+  //     const cached = localStorage.getItem(CACHE_KEY);
+  //     const now = new Date().getTime();
+  //     if (cached) {
+  //       const { data, timestamp } = JSON.parse(cached);
+  //       if (now - timestamp < CACHE_EXPIRY) {
+  //         setTags(data);
+  //         setIsLoadingTags(false);
+  //         return;
+  //       }
+  //     }
 
-      try {
-        const tagsResponse = await fetch("https://api.sablle.ng/api/tags", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
+  //     try {
+  //       const tagsResponse = await fetch("https://api.sablle.ng/api/tags", {
+  //         method: "GET",
+  //         headers: { "Content-Type": "application/json" },
+  //       });
 
-        if (!tagsResponse.ok) {
-          throw new Error(`Failed to fetch tags: ${tagsResponse.statusText}`);
-        }
+  //       if (!tagsResponse.ok) {
+  //         throw new Error(`Failed to fetch tags: ${tagsResponse.statusText}`);
+  //       }
 
-        const tagsData = await tagsResponse.json();
-        const tagsArray = Array.isArray(tagsData) ? tagsData : [];
+  //       const tagsData = await tagsResponse.json();
+  //       const tagsArray = Array.isArray(tagsData) ? tagsData : [];
 
-        const formattedTags = tagsArray
-          .filter((item) => item.is_active === true)
-          .map((item) => ({
-            id: item.id,
-            name: item.name,
-            slug: item.slug,
-            categories: item.categories || [],
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name));
+  //       const formattedTags = tagsArray
+  //         .filter((item) => item.is_active === true)
+  //         .map((item) => ({
+  //           id: item.id,
+  //           name: item.name,
+  //           slug: item.slug,
+  //           categories: item.categories || [],
+  //         }))
+  //         .sort((a, b) => a.name.localeCompare(b.name));
 
-        // Cache it
-        localStorage.setItem(
-          CACHE_KEY,
-          JSON.stringify({
-            data: formattedTags,
-            timestamp: now,
-          })
-        );
+  //       // Cache it
+  //       localStorage.setItem(
+  //         CACHE_KEY,
+  //         JSON.stringify({
+  //           data: formattedTags,
+  //           timestamp: now,
+  //         })
+  //       );
 
-        setTags(formattedTags);
-      } catch (err) {
-        console.error("Fetch tags error:", err);
-        setErrorTags(err.message);
-        toast.error(`Error loading tags: ${err.message}`, {
-          position: "top-right",
-          autoClose: 5000,
-        });
-      } finally {
-        setIsLoadingTags(false);
-      }
-    };
+  //       setTags(formattedTags);
+  //     } catch (err) {
+  //       console.error("Fetch tags error:", err);
+  //       setErrorTags(err.message);
+  //       toast.error(`Error loading tags: ${err.message}`, {
+  //         position: "top-right",
+  //         autoClose: 5000,
+  //       });
+  //     } finally {
+  //       setIsLoadingTags(false);
+  //     }
+  //   };
 
-    fetchData();
-  }, []);
+  //   fetchData();
+  // }, []);
+  // NEW: Real-time tags — no cache, always fresh
+  // useEffect(() => {
+  //   const fetchTags = async () => {
+  //     setIsLoadingTags(true);
+  //     try {
+  //       const res = await fetch("https://api.sablle.ng/api/tags");
+  //       const data = await res.json();
+
+  //       const formattedTags = (Array.isArray(data) ? data : [])
+  //         .filter((tag) => tag.is_active === true)
+  //         .map((tag) => ({
+  //           id: tag.id,
+  //           name: tag.name,
+  //           slug: tag.slug,
+  //           categories: tag.categories || [],
+  //         }))
+  //         .sort((a, b) => a.name.localeCompare(b.name));
+
+  //       setTags(formattedTags);
+  //     } catch (err) {
+  //       console.error("Failed to load tags:", err);
+  //       setErrorTags("Failed to load menu");
+  //     } finally {
+  //       setIsLoadingTags(false);
+  //     }
+  //   };
+
+  //   fetchTags();
+  // }, []);
 
   // Close profile dropdown when location changes
   useEffect(() => {
@@ -312,7 +340,7 @@ const Header = React.memo(() => {
   return (
     <div className="w-full bg-white sticky top-0 z-50">
       {/* Noti Bar - Always Visible, Sticky at Top */}
-      <div className="bg-[#5F1327] sticky top-0 z-50 text-center border-b border-[#5F1327]/20">
+      <div className="bg-[#5F1327] py-2 sticky top-0 z-50 text-center border-b border-[#5F1327]/20">
         <div className="max-w-[1200px] mx-auto px-2 sm:px-4 md:px-8">
           {/* Desktop: Phone Left, Logo Center, Icons Right */}
           <div className="hidden md:flex items-center justify-between py-1.5 xs:py-2">
@@ -328,18 +356,13 @@ const Header = React.memo(() => {
               <img
                 src={logo}
                 alt="Sablle Logo"
-                className="w-[120px] h-[35px]"
+                className="w-[120px] h-[25px]"
               />
             </Link>
 
             {/* Right: Icons */}
             <div className="flex items-center gap-3 md:gap-4 flex-shrink-0">
-              <button
-                className="text-white hidden cursor-pointer hover:text-gray-200 transition-colors duration-200"
-                aria-label="Search"
-              >
-                <Search size={20} />
-              </button>
+              <HeaderSearch />
 
               {/* Profile Section */}
               <div className="relative z-10" ref={profileRefDesktop}>
@@ -484,12 +507,7 @@ const Header = React.memo(() => {
 
             {/* Right: Icons */}
             <div className="flex items-center gap-3 flex-shrink-0">
-              <button
-                className="text-white hidden cursor-pointer hover:text-gray-200 transition-colors duration-200"
-                aria-label="Search"
-              >
-                <Search size={20} />
-              </button>
+              <HeaderSearch />
 
               {/* Profile Section - Mobile */}
               {/* Profile Section */}

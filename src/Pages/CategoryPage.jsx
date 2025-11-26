@@ -1,9 +1,9 @@
+// src/Pages/CategoryPage.jsx
 import React, { useState, useEffect, useMemo, useContext } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { Heart } from "lucide-react";
 import { CartContext } from "../context/CartContextObject";
+import ProductFilters from "../Components/ProductFilters"; // ← THE BEAST
 import Noti from "../Components/Noti";
 import Header from "../Components/Header";
 import Cahero from "../Components/Cahero";
@@ -12,142 +12,107 @@ import Footer from "../Components/Footer";
 const CategoryPage = () => {
   const { categorySlug } = useParams();
   const navigate = useNavigate();
-  const [filter, setFilter] = useState("All");
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const productsPerPage = 30;
   const { addToWishlist, isInWishlist } = useContext(CartContext);
 
+  // Raw + filtered products
+  const [rawProducts, setRawProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 30;
+
+  // Resolve current category
+  const { categoryId, categoryName } = useMemo(() => {
+    const found = categories.find((c) => c.slug === categorySlug);
+    return {
+      categoryId: found?.id || null,
+      categoryName: found?.name || "Loading...",
+    };
+  }, [categories, categorySlug]);
+
+  // Fetch categories once
   useEffect(() => {
-    const cachedCategories = localStorage.getItem("categories");
-    if (cachedCategories) {
-      setCategories(JSON.parse(cachedCategories));
+    const cached = localStorage.getItem("categories");
+    if (cached) {
+      setCategories(JSON.parse(cached));
       return;
     }
 
     const fetchCategories = async () => {
       try {
-        const response = await fetch("https://api.sablle.ng/api/categories", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
+        const res = await fetch("https://api.sablle.ng/api/categories");
+        if (!res.ok) throw new Error("Failed to load categories");
+        const data = await res.json();
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch categories: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const categoriesArray = Array.isArray(data) ? data : [];
-
-        const formattedCategories = categoriesArray
-          .filter((item) => item.is_active === 1)
-          .map((item) => ({
-            id: item.id,
-            name: item.name,
-            slug: item.name
+        const formatted = (Array.isArray(data) ? data : [])
+          .filter((c) => c.is_active === 1)
+          .map((c) => ({
+            id: c.id,
+            name: c.name,
+            slug: c.name
               .toLowerCase()
               .replace(/\s+/g, "-")
               .replace(/[^\w-]/g, ""),
           }));
 
-        setCategories(formattedCategories);
-        localStorage.setItem("categories", JSON.stringify(formattedCategories));
+        setCategories(formatted);
+        localStorage.setItem("categories", JSON.stringify(formatted));
       } catch (err) {
-        console.error("Fetch categories error:", err);
-        setError(err.message);
-        toast.error(`Error fetching categories: ${err.message}`, {
-          position: "top-right",
-          autoClose: 5000,
-        });
+        console.error(err);
+        setError("Failed to load categories");
       }
     };
 
     fetchCategories();
   }, []);
 
-  const { categoryId, categoryName } = useMemo(() => {
-    const category =
-      categories.find((cat) => cat.slug === categorySlug) || null;
-    return {
-      categoryId: category ? category.id : null,
-      categoryName: category ? category.name : "Unknown Category",
-    };
-  }, [categorySlug, categories]);
-
+  // Fetch products for this category
   useEffect(() => {
-    const controller = new AbortController();
-    let isMounted = true;
+    if (!categoryId) {
+      setIsLoading(false);
+      return;
+    }
 
-    const fetchData = async () => {
-      if (!categoryId) {
-        if (isMounted) {
-          setError("Category not found");
-          setProducts([]);
-          setTotalPages(1);
-          setIsLoading(false);
-        }
+    const cacheKey = `cat_products_${categoryId}`;
+    const cached = localStorage.getItem(cacheKey);
+    const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
+
+    if (cached) {
+      const { products, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp < CACHE_TIME) {
+        setRawProducts(products);
+        setFilteredProducts(products);
+        setIsLoading(false);
         return;
       }
+    }
 
-      const cacheKey = `products_${categoryId}`;
-      const cachedData = localStorage.getItem(cacheKey);
-      const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in ms - adjust as needed
-
-      if (cachedData) {
-        try {
-          const { products: cachedProducts, timestamp } =
-            JSON.parse(cachedData);
-          const now = Date.now();
-          if (now - timestamp < CACHE_DURATION) {
-            // Cache is fresh
-            if (isMounted) {
-              setProducts(cachedProducts);
-              setCurrentPage(1);
-              setIsLoading(false);
-            }
-            return;
-          }
-          // Cache is stale - fall through to fetch
-        } catch (parseErr) {
-          console.warn("Invalid cache data, fetching fresh:", parseErr);
-        }
-      }
-
-      if (isMounted) {
-        setIsLoading(true);
-        setError(null);
-        setProducts([]);
-      }
-
+    const fetchProducts = async () => {
+      setIsLoading(true);
       try {
-        const response = await fetch(
-          `https://api.sablle.ng/api/categories/${categoryId}`,
-          {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            signal: controller.signal,
-          }
+        const res = await fetch(
+          `https://api.sablle.ng/api/categories/${categoryId}`
         );
+        if (!res.ok) throw new Error("Failed to load products");
 
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch category products: ${response.statusText}`
-          );
-        }
-
-        const data = await response.json();
+        const data = await res.json();
         const productsArray = Array.isArray(data.products) ? data.products : [];
 
-        const formattedProducts = productsArray.map((item) => ({
+        const formatted = productsArray.map((item) => ({
           id: item.id,
-          name: item.name || "",
+          name: item.name || "Unnamed Product",
           price: item.sale_price_inc_tax
             ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-            : "Price Unavailable",
+            : "Custom Quote",
+          sale_price_inc_tax: parseFloat(item.sale_price_inc_tax) || 0,
+          cost_inc_tax: parseFloat(item.cost_inc_tax) || 0,
+          customize: !!item.customize,
+          customization: item.customization || [],
+          created_at: item.created_at,
           category: item.category?.name || categoryName,
           badge: item.customize ? "Customizable" : null,
           image:
@@ -155,279 +120,225 @@ const CategoryPage = () => {
             (item.images?.[0]?.path
               ? `https://api.sablle.ng/storage/${item.images[0].path}`
               : "/placeholder-image.jpg"),
-          customize: item.meta?.customizable ?? item.customize ?? false,
         }));
 
-        if (isMounted) {
-          setProducts(formattedProducts);
-          // Update cache with timestamp
-          localStorage.setItem(
-            cacheKey,
-            JSON.stringify({
-              products: formattedProducts,
-              timestamp: Date.now(),
-            })
-          );
-          setCurrentPage(1);
+        setRawProducts(formatted);
+        setFilteredProducts(formatted);
 
-          if (formattedProducts.length > 0) {
-            toast.success("Products fetched successfully!", {
-              position: "top-right",
-              autoClose: 3000,
-            });
-          } else {
-            toast.info("No products found in this category", {
-              position: "top-right",
-              autoClose: 5000,
-            });
-          }
-        }
+        // Cache
+        localStorage.setItem(
+          cacheKey,
+          JSON.stringify({ products: formatted, timestamp: Date.now() })
+        );
       } catch (err) {
-        if (err.name === "AbortError") return;
-        console.error("Fetch products error:", err);
-        if (isMounted) {
-          setError(err.message);
-          toast.error(`Error: ${err.message}`, {
-            position: "top-right",
-            autoClose: 5000,
-          });
-          setProducts([]);
-          setTotalPages(1);
-        }
+        console.error(err);
+        setError("Failed to load products");
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
 
-    if (categorySlug && categories.length > 0) {
-      fetchData();
-    }
+    fetchProducts();
+  }, [categoryId, categoryName]);
 
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [categorySlug, categoryId, categoryName, categories]);
-
-  // Filter products first, then paginate
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      if (filter === "All") return true;
-      if (filter === "Customizable") return product.customize === true;
-      if (filter === "Non-Customizable") return product.customize === false;
-      return true;
-    });
-  }, [products, filter]);
-
-  // Calculate total pages based on filtered products
-  useEffect(() => {
-    const newTotalPages = Math.ceil(filteredProducts.length / productsPerPage);
-    setTotalPages(newTotalPages || 1);
-    // Reset to page 1 when filter changes to ensure valid page
-    if (currentPage > newTotalPages && newTotalPages > 0) {
-      setCurrentPage(1);
-    }
-  }, [filteredProducts, productsPerPage, currentPage]);
-
-  // Paginate the filtered products
+  // Pagination
   const startIndex = (currentPage - 1) * productsPerPage;
   const paginatedProducts = filteredProducts.slice(
     startIndex,
     startIndex + productsPerPage
   );
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [filteredProducts, currentPage, totalPages]);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: "smooth" }); // smoother than scrollTo(0,0)
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
-  // const getPageNumbers = () => {
-  //   const maxPagesToShow = 5;
-  //   const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-  //   const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-  //   const pages = [];
-  //   for (let i = startPage; i <= endPage; i++) {
-  //     pages.push(i);
-  //   }
-  //   return pages;
-  // };
-
   return (
     <div>
-      <ToastContainer />
       <Noti />
       <Header />
       <Cahero />
-      <div className="py-12 md:py-8">
-        <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 mx-auto">
+
+      <div className="py-12 md:py-16">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Back + Title */}
           <button
             onClick={() => navigate(-1)}
-            className="mb-4 inline-flex items-center text-sm font-medium text-[#5F1327] hover:text-gray-700"
+            className="mb-4 text-sm font-medium text-[#5F1327] hover:text-gray-700 inline-flex items-center"
           >
             ← Back
           </button>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            {categoryName}
-          </h2>
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Filter Products
-            </h3>
-            <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
-              {["All", "Customizable", "Non-Customizable"].map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setFilter(option)}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                    filter === option
-                      ? "bg-[#5F1327] text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                  aria-label={`Filter by ${option} products`}
-                  aria-pressed={filter === option}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {isLoading ? (
-              <div className="col-span-full text-center text-gray-600">
-                Loading products...
-              </div>
-            ) : error ? (
-              <div className="col-span-full text-center text-red-500">
-                {error}
-              </div>
-            ) : paginatedProducts.length > 0 ? (
-              paginatedProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="bg-white overflow-hidden block hover:shadow-lg transition-shadow duration-200 animate-fade-in"
-                >
-                  <Link
-                    to={`/product/${product.id}`}
-                    className="block relative"
-                  >
-                    <div className="relative bg-[#F4F2F2] p-4 h-48 md:h-80 flex items-center justify-center">
-                      {product.badge && (
-                        <div className="absolute top-6 left-0 bg-[#5F1327] text-white px-8 py-2 rounded text-sm font-medium">
-                          {product.badge}
-                        </div>
-                      )}
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    </div>
-                  </Link>
-                  <div className="p-4">
-                    <div className="flex items-center justify-between">
-                      <Link to={`/product/${product.id}`}>
-                        <h3 className="font-medium text-gray-900 text-sm">
-                          {product.name}
-                        </h3>
-                      </Link>
-                      <button
-                        onClick={() => addToWishlist(product)}
-                        className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
-                        aria-label={
-                          isInWishlist(product.id)
-                            ? "Remove from wishlist"
-                            : "Add to wishlist"
-                        }
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">
+            {categoryName}{" "}
+            {filteredProducts.length > 0 &&
+              `(${filteredProducts.length} items)`}
+          </h1>
+
+          {/* Filters + Product Grid */}
+          <div className="flex gap-8">
+            {/* REUSABLE FILTERS */}
+            <ProductFilters
+              products={rawProducts}
+              onFiltered={setFilteredProducts}
+              isLoading={isLoading}
+            />
+
+            {/* Product Grid */}
+            <div className="flex-1">
+              {isLoading ? (
+                <div className="text-center py-20 text-gray-600">
+                  Loading products...
+                </div>
+              ) : error ? (
+                <div className="text-center py-20 text-red-500">{error}</div>
+              ) : filteredProducts.length === 0 ? (
+                <div className="text-center py-20 text-gray-600">
+                  No products match your filters. Try adjusting them!
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                    {paginatedProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        className="bg-white rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 border"
                       >
-                        <Heart
-                          size={20}
-                          className={
-                            isInWishlist(product.id)
-                              ? "text-[#5F1327] fill-[#5F1327]"
-                              : "text-gray-400"
-                          }
-                        />
+                        <Link
+                          to={`/product/${product.id}`}
+                          className="block relative"
+                        >
+                          <div className="relative bg-[#F4F2F2] p-6 h-64 flex items-center justify-center">
+                            {product.badge && (
+                              <span className="absolute top-4 left-0 bg-[#5F1327] text-white px-6 py-1.5 rounded-r-full text-xs font-bold z-10">
+                                {product.badge}
+                              </span>
+                            )}
+                            {product.customization?.length > 0 && (
+                              <span className="absolute top-12 left-0 bg-green-600 text-white px-3 py-1 rounded-r-full text-xs font-medium z-10">
+                                {product.customization.length}+ customs
+                              </span>
+                            )}
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="max-h-full max-w-full object-contain"
+                              loading="lazy"
+                              onError={(e) =>
+                                (e.target.src = "/placeholder-image.jpg")
+                              }
+                            />
+                          </div>
+                        </Link>
+
+                        <div className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <Link to={`/product/${product.id}`}>
+                              <h3 className="font-medium text-gray-900 text-sm line-clamp-2 hover:text-[#5F1327] transition">
+                                {product.name}
+                              </h3>
+                            </Link>
+                            <button
+                              onClick={() => addToWishlist(product)}
+                              className="p-2 rounded-full hover:bg-gray-100 transition"
+                            >
+                              <Heart
+                                size={20}
+                                className={
+                                  isInWishlist(product.id)
+                                    ? "text-[#5F1327] fill-[#5F1327]"
+                                    : "text-gray-400"
+                                }
+                              />
+                            </button>
+                          </div>
+
+                          <p className="text-lg font-bold text-gray-900">
+                            {product.price}
+                          </p>
+                          {product.sale_price_inc_tax > 0 &&
+                            product.sale_price_inc_tax <
+                              product.cost_inc_tax && (
+                              <p className="text-sm text-green-600 font-medium mt-1">
+                                On Sale!
+                              </p>
+                            )}
+                          <p className="text-xs text-gray-500 mt-1">
+                            {product.category}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="mt-12 flex justify-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-5 py-2.5 rounded bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition"
+                      >
+                        Previous
+                      </button>
+
+                      {[...Array(totalPages).keys()].map((_, i) => {
+                        const page = i + 1;
+                        const show =
+                          totalPages <= 7 ||
+                          page === 1 ||
+                          page === totalPages ||
+                          Math.abs(page - currentPage) <= 2;
+
+                        if (!show) {
+                          if (Math.abs(page - currentPage) === 3)
+                            return (
+                              <span key={page} className="px-2">
+                                ...
+                              </span>
+                            );
+                          return null;
+                        }
+
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`px-4 py-2.5 rounded transition ${
+                              currentPage === page
+                                ? "bg-[#5F1327] text-white"
+                                : "bg-gray-100 hover:bg-gray-200"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      })}
+
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-5 py-2.5 rounded bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition"
+                      >
+                        Next
                       </button>
                     </div>
-                    <span className="text-lg font-semibold text-gray-900">
-                      {product.price}
-                    </span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full text-center text-gray-600">
-                No products found in this category.
-              </div>
-            )}
-          </div>
-          {totalPages > 1 && (
-            <div className="mt-8 flex flex-col items-center space-y-4">
-              <div className="text-gray-600">
-                Page {currentPage} of {totalPages}
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                    currentPage === 1
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                  aria-label="Previous page"
-                >
-                  Previous
-                </button>
-
-                {[...Array(totalPages).keys()]
-                  .filter((page) =>
-                    totalPages <= 10
-                      ? true
-                      : page + 1 === 1 ||
-                        page + 1 === totalPages ||
-                        (page + 1 >= currentPage - 2 &&
-                          page + 1 <= currentPage + 2)
-                  )
-                  .map((page) => (
-                    <button
-                      key={page + 1}
-                      onClick={() => handlePageChange(page + 1)}
-                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                        currentPage === page + 1
-                          ? "bg-[#5F1327] text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                      aria-label={`Page ${page + 1}`}
-                      aria-current={
-                        currentPage === page + 1 ? "page" : undefined
-                      }
-                    >
-                      {page + 1}
-                    </button>
-                  ))}
-
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                    currentPage === totalPages
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                  aria-label="Next page"
-                >
-                  Next
-                </button>
-              </div>
+                  )}
+                </>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
+
       <Footer />
     </div>
   );

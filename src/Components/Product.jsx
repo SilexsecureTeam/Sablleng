@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
+// import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Heart } from "lucide-react";
 import { CartContext } from "../context/CartContextObject";
@@ -8,32 +8,35 @@ import { CartContext } from "../context/CartContextObject";
 const Product = () => {
   const [filter, setFilter] = useState("All");
   const [allProducts, setAllProducts] = useState([]);
-  // const [allCustomProducts, setAllCustomProducts] = useState([]); // ← Commented out
+  // const [allCustomProducts, setAllCustomProducts] = useState([]); // ← Still commented
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const { addToWishlist, isInWishlist } = useContext(CartContext);
   const PRODUCTS_PER_PAGE = 30;
 
   useEffect(() => {
-    const fetchAllData = async () => {
+    const fetchProducts = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const allResponse = await fetch(`https://api.sablle.ng/api/products`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
+        // FASTER: Only active products + only needed fields
+        const response = await fetch(
+          `https://api.sablle.ng/api/products?page=${currentPage}&per_page=${PRODUCTS_PER_PAGE}&is_active=1&fields=id,name,sale_price_inc_tax,customize,category.name,images.url,images.path`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
 
-        if (!allResponse.ok) {
-          throw new Error(
-            `Failed to fetch products: ${allResponse.statusText}`
-          );
+        if (!response.ok) {
+          throw new Error(`Failed to fetch products: ${response.statusText}`);
         }
 
-        const allData = await allResponse.json();
-        const productsArray = Array.isArray(allData) ? allData : [];
+        const result = await response.json();
+        const productsArray = Array.isArray(result.data) ? result.data : result;
 
         const formattedAllProducts = productsArray.map((item) => ({
           id: item.id,
@@ -51,32 +54,32 @@ const Product = () => {
             (item.images?.[0]?.path
               ? `https://api.sablle.ng/storage/${item.images[0].path}`
               : "/placeholder-image.jpg"),
-          customize: !!item.customize, // ensure boolean
+          customize: !!item.customize,
         }));
 
         setAllProducts(formattedAllProducts);
+        setTotalPages(result.last_page || result.total_pages || 1);
 
-        toast.success("Products loaded!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        // toast.success("Products loaded!", {
+        //   position: "top-right",
+        //   autoClose: 3000,
+        // });
       } catch (err) {
         console.error("Fetch error:", err);
         setError(err.message);
-        toast.error(`Error: ${err.message}`, {
-          position: "top-right",
-          autoClose: 5000,
-        });
+        // toast.error(`Error: ${err.message}`, {
+        //   position: "top-right",
+        //   autoClose: 5000,
+        // });
         setAllProducts([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchAllData();
-  }, []);
+    fetchProducts();
+  }, [currentPage]);
 
-  // Unified filtering using only allProducts + customize flag
   const filteredProducts = allProducts.filter((product) => {
     if (filter === "All") return true;
     if (filter === "Customizable") return product.customize === true;
@@ -84,21 +87,18 @@ const Product = () => {
     return true;
   });
 
-  // Pagination
   const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
   const paginatedProducts = filteredProducts.slice(
     startIndex,
     startIndex + PRODUCTS_PER_PAGE
   );
-  const displayTotalPages =
-    Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE) || 1;
 
   useEffect(() => {
     setCurrentPage(1);
   }, [filteredProducts.length]);
 
   const handlePageChange = (page) => {
-    if (page >= 1 && page <= displayTotalPages) {
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
       setCurrentPage(page);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -106,9 +106,8 @@ const Product = () => {
 
   return (
     <div className="py-12 md:py-16">
-      <ToastContainer />
+      {/* <ToastContainer /> */}
       <div className="max-w-[1200px] px-4 sm:px-6 md:px-8 mx-auto">
-        {/* Filter Buttons */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Filter Products
@@ -130,7 +129,6 @@ const Product = () => {
           </div>
         </div>
 
-        {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {isLoading ? (
             <div className="col-span-full text-center py-12">
@@ -157,6 +155,10 @@ const Product = () => {
                       src={product.image}
                       alt={product.name}
                       className="max-h-full max-w-full object-contain"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.target.src = "/placeholder-image.jpg";
+                      }}
                     />
                   </div>
                 </Link>
@@ -205,8 +207,7 @@ const Product = () => {
           )}
         </div>
 
-        {/* Pagination */}
-        {displayTotalPages > 1 && (
+        {totalPages > 1 && (
           <div className="mt-12 flex justify-center">
             <div className="flex items-center gap-2">
               <button
@@ -217,12 +218,12 @@ const Product = () => {
                 Previous
               </button>
 
-              {[...Array(displayTotalPages)].map((_, i) => {
+              {[...Array(totalPages)].map((_, i) => {
                 const page = i + 1;
                 if (
-                  displayTotalPages <= 7 ||
+                  totalPages <= 7 ||
                   page === 1 ||
-                  page === displayTotalPages ||
+                  page === totalPages ||
                   (page >= currentPage - 1 && page <= currentPage + 1)
                 ) {
                   return (
@@ -241,8 +242,7 @@ const Product = () => {
                 }
                 if (
                   (page === 2 && currentPage > 3) ||
-                  (page === displayTotalPages - 1 &&
-                    currentPage < displayTotalPages - 2)
+                  (page === totalPages - 1 && currentPage < totalPages - 2)
                 ) {
                   return <span key={page}>...</span>;
                 }
@@ -251,7 +251,7 @@ const Product = () => {
 
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === displayTotalPages}
+                disabled={currentPage === totalPages}
                 className="px-4 py-2 rounded bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next

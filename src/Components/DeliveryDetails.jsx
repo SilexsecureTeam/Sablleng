@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
-import { toast, ToastContainer } from "react-toastify";
+// import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const DeliveryDetail = () => {
@@ -113,12 +113,12 @@ const DeliveryDetail = () => {
           setSelectedState("Abuja");
         }
       } else {
-        toast.error("Failed to load states");
+        // toast.error("Failed to load states");
         setStates([]);
       }
     } catch (error) {
       console.error("Error fetching states:", error);
-      toast.error("Network error loading states");
+      // toast.error("Network error loading states");
       setStates([]);
     } finally {
       setLoadingStates(false);
@@ -135,12 +135,12 @@ const DeliveryDetail = () => {
       if (response.ok && Array.isArray(data)) {
         setLgas(data);
       } else {
-        toast.error(`Failed to load LGAs for ${state}`);
+        // toast.error(`Failed to load LGAs for ${state}`);
         setLgas([]);
       }
     } catch (error) {
       console.error("Error fetching LGAs:", error);
-      toast.error("Network error loading LGAs");
+      // toast.error("Network error loading LGAs");
       setLgas([]);
     } finally {
       setLoadingLgas(false);
@@ -159,12 +159,12 @@ const DeliveryDetail = () => {
       if (response.ok && Array.isArray(data)) {
         setPlaces(data);
       } else {
-        toast.error(`Failed to load places for ${lga}, ${state}`);
+        // toast.error(`Failed to load places for ${lga}, ${state}`);
         setPlaces([]);
       }
     } catch (error) {
       console.error("Error fetching places:", error);
-      toast.error("Network error loading places");
+      // toast.error("Network error loading places");
       setPlaces([]);
     } finally {
       setLoadingPlaces(false);
@@ -276,7 +276,7 @@ const DeliveryDetail = () => {
     // Check authentication
     if (!auth?.isAuthenticated || !auth?.token) {
       console.log("❌ User not authenticated");
-      toast.error("You must be logged in to checkout");
+      // toast.error("You must be logged in to checkout");
       navigate("/signin", { state: { from: location } });
       return;
     }
@@ -284,7 +284,7 @@ const DeliveryDetail = () => {
     // Check cart
     if (!items || items.length === 0) {
       console.log("❌ Cart is empty");
-      toast.error("Your cart is empty. Please add items before checking out.");
+      // toast.error("Your cart is empty. Please add items before checking out.");
       return;
     }
 
@@ -329,7 +329,7 @@ const DeliveryDetail = () => {
 
       if (response.ok) {
         console.log("✅ Checkout successful");
-        toast.success("Checkout submitted! Proceeding to payment.");
+        // toast.success("Checkout submitted! Proceeding to payment.");
 
         navigate("/payment", {
           state: {
@@ -345,16 +345,16 @@ const DeliveryDetail = () => {
         console.error("❌ Checkout failed:", data);
 
         if (response.status === 401) {
-          toast.error("Session expired. Please log in again.");
+          // toast.error("Session expired. Please log in again.");
           navigate("/signin");
         } else if (response.status === 400 && data.message?.includes("cart")) {
-          toast.error(
-            "Your cart appears to be empty on the server. Please try adding items again."
-          );
+          // toast.error(
+          //   "Your cart appears to be empty on the server. Please try adding items again."
+          // );
         } else {
-          toast.error(
-            data.message || "Failed to process checkout. Please try again."
-          );
+          // toast.error(
+          //   data.message || "Failed to process checkout. Please try again."
+          // );
         }
 
         setErrors({
@@ -364,7 +364,7 @@ const DeliveryDetail = () => {
       }
     } catch (error) {
       console.error("❌ Network error:", error);
-      toast.error("Network error. Please check your connection and try again.");
+      // toast.error("Network error. Please check your connection and try again.");
       setErrors({
         ...errors,
         api: "Network error. Please check your connection.",
@@ -385,7 +385,7 @@ const DeliveryDetail = () => {
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">
-      <ToastContainer position="top-right" autoClose={3000} />
+      {/* <ToastContainer position="top-right" autoClose={3000} /> */}
 
       {/* Header */}
       <div className="mb-8">

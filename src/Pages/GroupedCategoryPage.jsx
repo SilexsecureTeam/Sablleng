@@ -1,5 +1,5 @@
 // Updated GroupedCategoryPage.jsx
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 // import { toast, ToastContainer } from "react-toastify";
 // import "react-toastify/dist/ReactToastify.css";
@@ -7,126 +7,127 @@ import { getTagCategories } from "../utils/categoryGroups";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
 import Noti from "../Components/Noti";
+import { useTags } from "../context/TagContext";
 
 const GroupedCategoryPage = () => {
   const { mainSlug } = useParams();
   const navigate = useNavigate();
-  // eslint-disable-next-line no-unused-vars
-  const [tags, setTags] = useState([]);
-  const [subCategories, setSubCategories] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [tagName, setTagName] = useState("");
 
-  useEffect(() => {
-    const CACHE_KEY = "sablle_tags";
-    // const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
-    const CACHE_EXPIRY = 30 * 1000; // 30 seconds
+  const { tags, isLoading, error } = useTags();
 
-    const fetchTags = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+  const matchedTag = tags.find((tag) => tag.slug === mainSlug);
+  const subCategories = matchedTag ? getTagCategories(matchedTag) : [];
+  const tagName = matchedTag?.name || "Collection";
 
-        // Check cache first
-        const cached = localStorage.getItem(CACHE_KEY);
-        const now = new Date().getTime();
-        let formattedTags = [];
+  // useEffect(() => {
+  //   const CACHE_KEY = "sablle_tags";
+  //   // const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+  //   const CACHE_EXPIRY = 30 * 1000; // 30 seconds
 
-        if (cached) {
-          const { data, timestamp } = JSON.parse(cached);
-          if (now - timestamp < CACHE_EXPIRY) {
-            formattedTags = data;
-          } else {
-            // Cache expired, fetch fresh
-            const response = await fetch("https://api.sablle.ng/api/tags", {
-              method: "GET",
-              headers: { "Content-Type": "application/json" },
-            });
+  //   const fetchTags = async () => {
+  //     try {
+  //       setIsLoading(true);
+  //       setError(null);
 
-            if (!response.ok) {
-              throw new Error(`Failed to fetch tags: ${response.statusText}`);
-            }
+  //       // Check cache first
+  //       const cached = localStorage.getItem(CACHE_KEY);
+  //       const now = new Date().getTime();
+  //       let formattedTags = [];
 
-            const data = await response.json();
-            formattedTags = Array.isArray(data)
-              ? data.filter((item) => item.is_active === true)
-              : [];
+  //       if (cached) {
+  //         const { data, timestamp } = JSON.parse(cached);
+  //         if (now - timestamp < CACHE_EXPIRY) {
+  //           formattedTags = data;
+  //         } else {
+  //           // Cache expired, fetch fresh
+  //           const response = await fetch("https://api.sablle.ng/api/tags", {
+  //             method: "GET",
+  //             headers: { "Content-Type": "application/json" },
+  //           });
 
-            // Cache fresh data
-            localStorage.setItem(
-              CACHE_KEY,
-              JSON.stringify({
-                data: formattedTags,
-                timestamp: now,
-              })
-            );
-          }
-        } else {
-          // No cache, fetch
-          const response = await fetch("https://api.sablle.ng/api/tags", {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-          });
+  //           if (!response.ok) {
+  //             throw new Error(`Failed to fetch tags: ${response.statusText}`);
+  //           }
 
-          if (!response.ok) {
-            throw new Error(`Failed to fetch tags: ${response.statusText}`);
-          }
+  //           const data = await response.json();
+  //           formattedTags = Array.isArray(data)
+  //             ? data.filter((item) => item.is_active === true)
+  //             : [];
 
-          const data = await response.json();
-          formattedTags = Array.isArray(data)
-            ? data.filter((item) => item.is_active === true)
-            : [];
+  //           // Cache fresh data
+  //           localStorage.setItem(
+  //             CACHE_KEY,
+  //             JSON.stringify({
+  //               data: formattedTags,
+  //               timestamp: now,
+  //             })
+  //           );
+  //         }
+  //       } else {
+  //         // No cache, fetch
+  //         const response = await fetch("https://api.sablle.ng/api/tags", {
+  //           method: "GET",
+  //           headers: { "Content-Type": "application/json" },
+  //         });
 
-          // Cache it
-          localStorage.setItem(
-            CACHE_KEY,
-            JSON.stringify({
-              data: formattedTags,
-              timestamp: now,
-            })
-          );
-        }
+  //         if (!response.ok) {
+  //           throw new Error(`Failed to fetch tags: ${response.statusText}`);
+  //         }
 
-        setTags(formattedTags);
+  //         const data = await response.json();
+  //         formattedTags = Array.isArray(data)
+  //           ? data.filter((item) => item.is_active === true)
+  //           : [];
 
-        // Find the tag matching the slug
-        const matchedTag = formattedTags.find((tag) => tag.slug === mainSlug);
+  //         // Cache it
+  //         localStorage.setItem(
+  //           CACHE_KEY,
+  //           JSON.stringify({
+  //             data: formattedTags,
+  //             timestamp: now,
+  //           })
+  //         );
+  //       }
 
-        if (matchedTag) {
-          setTagName(matchedTag.name);
-          const subs = getTagCategories(matchedTag);
-          setSubCategories(subs);
+  //       setTags(formattedTags);
 
-          if (subs.length > 0) {
-            // toast.success(`Loaded ${subs.length} categories!`, {
-            //   position: "top-right",
-            //   autoClose: 3000,
-            // });
-          } else {
-            // toast.info("No categories found—check back soon!", {
-            //   position: "top-right",
-            //   autoClose: 5000,
-            // });
-          }
-        } else {
-          throw new Error("Tag not found");
-        }
-      } catch (err) {
-        console.error("Fetch tags error:", err);
-        setError(err.message);
-        // toast.error(`Error: ${err.message}`, {
-        //   position: "top-right",
-        //   autoClose: 5000,
-        // });
-        setSubCategories([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  //       // Find the tag matching the slug
+  //       const matchedTag = formattedTags.find((tag) => tag.slug === mainSlug);
 
-    fetchTags();
-  }, [mainSlug]);
+  //       if (matchedTag) {
+  //         setTagName(matchedTag.name);
+  //         const subs = getTagCategories(matchedTag);
+  //         setSubCategories(subs);
+
+  //         if (subs.length > 0) {
+  //           // toast.success(`Loaded ${subs.length} categories!`, {
+  //           //   position: "top-right",
+  //           //   autoClose: 3000,
+  //           // });
+  //         } else {
+  //           // toast.info("No categories found—check back soon!", {
+  //           //   position: "top-right",
+  //           //   autoClose: 5000,
+  //           // });
+  //         }
+  //       } else {
+  //         throw new Error("Tag not found");
+  //       }
+  //     } catch (err) {
+  //       console.error("Fetch tags error:", err);
+  //       setError(err.message);
+  //       // toast.error(`Error: ${err.message}`, {
+  //       //   position: "top-right",
+  //       //   autoClose: 5000,
+  //       // });
+  //       setSubCategories([]);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+
+  //   fetchTags();
+  // }, [mainSlug]);
 
   if (isLoading) {
     return (

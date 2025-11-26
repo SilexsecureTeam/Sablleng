@@ -7,6 +7,7 @@ import "./App.css";
 import logo from "./assets/logo.png";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { TagProvider } from "./context/TagContext";
 
 const HomePage = lazy(() => import("./Pages/HomePage"));
 const AboutPage = lazy(() => import("./Pages/AboutPage"));
@@ -37,6 +38,7 @@ const MyProfilePage = lazy(() => import("./Pages/MyProfilePage"));
 const OrdersPage = lazy(() => import("./Pages/OrdersPage"));
 const GroupedCategoryPage = lazy(() => import("./Pages/GroupedCategoryPage"));
 const WishListPage = lazy(() => import("./Pages/WishListPage"));
+const SearchResultsPage = lazy(() => import("./Pages/SearchResultsPage"));
 const AdminForgotPassword = lazy(() => import("./Auth/AdminForgotPassword"));
 
 const LoadingSpinner = () => {
@@ -94,65 +96,71 @@ const App = () => {
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
-          <div className="min-h-screen">
-            <ToastContainer position="top-right" autoClose={3000} />
-            <ScrollToTop />
-            <Suspense fallback={<LoadingSpinner />}>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/product" element={<ProductPage />} />
-                <Route path="/product/:id" element={<ProductPage />} />
-                <Route
-                  path="/categories/:categorySlug"
-                  element={<CategoryPage />}
-                />
-                <Route
-                  path="/groups/:mainSlug"
-                  element={<GroupedCategoryPage />}
-                />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/delivery" element={<DeliveryPage />} />
-                <Route path="/payment" element={<PaymentPage />} />
-                <Route path="/order-success" element={<OrderSuccessPage />} />
-                <Route
-                  path="/order-success/:orderId"
-                  element={<OrderSuccessPage />}
-                />
-                <Route path="/order-tracking" element={<OrderTrackingPage />} />
-                <Route path="/profile" element={<MyProfilePage />} />
-                <Route path="/orders" element={<OrdersPage />} />
-                <Route path="/wishlist" element={<WishListPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/admin/signin" element={<AdminSignIn />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route
-                  path="/admin/forgot-password"
-                  element={<AdminForgotPassword />}
-                />
-                <Route path="/reset-password" element={<PasswordReset />} />
-                <Route path="/otp" element={<OtpPage />} />
-                <Route path="/admin/otp" element={<AdminOtpPage />} />
-                <Route path="/customize" element={<CustomizablePage />} />
-                <Route path="/terms" element={<TermsPage />} />
-                <Route path="/cookie-policy" element={<CookiesPage />} />
-                <Route path="/privacy-policy" element={<PrivacyPage />} />
-                <Route path="/careers" element={<CareerPage />} />
-                <Route path="/faqs" element={<FaqPage />} />
-                <Route
-                  path="/dashboard/*"
-                  element={
-                    <ProtectedRoute>
-                      <DashboardLayout />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </div>
+          <TagProvider>
+            <div className="min-h-screen">
+              <ToastContainer position="top-right" autoClose={3000} />
+              <ScrollToTop />
+              <Suspense fallback={<LoadingSpinner />}>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/product" element={<ProductPage />} />
+                  <Route path="/product/:id" element={<ProductPage />} />
+                  <Route
+                    path="/categories/:categorySlug"
+                    element={<CategoryPage />}
+                  />
+                  <Route
+                    path="/groups/:mainSlug"
+                    element={<GroupedCategoryPage />}
+                  />
+                  <Route path="/search" element={<SearchResultsPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/delivery" element={<DeliveryPage />} />
+                  <Route path="/payment" element={<PaymentPage />} />
+                  <Route path="/order-success" element={<OrderSuccessPage />} />
+                  <Route
+                    path="/order-success/:orderId"
+                    element={<OrderSuccessPage />}
+                  />
+                  <Route
+                    path="/order-tracking"
+                    element={<OrderTrackingPage />}
+                  />
+                  <Route path="/profile" element={<MyProfilePage />} />
+                  <Route path="/orders" element={<OrdersPage />} />
+                  <Route path="/wishlist" element={<WishListPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/signin" element={<SignIn />} />
+                  <Route path="/admin/signin" element={<AdminSignIn />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route
+                    path="/admin/forgot-password"
+                    element={<AdminForgotPassword />}
+                  />
+                  <Route path="/reset-password" element={<PasswordReset />} />
+                  <Route path="/otp" element={<OtpPage />} />
+                  <Route path="/admin/otp" element={<AdminOtpPage />} />
+                  <Route path="/customize" element={<CustomizablePage />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/cookie-policy" element={<CookiesPage />} />
+                  <Route path="/privacy-policy" element={<PrivacyPage />} />
+                  <Route path="/careers" element={<CareerPage />} />
+                  <Route path="/faqs" element={<FaqPage />} />
+                  <Route
+                    path="/dashboard/*"
+                    element={
+                      <ProtectedRoute>
+                        <DashboardLayout />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </div>
+          </TagProvider>
         </CartProvider>
       </AuthProvider>
     </BrowserRouter>

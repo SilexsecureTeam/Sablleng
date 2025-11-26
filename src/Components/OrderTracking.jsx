@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { Check, ArrowLeft, Phone, Mail, MapPin } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContextObject";
-import { toast, ToastContainer } from "react-toastify";
+// import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const OrderTracking = () => {
@@ -39,7 +39,7 @@ const OrderTracking = () => {
 
   useEffect(() => {
     if (!orderReference) {
-      toast.error("No order found");
+      // toast.error("No order found");
       navigate("/orders");
       return;
     }
@@ -59,7 +59,7 @@ const OrderTracking = () => {
         }
       } catch (err) {
         setError(err.message);
-        toast.error("Failed to load order");
+        // toast.error("Failed to load order");
       } finally {
         setIsLoading(false);
       }
@@ -112,7 +112,7 @@ const OrderTracking = () => {
 
   return (
     <>
-      <ToastContainer />
+      {/* <ToastContainer /> */}
 
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-stone-100 p-6">
         <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl border-8 border-[#8b7355] p-10">

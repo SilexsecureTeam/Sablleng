@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
-import { toast, ToastContainer } from "react-toastify";
+// import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { User, Mail, Phone, Calendar, Loader2 } from "lucide-react";
 
@@ -34,10 +34,10 @@ const MyProfile = () => {
   // Redirect to sign-in if not authenticated
   useEffect(() => {
     if (!auth.isAuthenticated) {
-      toast.error("Please sign in to view your profile", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      // toast.error("Please sign in to view your profile", {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      // });
       navigate("/signin");
     }
   }, [auth.isAuthenticated, navigate]);
@@ -84,10 +84,10 @@ const MyProfile = () => {
       } catch (error) {
         console.error("MyProfile: Error fetching orders:", error);
         setError(error.message);
-        toast.error("Failed to load orders. Please try again.", {
-          position: "top-right",
-          autoClose: 5000,
-        });
+        // toast.error("Failed to load orders. Please try again.", {
+        //   position: "top-right",
+        //   autoClose: 5000,
+        // });
         setOrders([]);
       } finally {
         setIsLoading(false);
@@ -101,7 +101,7 @@ const MyProfile = () => {
 
   return (
     <div className="bg-[#FFF2F2] min-h-screen py-8">
-      <ToastContainer />
+      {/* <ToastContainer /> */}
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8">
         {/* Header */}
         <div className="mb-6">

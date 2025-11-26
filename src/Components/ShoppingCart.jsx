@@ -3,7 +3,7 @@ import { Minus, Plus, X } from "lucide-react";
 import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
 import { useNavigate, useLocation } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
+// import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function ShoppingCart() {
@@ -35,25 +35,25 @@ export default function ShoppingCart() {
 
     try {
       removeItem(id);
-      toast.success("Item removed from cart!", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      // toast.success("Item removed from cart!", {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      // });
     } catch (error) {
       console.error("Error removing item:", error);
-      toast.error("Failed to remove item. Please try again.", {
-        position: "top-right",
-        autoClose: 4000,
-      });
+      // toast.error("Failed to remove item. Please try again.", {
+      //   position: "top-right",
+      //   autoClose: 4000,
+      // });
     }
   };
 
   const handleCheckout = () => {
     if (!authContext?.auth?.isAuthenticated) {
-      toast.error("Please log in to continue with checkout", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      // toast.error("Please log in to continue with checkout", {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      // });
       navigate("/signin", { state: { from: location } });
       return;
     }
@@ -62,7 +62,7 @@ export default function ShoppingCart() {
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">
-      <ToastContainer />
+      {/* <ToastContainer /> */}
       <h1 className="text-xl sm:text-2xl font-semibold mb-6 sm:mb-8">
         Shopping Cart
       </h1>

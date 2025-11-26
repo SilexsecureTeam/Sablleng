@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useContext } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CartContext } from "../context/CartContextObject";
 import { AuthContext } from "../context/AuthContextObject";
-import { toast, ToastContainer } from "react-toastify";
+// import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ImageUploadComponent from "./ImageUploadComponent";
 
@@ -85,14 +85,14 @@ const ProductDetail = () => {
       } catch (err) {
         console.error("Fetch error:", err);
         setError(err.message);
-        toast.error(`Error: ${err.message}`, {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+        // toast.error(`Error: ${err.message}`, {
+        //   position: "top-right",
+        //   autoClose: 5000,
+        //   hideProgressBar: false,
+        //   closeOnClick: true,
+        //   pauseOnHover: true,
+        //   draggable: true,
+        // });
       } finally {
         setIsLoading(false);
       }
@@ -104,7 +104,7 @@ const ProductDetail = () => {
   const handleAddToCart = () => {
     if (!product) return;
     if (!auth?.isAuthenticated || !auth?.token) {
-      toast.error("Please log in to add to cart");
+      // toast.error("Please log in to add to cart");
       return;
     }
 
@@ -118,10 +118,10 @@ const ProductDetail = () => {
       customized: false,
     });
 
-    toast.success(`${product.name} added to cart!`, {
-      position: "top-right",
-      autoClose: 3000,
-    });
+    // toast.success(`${product.name} added to cart!`, {
+    //   position: "top-right",
+    //   autoClose: 3000,
+    // });
   };
 
   const scrollLeft = () => {
@@ -163,7 +163,7 @@ const ProductDetail = () => {
 
   return (
     <div className="bg-white py-8 md:py-10">
-      <ToastContainer />
+      {/* <ToastContainer /> */}
       <div className="max-w-[1200px] mx-auto">
         <div className="bg-white p-8">
           {isCustomizing ? (

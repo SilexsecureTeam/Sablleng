@@ -2,7 +2,7 @@ import React, { useState, useContext, useRef, useEffect } from "react";
 import { CartContext } from "../context/CartContextObject";
 import { useNavigate } from "react-router-dom";
 import { X, Upload, Image, RotateCcw } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
+// import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const ImageUploadComponent = ({ product, auth, onBack }) => {
@@ -117,11 +117,11 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
   const handleFileSelect = (file) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file (PNG, JPEG, etc.)");
+      // toast.error("Please upload an image file (PNG, JPEG, etc.)");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("File size exceeds 5MB limit");
+      // toast.error("File size exceeds 5MB limit");
       return;
     }
     const reader = new FileReader();
@@ -229,10 +229,10 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     setFontSize(24);
     setTextColor("#000000");
     setImageSize(0.5);
-    toast.info("Customizations reset", {
-      position: "top-right",
-      autoClose: 3000,
-    });
+    // toast.info("Customizations reset", {
+    //   position: "top-right",
+    //   autoClose: 3000,
+    // });
   };
 
   const adjustImageSize = (delta) => {
@@ -244,15 +244,15 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
 
   const handleSubmitCustomization = async () => {
     if (!product) {
-      toast.error("No product selected");
+      // toast.error("No product selected");
       return;
     }
     if (!uploadedImage && !text) {
-      toast.error("Please upload an image or add text");
+      // toast.error("Please upload an image or add text");
       return;
     }
     if (!auth?.isAuthenticated || !auth?.token) {
-      toast.error("Please log in to customize products");
+      // toast.error("Please log in to customize products");
       navigate("/signin");
       return;
     }
@@ -287,10 +287,10 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
       }
 
       const data = await response.json();
-      toast.success("Customization submitted successfully!", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      // toast.success("Customization submitted successfully!", {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      // });
 
       const combinedImage =
         data.customized_image_url || (await generateCombinedImage());
@@ -321,10 +321,10 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     } catch (err) {
       console.error("Customization error:", err);
       setApiError(err.message);
-      toast.error(`Error: ${err.message}`, {
-        position: "top-right",
-        autoClose: 5000,
-      });
+      // toast.error(`Error: ${err.message}`, {
+      //   position: "top-right",
+      //   autoClose: 5000,
+      // });
     } finally {
       setIsSubmitting(false);
     }
@@ -392,7 +392,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
 
   return (
     <div className="bg-white">
-      <ToastContainer />
+      {/* <ToastContainer /> */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 lg:p-6">
         <div>
           <div className="flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 p-8 min-h-[400px]">

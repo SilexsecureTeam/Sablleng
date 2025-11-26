@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useContext } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContextObject";
 import { AuthContext } from "../context/AuthContextObject";
-import { toast, ToastContainer } from "react-toastify";
+// import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ImageUploadComponent from "./ImageUploadComponent";
 
@@ -163,10 +163,10 @@ const ProductDetail = () => {
         });
       } catch (err) {
         setError(err.message);
-        toast.error(`Error: ${err.message}`, {
-          position: "top-right",
-          autoClose: 5000,
-        });
+        // toast.error(`Error: ${err.message}`, {
+        //   position: "top-right",
+        //   autoClose: 5000,
+        // });
       } finally {
         setIsLoading(false);
       }
@@ -217,7 +217,7 @@ const ProductDetail = () => {
 
   const handleAddToCart = async () => {
     if (!product) {
-      toast.error("Product information not available");
+      // toast.error("Product information not available");
       return;
     }
 
@@ -227,7 +227,7 @@ const ProductDetail = () => {
       const price = product.rawPrice;
 
       if (!price || price <= 0) {
-        toast.error("Invalid product price");
+        // toast.error("Invalid product price");
         return;
       }
 
@@ -244,16 +244,16 @@ const ProductDetail = () => {
       });
 
       setQuantity(1);
-      toast.success(`${product.name} added to cart!`, {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      // toast.success(`${product.name} added to cart!`, {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      // });
     } catch (error) {
       console.error("Error adding to cart:", error);
-      toast.error("Failed to add item to cart. Please try again.", {
-        position: "top-right",
-        autoClose: 5000,
-      });
+      // toast.error("Failed to add item to cart. Please try again.", {
+      //   position: "top-right",
+      //   autoClose: 5000,
+      // });
     } finally {
       setIsAddingToCart(false);
     }
@@ -261,7 +261,7 @@ const ProductDetail = () => {
 
   const handleBuyNow = async () => {
     if (!product) {
-      toast.error("Product not available");
+      // toast.error("Product not available");
       return;
     }
 
@@ -271,7 +271,7 @@ const ProductDetail = () => {
       const price = product.rawPrice;
 
       if (!price || price <= 0) {
-        toast.error("Invalid product price");
+        // toast.error("Invalid product price");
         return;
       }
 
@@ -289,10 +289,10 @@ const ProductDetail = () => {
       });
 
       // Success toast
-      toast.success(`1 item added! Taking you to checkout...`, {
-        position: "top-right",
-        autoClose: 2000,
-      });
+      // toast.success(`1 item added! Taking you to checkout...`, {
+      //   position: "top-right",
+      //   autoClose: 2000,
+      // });
 
       // Redirect straight to delivery (skip cart page)
       setTimeout(() => {
@@ -300,7 +300,7 @@ const ProductDetail = () => {
       }, 800);
     } catch (error) {
       console.error("Buy Now failed:", error);
-      toast.error("Failed to process. Please try again.");
+      // toast.error("Failed to process. Please try again.");
     } finally {
       setIsAddingToCart(false);
     }
@@ -333,7 +333,7 @@ const ProductDetail = () => {
 
   return (
     <div className="bg-white py-8 md:py-10">
-      <ToastContainer />
+      {/* <ToastContainer /> */}
       <div className="max-w-[1200px] mx-auto">
         <div className="bg-white p-8">
           {isCustomizing ? (
@@ -553,7 +553,7 @@ const ProductDetail = () => {
                       onClick={handleBuyNow}
                       disabled={isAddingToCart || !product.rawPrice}
                     >
-                      {isAddingToCart ? "Processing..." : "Buy Now"}
+                      {isAddingToCart ? "Processing..." : "Checkout"}
                     </button>
                   )}
                 </div>

@@ -3,7 +3,7 @@ import { Download, Printer, Phone } from "lucide-react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
-import { toast, ToastContainer } from "react-toastify";
+// import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
   PDFDownloadLink,
@@ -29,7 +29,7 @@ const OrderSuccess = () => {
 
   useEffect(() => {
     if (!location.state && !urlOrderId) {
-      toast.warn("Please select an order from your order history");
+      // toast.warn("Please select an order from your order history");
       navigate("/orders");
       return;
     }
@@ -37,7 +37,7 @@ const OrderSuccess = () => {
 
   useEffect(() => {
     if (!auth?.isAuthenticated) {
-      toast.error("Please log in to view your order");
+      // toast.error("Please log in to view your order");
       navigate("/signin", { state: { from: location } });
       return;
     }
@@ -93,7 +93,7 @@ const OrderSuccess = () => {
         }
       } catch (err) {
         setError(err.message);
-        toast.error("Failed to load order details");
+        // toast.error("Failed to load order details");
         navigate("/orders");
       } finally {
         setIsFetching(false);
@@ -150,7 +150,7 @@ const OrderSuccess = () => {
 
   return (
     <>
-      <ToastContainer />
+      {/* <ToastContainer /> */}
 
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-stone-100 p-4 print:p-0 print:bg-white">
         <div className="max-w-4xl mx-auto bg-[#fefdfb] shadow-2xl border-8 border-[#8b7355] p-10 print:border-8 print:shadow-none print:max-w-full print:p-8">

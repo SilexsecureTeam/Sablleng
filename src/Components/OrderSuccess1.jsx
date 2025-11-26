@@ -3,7 +3,7 @@ import { Check, Download, Printer } from "lucide-react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContextObject";
 import { CartContext } from "../context/CartContextObject";
-import { toast, ToastContainer } from "react-toastify";
+// import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
   PDFDownloadLink,
@@ -31,10 +31,10 @@ const OrderSuccess = () => {
   // Redirect to /orders if not coming from PaymentComponent or no orderId
   useEffect(() => {
     if (!location.state && !urlOrderId) {
-      toast.warn("Please select an order from your order history", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      // toast.warn("Please select an order from your order history", {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      // });
       navigate("/orders");
     }
   }, [location.state, urlOrderId, navigate, location]);
@@ -42,10 +42,10 @@ const OrderSuccess = () => {
   // Check authentication and fetch order details
   useEffect(() => {
     if (!auth?.isAuthenticated) {
-      toast.error("Please log in to view your order confirmation", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      // toast.error("Please log in to view your order confirmation", {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      // });
       navigate("/signin", { state: { from: location } });
       return;
     }
@@ -54,10 +54,10 @@ const OrderSuccess = () => {
       const orderIdToFetch = urlOrderId || location.state?.orderId;
       if (!orderIdToFetch) {
         setError("No order reference provided.");
-        toast.error("No order reference provided. Please select an order.", {
-          position: "top-right",
-          autoClose: 4000,
-        });
+        // toast.error("No order reference provided. Please select an order.", {
+        //   position: "top-right",
+        //   autoClose: 4000,
+        // });
         navigate("/orders");
         return;
       }
@@ -105,10 +105,10 @@ const OrderSuccess = () => {
       } catch (error) {
         console.error("OrderSuccess: Fetch error:", error);
         setError(`Failed to load order details: ${error.message}`);
-        toast.error(`Failed to load order details: ${error.message}`, {
-          position: "top-right",
-          autoClose: 4000,
-        });
+        // toast.error(`Failed to load order details: ${error.message}`, {
+        //   position: "top-right",
+        //   autoClose: 4000,
+        // });
         navigate("/orders");
       } finally {
         setIsFetching(false);
@@ -138,10 +138,10 @@ const OrderSuccess = () => {
     } catch (err) {
       console.error("Print error:", err);
       setError("Failed to initiate print. Please try again.");
-      toast.error("Failed to initiate print. Please try again.", {
-        position: "top-right",
-        autoClose: 4000,
-      });
+      // toast.error("Failed to initiate print. Please try again.", {
+      //   position: "top-right",
+      //   autoClose: 4000,
+      // });
     } finally {
       setTimeout(() => setIsPrinting(false), 1000);
     }
@@ -442,7 +442,7 @@ const OrderSuccess = () => {
     const [hasError, setHasError] = useState(false);
     useEffect(() => {
       if (hasError) {
-        toast.error("PDF generation failed—try refreshing.");
+        // toast.error("PDF generation failed—try refreshing.");
         setHasError(false);
       }
     }, [hasError]);
@@ -463,7 +463,7 @@ const OrderSuccess = () => {
   if (!orderData || error) {
     return (
       <div className="max-w-[800px] mx-auto bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8 my-8">
-        <ToastContainer position="top-right" autoClose={3000} />
+        {/* <ToastContainer position="top-right" autoClose={3000} /> */}
         <div className="text-center">
           <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">
             Error Loading Order
@@ -488,7 +488,7 @@ const OrderSuccess = () => {
       id="receipt-content"
       className="max-w-[800px] mx-auto bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8 my-8 font-poppins"
     >
-      <ToastContainer position="top-right" autoClose={3000} />
+      {/* <ToastContainer position="top-right" autoClose={3000} /> */}
       {/* Success Icon with Animation */}
       <div className="text-center mb-6 animate-fade-in">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-[#5F1327] rounded-full mb-4 border-2 border-green-[#5F1327]/40 p-2 transform transition-transform hover:scale-110">

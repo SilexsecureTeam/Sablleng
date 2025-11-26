@@ -2,7 +2,7 @@ import React, { useState, useContext } from "react";
 import { CartContext } from "../context/CartContextObject";
 import { AuthContext } from "../context/AuthContextObject";
 import { useNavigate, useLocation } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
+// import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import i2 from "../assets/i2.png";
 import PaystackPop from "@paystack/inline-js";
@@ -60,10 +60,10 @@ const PaymentComponent = () => {
 
   const handlePaystackPayment = () => {
     if (!auth.isAuthenticated || !auth.token) {
-      toast.error("Please log in to proceed with payment", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      // toast.error("Please log in to proceed with payment", {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      // });
       navigate("/signin", { state: { from: location } });
       return;
     }
@@ -72,22 +72,22 @@ const PaymentComponent = () => {
       !auth.user?.email ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(auth.user.email)
     ) {
-      toast.error(
-        "Valid email required for payment. Please update your profile.",
-        {
-          position: "top-right",
-          autoClose: 3000,
-        }
-      );
+      // toast.error(
+      //   "Valid email required for payment. Please update your profile.",
+      //   {
+      //     position: "top-right",
+      //     autoClose: 3000,
+      //   }
+      // );
       navigate("/signin");
       return;
     }
 
     if (items.length === 0) {
-      toast.error("Your cart is empty.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      // toast.error("Your cart is empty.", {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      // });
       return;
     }
 
@@ -95,13 +95,13 @@ const PaymentComponent = () => {
     const orderReference =
       location.state?.selectedDelivery?.orderData?.order_reference;
     if (!orderReference) {
-      toast.error(
-        "Order reference not found. Please complete checkout first.",
-        {
-          position: "top-right",
-          autoClose: 3000,
-        }
-      );
+      // toast.error(
+      //   "Order reference not found. Please complete checkout first.",
+      //   {
+      //     position: "top-right",
+      //     autoClose: 3000,
+      //   }
+      // );
       navigate("/checkout");
       return;
     }
@@ -144,17 +144,18 @@ const PaymentComponent = () => {
       },
       onCancel: () => {
         setIsProcessingPayment(false);
-        toast.warning("Payment cancelled.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        // toast.warning("Payment cancelled.", {
+        //   position: "top-right",
+        //   autoClose: 3000,
+        // });
       },
       onError: (error) => {
         setIsProcessingPayment(false);
-        toast.error(`Payment error: ${error.message || "An error occurred."}`, {
-          position: "top-right",
-          autoClose: 4000,
-        });
+        // toast.error(`Payment error: ${error.message || "An error occurred."}`, {
+        //   position: "top-right",
+        //   autoClose: 4000,
+        // });
+        console.error("Paystack payment error:", error);
       },
     });
   };
@@ -181,13 +182,13 @@ const PaymentComponent = () => {
       // console.log("Verification response:", data);
 
       if (!response.ok || data.error) {
-        toast.error(
-          data.error || "Payment verification failed. Please contact support.",
-          {
-            position: "top-right",
-            autoClose: 4000,
-          }
-        );
+        // toast.error(
+        //   data.error || "Payment verification failed. Please contact support.",
+        //   {
+        //     position: "top-right",
+        //     autoClose: 4000,
+        //   }
+        // );
         setIsProcessingPayment(false);
         return;
       }
@@ -200,29 +201,30 @@ const PaymentComponent = () => {
       localStorage.setItem("cart_total", 0);
       localStorage.removeItem("cart_session_id");
 
-      toast.success("Payment successful! Redirecting...", {
-        position: "top-right",
-        autoClose: 3000,
-        onClose: () =>
-          navigate("/order-success", {
-            state: {
-              orderId: orderReference, // Use order_reference for consistency
-              items,
-              subtotal,
-              vat,
-              delivery,
-              total,
-              address: selectedAddress,
-              paymentMethod: "Paystack",
-            },
-          }),
-      });
+      // toast.success("Payment successful! Redirecting...", {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      //   onClose: () =>
+      //     navigate("/order-success", {
+      //       state: {
+      //         orderId: orderReference, // Use order_reference for consistency
+      //         items,
+      //         subtotal,
+      //         vat,
+      //         delivery,
+      //         total,
+      //         address: selectedAddress,
+      //         paymentMethod: "Paystack",
+      //       },
+      //     }),
+      // });
     } catch (error) {
-      toast.error(`Verification request failed: ${error.message}`, {
-        position: "top-right",
-        autoClose: 4000,
-      });
+      // toast.error(`Verification request failed: ${error.message}`, {
+      //   position: "top-right",
+      //   autoClose: 4000,
+      // });
       setIsProcessingPayment(false);
+      console.error("Payment verification error:", error);
     }
   };
 
@@ -231,10 +233,10 @@ const PaymentComponent = () => {
       handlePaystackPayment();
     } else if (selectedPayment === "cod") {
       if (!auth.isAuthenticated || !auth.token) {
-        toast.error("Please log in to proceed with payment", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        // toast.error("Please log in to proceed with payment", {
+        //   position: "top-right",
+        //   autoClose: 3000,
+        // });
         navigate("/signin");
         return;
       }
@@ -251,30 +253,30 @@ const PaymentComponent = () => {
       localStorage.setItem("cart_total", 0);
       localStorage.removeItem("cart_session_id");
 
-      toast.success("Order placed successfully!", {
-        position: "top-right",
-        autoClose: 3000,
-        onClose: () =>
-          navigate("/order-success", {
-            state: {
-              orderId: cleanOrderId,
-              items,
-              subtotal,
-              vat,
-              delivery,
-              total,
-              address: selectedAddress,
-              paymentMethod: "Cash on Delivery",
-            },
-          }),
-      });
+      // toast.success("Order placed successfully!", {
+      //   position: "top-right",
+      //   autoClose: 3000,
+      //   onClose: () =>
+      //     navigate("/order-success", {
+      //       state: {
+      //         orderId: cleanOrderId,
+      //         items,
+      //         subtotal,
+      //         vat,
+      //         delivery,
+      //         total,
+      //         address: selectedAddress,
+      //         paymentMethod: "Cash on Delivery",
+      //       },
+      //     }),
+      // });
       setIsProcessingPayment(false);
     }
   };
 
   return (
     <div className="max-w-[1200px] mx-auto p-4 lg:p-6">
-      <ToastContainer position="top-right" autoClose={3000} />
+      {/* <ToastContainer position="top-right" autoClose={3000} /> */}
       <div className="grid md:grid-cols-2 gap-8 lg:gap-20">
         <div className="space-y-6">
           <div>
