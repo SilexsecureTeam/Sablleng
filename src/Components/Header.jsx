@@ -52,6 +52,7 @@ const Header = React.memo(() => {
   const overlayRef = useRef(null);
   const navigate = useNavigate();
   const { tags, isLoading: isLoadingTags, error: errorTags } = useTags();
+  const [searchOpen, setSearchOpen] = useState(false);
   // Memoized cart item count
   const cartItemCount = useMemo(
     () => items.reduce((sum, item) => sum + item.quantity, 0),
@@ -359,126 +360,148 @@ const Header = React.memo(() => {
                 className="w-[120px] h-[25px]"
               />
             </Link>
-
-            {/* Right: Icons */}
-            <div className="flex items-center gap-3 md:gap-4 flex-shrink-0">
-              <HeaderSearch />
-
-              {/* Profile Section */}
-              <div className="relative z-10" ref={profileRefDesktop}>
-                {auth.isAuthenticated ? (
-                  <button
-                    onClick={toggleProfileDropdown}
-                    className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors duration-200 relative z-20"
-                    aria-label="User Profile"
-                    aria-expanded={profileOpen}
-                    role="button"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#5F1327] font-semibold text-sm">
-                      {getInitials(auth.user?.name)}
-                    </div>
-                    <span className="text-sm font-medium">
-                      {auth.user?.name || "User"}
-                    </span>
-                    <ChevronDown
-                      size={16}
-                      className={`transition-transform duration-200 ${
-                        profileOpen ? "rotate-180" : ""
-                      }`}
+            <div className="flex items-center gap-3 md:gap-4">
+              {/* Desktop: Search Icon → Expands Full Width Below Logo Row */}
+              {!searchOpen ? (
+                <button
+                  onClick={() => setSearchOpen(true)}
+                  className="text-white hover:text-gray-200 transition"
+                >
+                  <Search size={20} />
+                </button>
+              ) : (
+                <div className="absolute left-0 right-0 top-full bg-[#5F1327] px-4 py-3 shadow-lg z-50 hidden md:block">
+                  <div className="max-w-3xl mx-auto">
+                    <HeaderSearch
+                      autoFocus
+                      onClose={() => setSearchOpen(false)}
                     />
-                  </button>
-                ) : (
-                  <Link
-                    to="/signin"
-                    className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200"
-                    aria-label="Sign In"
-                  >
-                    <User size={20} />
-                  </Link>
-                )}
-                {auth.isAuthenticated && profileOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-64 bg-white shadow-lg rounded-lg py-2 border border-gray-100 z-50 max-h-[70vh] overflow-y-auto">
-                    {/* User Info Section */}
-                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-[#5F1327] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                  </div>
+                </div>
+              )}
+
+              {/* Right: Icons */}
+              <div className="flex items-center gap-3 md:gap-4 flex-shrink-0 relative">
+                {/* Profile Section */}
+                <div className="relative z-10" ref={profileRefDesktop}>
+                  {auth.isAuthenticated ? (
+                    <button
+                      onClick={toggleProfileDropdown}
+                      className="flex items-center gap-2 text-white hover:text-gray-200 transition-colors duration-200 relative z-20"
+                      aria-label="User Profile"
+                      aria-expanded={profileOpen}
+                      role="button"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#5F1327] font-semibold text-sm">
                         {getInitials(auth.user?.name)}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate">
-                          {auth.user?.name || "N/A"}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {auth.user?.email || "N/A"}
-                        </p>
+                      <span className="text-sm font-medium">
+                        {auth.user?.name || "User"}
+                      </span>
+                      <ChevronDown
+                        size={16}
+                        className={`transition-transform duration-200 ${
+                          profileOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                  ) : (
+                    <Link
+                      to="/signin"
+                      className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200"
+                      aria-label="Sign In"
+                    >
+                      <User size={20} />
+                    </Link>
+                  )}
+                  {auth.isAuthenticated && profileOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-white shadow-lg rounded-lg py-2 border border-gray-100 z-50 max-h-[70vh] overflow-y-auto">
+                      {/* User Info Section */}
+                      <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-[#5F1327] flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                          {getInitials(auth.user?.name)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 truncate">
+                            {auth.user?.name || "N/A"}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {auth.user?.email || "N/A"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Menu Items */}
+                      <div className="py-1" role="menu">
+                        <Link
+                          to="/profile"
+                          className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
+                          role="menuitem"
+                          onClick={() => setProfileOpen(false)}
+                        >
+                          <UserCircle size={18} />
+                          <span className="text-sm font-medium">
+                            My Profile
+                          </span>
+                        </Link>
+
+                        <Link
+                          to="/orders"
+                          className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
+                          role="menuitem"
+                          onClick={() => setProfileOpen(false)}
+                        >
+                          <Package size={18} />
+                          <span className="text-sm font-medium">
+                            Order History
+                          </span>
+                        </Link>
+
+                        <Link
+                          to="/wishlist"
+                          className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
+                          role="menuitem"
+                          onClick={() => setProfileOpen(false)}
+                        >
+                          <Heart size={18} />
+                          <span className="text-sm font-medium">
+                            My Wishlist
+                          </span>
+                        </Link>
+
+                        <div className="border-t border-gray-100 my-1"></div>
+
+                        <button
+                          onClick={() => {
+                            logout();
+                            setProfileOpen(false);
+                            setMobileMenu(false);
+                          }}
+                          className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors duration-200"
+                          role="menuitem"
+                        >
+                          <LogOut size={18} />
+                          <span className="text-sm font-medium">Sign Out</span>
+                        </button>
                       </div>
                     </div>
+                  )}
+                </div>
 
-                    {/* Menu Items */}
-                    <div className="py-1" role="menu">
-                      <Link
-                        to="/profile"
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
-                        role="menuitem"
-                        onClick={() => setProfileOpen(false)}
-                      >
-                        <UserCircle size={18} />
-                        <span className="text-sm font-medium">My Profile</span>
-                      </Link>
-
-                      <Link
-                        to="/orders"
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
-                        role="menuitem"
-                        onClick={() => setProfileOpen(false)}
-                      >
-                        <Package size={18} />
-                        <span className="text-sm font-medium">
-                          Order History
-                        </span>
-                      </Link>
-
-                      <Link
-                        to="/wishlist"
-                        className="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-[#5F1327] transition-colors duration-200"
-                        role="menuitem"
-                        onClick={() => setProfileOpen(false)}
-                      >
-                        <Heart size={18} />
-                        <span className="text-sm font-medium">My Wishlist</span>
-                      </Link>
-
-                      <div className="border-t border-gray-100 my-1"></div>
-
-                      <button
-                        onClick={() => {
-                          logout();
-                          setProfileOpen(false);
-                          setMobileMenu(false);
-                        }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors duration-200"
-                        role="menuitem"
-                      >
-                        <LogOut size={18} />
-                        <span className="text-sm font-medium">Sign Out</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                {/* Cart */}
+                <Link
+                  to="/cart"
+                  className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200 relative"
+                  aria-label="Shopping Cart"
+                >
+                  <ShoppingCart size={20} />
+                  {cartItemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-white text-[#5F1327] text-xs px-1 py-0 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
+                      {cartItemCount > 99 ? "99+" : cartItemCount}
+                    </span>
+                  )}
+                </Link>
               </div>
-
-              {/* Cart */}
-              <Link
-                to="/cart"
-                className="text-white cursor-pointer hover:text-gray-200 transition-colors duration-200 relative"
-                aria-label="Shopping Cart"
-              >
-                <ShoppingCart size={20} />
-                {cartItemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-white text-[#5F1327] text-xs px-1 py-0 rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
-                    {cartItemCount > 99 ? "99+" : cartItemCount}
-                  </span>
-                )}
-              </Link>
             </div>
           </div>
 
@@ -507,7 +530,57 @@ const Header = React.memo(() => {
 
             {/* Right: Icons */}
             <div className="flex items-center gap-3 flex-shrink-0">
-              <HeaderSearch />
+              <div className="md:hidden">
+                <button
+                  onClick={() => setSearchOpen(true)}
+                  className="text-white hover:text-gray-200 transition"
+                >
+                  <Search size={20} />
+                </button>
+              </div>
+
+              {/* Mobile: Fullscreen Search */}
+              {searchOpen && (
+                <>
+                  {/* Dark backdrop */}
+                  <div
+                    className="fixed inset-0 bg-black/50 z-50 md:hidden"
+                    onClick={() => setSearchOpen(false)}
+                  />
+
+                  {/* Fullscreen Search Panel - Slides from Top */}
+                  <div className="fixed top-0 left-0 right-0 bg-white z-50 md:hidden animate-in slide-in-from-top duration-300">
+                    <div className="flex items-center gap-3 p-4 border-b border-gray-200">
+                      {/* Back Button */}
+                      <button
+                        onClick={() => setSearchOpen(false)}
+                        className="text-gray-600 hover:text-gray-900"
+                        aria-label="Close search"
+                      >
+                        <X size={28} />
+                      </button>
+
+                      {/* Search Input - Takes full width */}
+                      <div className="flex-1">
+                        <HeaderSearch
+                          autoFocus={true}
+                          onClose={() => setSearchOpen(false)}
+                        />
+                      </div>
+
+                      {/* Optional: Cancel text (extra polish) */}
+                      <button
+                        onClick={() => setSearchOpen(false)}
+                        className="text-[#5F1327] font-medium pr-2"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+
+                    {/* Optional: Recent searches or voice button can go here later */}
+                  </div>
+                </>
+              )}
 
               {/* Profile Section - Mobile */}
               {/* Profile Section */}
@@ -523,9 +596,9 @@ const Header = React.memo(() => {
                     <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-[#5F1327] font-semibold text-sm">
                       {getInitials(auth.user?.name)}
                     </div>
-                    <span className="text-sm font-medium">
+                    {/* <span className="text-sm font-medium">
                       {auth.user?.name || "User"}
-                    </span>
+                    </span> */}
                     <ChevronDown
                       size={16}
                       className={`transition-transform duration-200 ${

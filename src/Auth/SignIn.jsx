@@ -74,15 +74,15 @@ const SignIn = () => {
           user: data.user,
           role: role,
         });
-        if (role.toLowerCase() !== "user") {
-          toast.error("Access denied. Please use the admin login page.");
-          setErrors({
-            ...errors,
-            api: "Access denied. Please use the admin login page.",
-          });
-          setIsLoading(false);
-          return;
-        }
+        // if (role.toLowerCase() !== "user") {
+        //   toast.error("Access denied. Please use the admin login page.");
+        //   setErrors({
+        //     ...errors,
+        //     api: "Access denied. Please use the admin login page.",
+        //   });
+        //   setIsLoading(false);
+        //   return;
+        // }
         toast.success("Login successful! Redirecting...");
         login(data.token, data.user, role);
 

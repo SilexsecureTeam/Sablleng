@@ -4,7 +4,7 @@ import { Search, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import useAllProducts from "../hooks/useAllProducts";
 
-const HeaderSearch = () => {
+const HeaderSearch = ({ autoFocus = false, onClose }) => {
   const { products, loading } = useAllProducts();
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
@@ -12,7 +12,12 @@ const HeaderSearch = () => {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
-  // Instant search
+  useEffect(() => {
+    if (autoFocus && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [autoFocus]);
+
   useEffect(() => {
     if (!searchTerm.trim()) {
       setResults([]);
@@ -21,86 +26,92 @@ const HeaderSearch = () => {
 
     const filtered = products
       .filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .slice(0, 10); // Top 10 matches
+      .slice(0, 10);
 
     setResults(filtered);
   }, [searchTerm, products]);
 
-  // Handle Enter key
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && searchTerm.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
       setSearchTerm("");
       setResults([]);
-      inputRef.current?.blur();
+      onClose?.();
+    }
+    if (e.key === "Escape") {
+      onClose?.();
     }
   };
 
-  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setResults([]);
+        if (!searchTerm) onClose?.();
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [searchTerm, onClose]);
 
   return (
-    <div className="relative w-full md:max-w-xl max-w-[80px]">
-      <div className="relative">
-        <div className="w-full ">
-          <Search size={18} className="absolute left-3 top-3 text-gray-400" />
-          <input
-            ref={inputRef}
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Search products..."
-            className="w-full pl-8 text-white pr-2 py-2 border border-gray-400 rounded-md outline-none"
-          />
-        </div>
+    <div className="relative" ref={dropdownRef}>
+      <div className="relative flex items-center">
+        <Search
+          size={20}
+          className="absolute left-3 text-gray-400 pointer-events-none"
+        />
+        <input
+          ref={inputRef}
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Search products..."
+          className="w-full pl-10 pr-10 py-3 bg-white/10 backdrop-blur-sm text-white placeholder:text-white/70 border border-white/30 rounded-full outline-none focus:border-white transition-all duration-200"
+          autoFocus={autoFocus}
+        />
         {searchTerm && (
           <button
-            onClick={() => setSearchTerm("")}
-            className="absolute right-3 top-3 text-gray-400 hover:text-gray-700"
+            onClick={() => {
+              setSearchTerm("");
+              inputRef.current?.focus();
+            }}
+            className="absolute right-3 text-white/70 hover:text-white"
           >
             <X size={20} />
           </button>
         )}
       </div>
 
-      {/* Instant Dropdown Results - FULL WIDTH max-w-xl */}
       {results.length > 0 && (
-        <div
-          ref={dropdownRef}
-          className="absolute z-50 w-full bg-white border shadow-lg rounded-md mt-1 max-h-96 overflow-y-auto"
-        >
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 max-h-96 overflow-y-auto z-50">
           {results.map((product) => (
             <Link
               key={product.id}
               to={`/product/${product.id}`}
               onClick={() => {
                 setSearchTerm("");
-                setResults([]);
+                onClose?.();
               }}
               className="flex items-center gap-4 p-4 hover:bg-gray-50 transition"
             >
               <img
                 src={product.image}
                 alt={product.name}
-                className="w-12 h-12 object-contain rounded"
+                className="w-12 h-12 object-cover rounded"
               />
-              <div>
-                <h4 className="font-medium text-gray-900">{product.name}</h4>
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 truncate">
+                  {product.name}
+                </h4>
                 <p className="text-sm text-gray-600">
                   ₦{product.price.toLocaleString()}
                 </p>
                 {product.customize && (
-                  <span className="text-xs text-[#5F1327]">Customizable</span>
+                  <span className="text-xs text-[#5F1327] font-medium">
+                    Customizable
+                  </span>
                 )}
               </div>
             </Link>
@@ -110,18 +121,18 @@ const HeaderSearch = () => {
               onClick={() => {
                 navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
                 setSearchTerm("");
-                setResults([]);
+                onClose?.();
               }}
-              className="w-full p-4 text-center text-[#5F1327] font-medium hover:bg-gray-50"
+              className="w-full p-4 text-center text-[#5F1327] font-semibold hover:bg-gray-50 border-t"
             >
-              See all results
+              See all results →
             </button>
           )}
         </div>
       )}
 
       {loading && searchTerm && (
-        <p className="text-sm text-gray-500 mt-2">Loading...</p>
+        <div className="text-center py-8 text-gray-500">Loading...</div>
       )}
     </div>
   );
