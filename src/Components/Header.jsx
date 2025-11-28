@@ -371,11 +371,20 @@ const Header = React.memo(() => {
                 </button>
               ) : (
                 <div className="absolute left-0 right-0 top-full bg-[#5F1327] px-4 py-3 shadow-lg z-50 hidden md:block">
-                  <div className="max-w-3xl mx-auto">
-                    <HeaderSearch
-                      autoFocus
-                      onClose={() => setSearchOpen(false)}
-                    />
+                  <div className="max-w-3xl mx-auto w-full flex items-center gap-3">
+                    <button
+                      onClick={() => setSearchOpen(false)}
+                      className="text-white cursor-pointer"
+                      aria-label="Close search"
+                    >
+                      <X size={28} />
+                    </button>
+                    <div className="flex-1">
+                      <HeaderSearch
+                        autoFocus
+                        onClose={() => setSearchOpen(false)}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -543,18 +552,15 @@ const Header = React.memo(() => {
               {searchOpen && (
                 <>
                   {/* Dark backdrop */}
-                  <div
-                    className="fixed inset-0 bg-black/50 z-50 md:hidden"
-                    onClick={() => setSearchOpen(false)}
-                  />
+                  <div className="fixed inset-0 bg-black/50 z-50 md:hidden" />
 
                   {/* Fullscreen Search Panel - Slides from Top */}
-                  <div className="fixed top-0 left-0 right-0 bg-white z-50 md:hidden animate-in slide-in-from-top duration-300">
+                  <div className="fixed top-0 left-0 right-0 bg-[#5F1327] z-50 md:hidden animate-in slide-in-from-top duration-300">
                     <div className="flex items-center gap-3 p-4 border-b border-gray-200">
                       {/* Back Button */}
                       <button
                         onClick={() => setSearchOpen(false)}
-                        className="text-gray-600 hover:text-gray-900"
+                        className="text-white hover:text-gray-900"
                         aria-label="Close search"
                       >
                         <X size={28} />
@@ -567,17 +573,7 @@ const Header = React.memo(() => {
                           onClose={() => setSearchOpen(false)}
                         />
                       </div>
-
-                      {/* Optional: Cancel text (extra polish) */}
-                      <button
-                        onClick={() => setSearchOpen(false)}
-                        className="text-[#5F1327] font-medium pr-2"
-                      >
-                        Cancel
-                      </button>
                     </div>
-
-                    {/* Optional: Recent searches or voice button can go here later */}
                   </div>
                 </>
               )}

@@ -43,16 +43,16 @@ const HeaderSearch = ({ autoFocus = false, onClose }) => {
     }
   };
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        if (!searchTerm) onClose?.();
-      }
-    };
+  // useEffect(() => {
+  //   const handleClickOutside = (e) => {
+  //     if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+  //       if (!searchTerm) onClose?.();
+  //     }
+  //   };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [searchTerm, onClose]);
+  //   document.addEventListener("mousedown", handleClickOutside);
+  //   return () => document.removeEventListener("mousedown", handleClickOutside);
+  // }, [searchTerm, onClose]);
 
   return (
     <div className="relative" ref={dropdownRef}>
