@@ -34,7 +34,6 @@ export const AuthProvider = ({ children }) => {
           isAuthenticated: true,
           token: token || null,
           user,
-          role,
         });
 
         console.log("✅ AuthProvider: Auth restored successfully", {
@@ -57,30 +56,21 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = (token, user, role) => {
-    console.log("🔑 AuthProvider: Login called");
-
+  const login = (token, user) => {
     try {
       if (token) localStorage.setItem("authToken", token);
       localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("role", role);
 
       setAuth({
         isAuthenticated: true,
-        token: token || null,
+        token,
         user,
-        role,
       });
 
-      console.log("✅ AuthProvider: Login successful", {
-        tokenPreview: token ? token.substring(0, 20) + "..." : "none",
-        userName: user.name || user.email,
-        role,
-      });
-
+      console.log("LOGIN SUCCESS → Name:", user.name, "| Role:", user.role);
       return true;
-    } catch (error) {
-      console.error("❌ AuthProvider: Login failed:", error);
+    } catch (err) {
+      console.error("Login failed:", err);
       return false;
     }
   };

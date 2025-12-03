@@ -95,7 +95,7 @@ const AdminOtpPage = () => {
       );
 
       if (response.ok) {
-        login(data.token, data.user, "admin");
+        login(data.token, data.user);
         localStorage.setItem("otp_verified", "true");
         toast.success("Verification successful! Redirecting...");
         setTimeout(() => navigate("/dashboard"), 2000);

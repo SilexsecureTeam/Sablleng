@@ -6,6 +6,7 @@ import EditProductForm from "./EditProductForm";
 import { AuthContext } from "../../context/AuthContextObject";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Can from "./Can";
 
 const ProductList = () => {
   const { auth } = useContext(AuthContext);
@@ -188,212 +189,222 @@ const ProductList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F5] p-6">
-      <ToastContainer position="top-right" autoClose={3000} />
+    <Can perform="products.view">
+      <div className="min-h-screen bg-[#FAF7F5] p-6">
+        <ToastContainer position="top-right" autoClose={3000} />
 
-      <div className="flex w-full justify-end mb-6">
-        <button
-          onClick={handleNewProduct}
-          className="flex items-center gap-2 bg-[#5F1327] hover:bg-[#B54F5E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New Product
-        </button>
-      </div>
+        <div className="flex w-full justify-end mb-6">
+          <Can perform="products.create">
+            <button
+              onClick={handleNewProduct}
+              className="flex items-center gap-2 bg-[#5F1327] hover:bg-[#B54F5E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              New Product
+            </button>
+          </Can>
+        </div>
 
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="px-6 pt-6 pb-4">
-            <h1 className="text-2xl font-semibold text-[#141718]">
-              Products Inventory
-            </h1>
-          </div>
-
-          <div className="px-6 pb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search Products"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
-              />
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white rounded-lg shadow-sm">
+            <div className="px-6 pt-6 pb-4">
+              <h1 className="text-2xl font-semibold text-[#141718]">
+                Products Inventory
+              </h1>
             </div>
-          </div>
 
-          {isLoading ? (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm text-gray-500">Loading products...</p>
+            <div className="px-6 pb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search Products"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
+                />
+              </div>
             </div>
-          ) : error ? (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-t border-b border-gray-200 text-[#414245]">
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        SKU
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Product
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Category
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Price
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {paginatedProducts.map((product, index) => (
-                      <tr key={product.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
-                          {product.sku}
-                        </td>
-                        <td className="px-0 py-4 text-sm font-medium">
-                          <Link
-                            to={`/dashboard/product/${product.id}`}
-                            className="text-[#5F1327] hover:text-[#B54F5E] text-[14px] hover:underline max-w-[180px] block line-clamp-2 break-words whitespace-normal"
-                          >
-                            {product.product}
-                          </Link>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
-                          {product.category}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {product.type === "Customizable" ? (
-                            <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                              Customizable
-                            </span>
-                          ) : (
-                            <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
-                              Non-custom
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
-                          {product.price}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
+
+            {isLoading ? (
+              <div className="px-6 py-12 text-center">
+                <p className="text-sm text-gray-500">Loading products...</p>
+              </div>
+            ) : error ? (
+              <div className="px-6 py-12 text-center">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-t border-b border-gray-200 text-[#414245]">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          SKU
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Product
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Category
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Price
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedProducts.map((product, index) => (
+                        <tr key={product.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
+                            {product.sku}
+                          </td>
+                          <td className="px-0 py-4 text-sm font-medium">
                             <Link
                               to={`/dashboard/product/${product.id}`}
-                              className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                              className="text-[#5F1327] hover:text-[#B54F5E] text-[14px] hover:underline max-w-[180px] block line-clamp-2 break-words whitespace-normal"
                             >
-                              View
+                              {product.product}
                             </Link>
-                            <button
-                              onClick={() => handleEdit(index)}
-                              className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-[#5F1327] hover:bg-gray-200 transition-colors"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(product.id, index)}
-                              className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {paginatedProducts.length === 0 && (
-                <div className="px-6 py-12 text-center">
-                  <p className="text-sm text-gray-500">No products found.</p>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
+                            {product.category}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {product.type === "Customizable" ? (
+                              <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Customizable
+                              </span>
+                            ) : (
+                              <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                                Non-custom
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
+                            {product.price}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <Link
+                                to={`/dashboard/product/${product.id}`}
+                                className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                              >
+                                View
+                              </Link>
+                              <Can perform="products.update">
+                                <button
+                                  onClick={() => handleEdit(index)}
+                                  className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-[#5F1327] hover:bg-gray-200 transition-colors"
+                                >
+                                  Edit
+                                </button>
+                              </Can>
+                              <Can perform="products.delete">
+                                <button
+                                  onClick={() =>
+                                    handleDelete(product.id, index)
+                                  }
+                                  className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                                >
+                                  Delete
+                                </button>
+                              </Can>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
 
-              {filteredProducts.length > 0 && (
-                <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
-                  <p className="text-sm text-gray-700">
-                    Page {currentPage} of {totalPages}
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handlePrevPage}
-                      disabled={currentPage === 1}
-                      className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                        currentPage === 1
-                          ? "bg-gray-100 text-gray-400"
-                          : "bg-white text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      Previous
-                    </button>
-                    {getPageNumbers().map((page) => (
+                {paginatedProducts.length === 0 && (
+                  <div className="px-6 py-12 text-center">
+                    <p className="text-sm text-gray-500">No products found.</p>
+                  </div>
+                )}
+
+                {filteredProducts.length > 0 && (
+                  <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                    <p className="text-sm text-gray-700">
+                      Page {currentPage} of {totalPages}
+                    </p>
+                    <div className="flex gap-2">
                       <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
+                        onClick={handlePrevPage}
+                        disabled={currentPage === 1}
                         className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                          currentPage === page
-                            ? "bg-[#5F1327] text-white"
+                          currentPage === 1
+                            ? "bg-gray-100 text-gray-400"
                             : "bg-white text-gray-700 hover:bg-gray-50"
                         }`}
                       >
-                        {page}
+                        Previous
                       </button>
-                    ))}
-                    <button
-                      onClick={handleNextPage}
-                      disabled={currentPage === totalPages}
-                      className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                        currentPage === totalPages
-                          ? "bg-gray-100 text-gray-400"
-                          : "bg-white text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      Next
-                    </button>
+                      {getPageNumbers().map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-4 py-2 border rounded-md text-sm font-medium ${
+                            currentPage === page
+                              ? "bg-[#5F1327] text-white"
+                              : "bg-white text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                      <button
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                        className={`px-4 py-2 border rounded-md text-sm font-medium ${
+                          currentPage === totalPages
+                            ? "bg-gray-100 text-gray-400"
+                            : "bg-white text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </>
-          )}
+                )}
+              </>
+            )}
+          </div>
         </div>
+
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <ProductForm
+                onSave={handleSaveProduct}
+                onCancel={handleCloseModal}
+              />
+            </div>
+          </div>
+        )}
+
+        {isEditModalOpen && selectedProduct && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <EditProductForm
+                product={selectedProduct}
+                index={selectedProductIndex}
+                onSave={handleUpdateProduct}
+                onCancel={handleCloseModal}
+              />
+            </div>
+          </div>
+        )}
       </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <ProductForm
-              onSave={handleSaveProduct}
-              onCancel={handleCloseModal}
-            />
-          </div>
-        </div>
-      )}
-
-      {isEditModalOpen && selectedProduct && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <EditProductForm
-              product={selectedProduct}
-              index={selectedProductIndex}
-              onSave={handleUpdateProduct}
-              onCancel={handleCloseModal}
-            />
-          </div>
-        </div>
-      )}
-    </div>
+    </Can>
   );
 };
 

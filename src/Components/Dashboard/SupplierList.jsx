@@ -6,6 +6,7 @@ import SupplierForm from "./SupplierForm";
 import { AuthContext } from "../../context/AuthContextObject";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Can from "./Can";
 
 const SupplierList = () => {
   const { auth } = useContext(AuthContext);
@@ -115,196 +116,206 @@ const SupplierList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F5] p-6">
-      <ToastContainer position="top-right" autoClose={3000} />
+    <Can perform="suppliers.view">
+      <div className="min-h-screen bg-[#FAF7F5] p-6">
+        <ToastContainer position="top-right" autoClose={3000} />
 
-      <div className="flex w-full justify-end mb-6">
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-[#5F1327] hover:bg-[#B54F5E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Supplier
-        </button>
-      </div>
+        <div className="flex w-full justify-end mb-6">
+          <Can perform="suppliers.create">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 bg-[#5F1327] hover:bg-[#B54F5E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Supplier
+            </button>
+          </Can>
+        </div>
 
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="px-6 pt-6 pb-4">
-            <h1 className="text-2xl font-semibold text-[#141718]">
-              Suppliers Inventory
-            </h1>
-          </div>
-
-          <div className="px-6 pb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search Suppliers"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
-              />
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white rounded-lg shadow-sm">
+            <div className="px-6 pt-6 pb-4">
+              <h1 className="text-2xl font-semibold text-[#141718]">
+                Suppliers Inventory
+              </h1>
             </div>
-          </div>
 
-          {isLoading ? (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm text-gray-500">Loading suppliers...</p>
-            </div>
-          ) : error ? (
-            <div className="px-6 py-12 text-center">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-t border-b border-gray-200 text-[#414245]">
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Phone
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Created
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filtered.map((s, i) => (
-                      <tr key={s.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#414245]">
-                          {s.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
-                          {s.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
-                          {s.phone}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                              s.isActive
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {s.isActive ? "Active" : "Inactive"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
-                          {new Date(s.createdAt).toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "2-digit",
-                          })}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center gap-2">
-                            <Link
-                              to={`/dashboard/suppliers/${s.id}/edit`}
-                              className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-[#5F1327] hover:bg-gray-200 transition-colors"
-                            >
-                              <Edit className="w-3 h-3 mr-1" />
-                              Edit
-                            </Link>
-                            <button
-                              onClick={() => handleDelete(s.id, i)}
-                              className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-                            >
-                              <Trash2 className="w-3 h-3 mr-1" />
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="px-6 pb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search Suppliers"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
+                />
               </div>
+            </div>
 
-              {filtered.length === 0 && (
-                <div className="px-6 py-12 text-center">
-                  <p className="text-sm text-gray-500">No suppliers found.</p>
+            {isLoading ? (
+              <div className="px-6 py-12 text-center">
+                <p className="text-sm text-gray-500">Loading suppliers...</p>
+              </div>
+            ) : error ? (
+              <div className="px-6 py-12 text-center">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-t border-b border-gray-200 text-[#414245]">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Email
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Phone
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Created
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filtered.map((s, i) => (
+                        <tr key={s.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#414245]">
+                            {s.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
+                            {s.email}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
+                            {s.phone}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                                s.isActive
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {s.isActive ? "Active" : "Inactive"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#414245]">
+                            {new Date(s.createdAt).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "2-digit",
+                            })}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex items-center gap-2">
+                              <Can perform="suppliers.edit">
+                                <Link
+                                  to={`/dashboard/suppliers/${s.id}/edit`}
+                                  className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-gray-100 text-[#5F1327] hover:bg-gray-200 transition-colors"
+                                >
+                                  <Edit className="w-3 h-3 mr-1" />
+                                  Edit
+                                </Link>
+                              </Can>
+                              <Can perform="suppliers.delete">
+                                <button
+                                  onClick={() => handleDelete(s.id, i)}
+                                  className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  Delete
+                                </button>
+                              </Can>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
 
-              {suppliers.length > 0 && (
-                <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
-                  <p className="text-sm text-gray-700">
-                    Page {currentPage} of {totalPages}
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                        currentPage === 1
-                          ? "bg-gray-100 text-gray-400"
-                          : "bg-white text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      Previous
-                    </button>
-                    {getPageNumbers().map((p) => (
+                {filtered.length === 0 && (
+                  <div className="px-6 py-12 text-center">
+                    <p className="text-sm text-gray-500">No suppliers found.</p>
+                  </div>
+                )}
+
+                {suppliers.length > 0 && (
+                  <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                    <p className="text-sm text-gray-700">
+                      Page {currentPage} of {totalPages}
+                    </p>
+                    <div className="flex gap-2">
                       <button
-                        key={p}
-                        onClick={() => setCurrentPage(p)}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
+                        disabled={currentPage === 1}
                         className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                          currentPage === p
-                            ? "bg-[#5F1327] text-white"
+                          currentPage === 1
+                            ? "bg-gray-100 text-gray-400"
                             : "bg-white text-gray-700 hover:bg-gray-50"
                         }`}
                       >
-                        {p}
+                        Previous
                       </button>
-                    ))}
-                    <button
-                      onClick={() =>
-                        setCurrentPage((p) => Math.min(totalPages, p + 1))
-                      }
-                      disabled={currentPage === totalPages}
-                      className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                        currentPage === totalPages
-                          ? "bg-gray-100 text-gray-400"
-                          : "bg-white text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      Next
-                    </button>
+                      {getPageNumbers().map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={`px-4 py-2 border rounded-md text-sm font-medium ${
+                            currentPage === p
+                              ? "bg-[#5F1327] text-white"
+                              : "bg-white text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
+                        disabled={currentPage === totalPages}
+                        className={`px-4 py-2 border rounded-md text-sm font-medium ${
+                          currentPage === totalPages
+                            ? "bg-gray-100 text-gray-400"
+                            : "bg-white text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <SupplierForm
-              onSave={handleSaveSupplier}
-              onCancel={() => setIsModalOpen(false)}
-            />
+                )}
+              </>
+            )}
           </div>
         </div>
-      )}
-    </div>
+
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <SupplierForm
+                onSave={handleSaveSupplier}
+                onCancel={() => setIsModalOpen(false)}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </Can>
   );
 };
 

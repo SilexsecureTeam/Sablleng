@@ -64,7 +64,7 @@ const AdminSignIn = () => {
       if (response.ok) {
         toast.success("OTP sent to your email. Please verify.");
         // Store user data without token, as token comes after OTP
-        login(null, data.data, "admin");
+        login(null, data.data);
         setTimeout(() => {
           navigate("/admin/otp");
         }, 2000);

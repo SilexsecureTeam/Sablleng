@@ -1,25 +1,26 @@
-import React, { useState, useContext } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+// src/components/admin/Sidebar.jsx
+import React, { useContext } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import {
   Home,
   Package,
   Users,
+  List,
   Tag,
   Grid,
-  CreditCard,
-  Box,
   Percent,
-  List,
-  Star,
-  FileText,
-  Settings,
-  UserCog,
+  CreditCard,
   Archive,
+  FileText,
+  UserCog,
+  Settings,
   LogOut,
   Menu,
 } from "lucide-react";
+
 import { AuthContext } from "../../context/AuthContextObject";
+import Can from "./Can";
 import SignOutModal from "./SignOutModal";
 import logo from "../../assets/logo-d.png";
 
@@ -34,198 +35,170 @@ const scrollbarStyles = `
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const location = useLocation();
-  const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
-  const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
-  const activeItem = location.pathname.split("/").pop() || "dashboard";
+  const [isSignOutModalOpen, setIsSignOutModalOpen] = React.useState(false);
 
+  const currentPath = location.pathname;
+
+  // MENU ITEMS — Clean & Logical
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home, path: "/dashboard" },
+    // Everyone (non-admin) sees these
     {
-      id: "customers",
+      label: "Dashboard",
+      icon: Home,
+      path: "/dashboard",
+      permission: "dashboard.view",
+    },
+    {
+      label: "Orders",
+      icon: Package,
+      path: "/dashboard/orders",
+      permission: "orders.view",
+    },
+    {
       label: "Customers",
       icon: Users,
       path: "/dashboard/customers",
+      permission: "customers.view",
     },
     {
-      id: "orders",
-      label: "Order Management",
-      icon: Package,
-      path: "/dashboard/orders",
-    },
-    {
-      id: "product-list",
-      label: "Product List",
+      label: "Products",
       icon: List,
       path: "/dashboard/product-list",
+      permission: "products.view",
     },
-    { id: "tags", label: "Tags", icon: Box, path: "/dashboard/tags" },
+
+    // ADMIN-ONLY MENUS — No permission needed in list (admin bypasses all)
+    // These will be wrapped in <Can perform="admin.only"> or just use a dummy permission
     {
-      id: "categories",
       label: "Categories",
       icon: Grid,
       path: "/dashboard/categories",
+      permission: "admin.only",
     },
     {
-      id: "tax-management",
+      label: "Tags",
+      icon: Tag,
+      path: "/dashboard/tags",
+      permission: "tags.view",
+    },
+    {
+      label: "Brands",
+      icon: Archive,
+      path: "/dashboard/brand",
+      permission: "brands.view",
+    },
+    {
+      label: "Suppliers",
+      icon: FileText,
+      path: "/dashboard/suppliers",
+      permission: "suppliers.view",
+    },
+    {
+      label: "Coupon Codes",
+      icon: Tag,
+      path: "/dashboard/coupon-code",
+      permission: "admin.only",
+    },
+    {
       label: "Tax Management",
       icon: Percent,
       path: "/dashboard/tax-management",
+      permission: "admin.only",
     },
     {
-      id: "DeliveryFeeManager",
-      label: "Delivery Fee Manager",
+      label: "Delivery Fees",
       icon: CreditCard,
       path: "/dashboard/delivery-fee-manager",
+      permission: "admin.only",
     },
     {
-      id: "coupon-code",
-      label: "Coupon Code",
-      icon: Tag,
-      path: "/dashboard/coupon-code",
-    },
-    { id: "brand", label: "Brand", icon: Archive, path: "/dashboard/brand" },
-    {
-      id: "supplier",
-      label: "Supplier",
-      icon: FileText,
-      path: "/dashboard/suppliers",
-    },
-    {
-      id: "report",
-      label: "Report",
+      label: "Reports",
       icon: FileText,
       path: "/dashboard/report",
+      permission: "analytics.view",
+    },
+
+    // Bottom: Admin Only
+    {
+      label: "Staff Management",
+      icon: UserCog,
+      path: "/dashboard/staff-role",
+      permission: "staff.view",
     },
     // {
-    //   id: "customization",
-    //   label: "Customization",
-    //   icon: Box,
-    //   path: "/dashboard/customization",
-    // },
-    // {
-    //   id: "product-reviews",
-    //   label: "Product Reviews",
-    //   icon: Star,
-    //   path: "/dashboard/product-reviews",
-    // },
-  ];
-
-  const bottomItems = [
-    // {
-    //   id: "settings",
     //   label: "Settings",
     //   icon: Settings,
     //   path: "/dashboard/settings",
+    //   permission: "admin.only",
     // },
-    // {
-    //   id: "admin-role",
-    //   label: "Admin Role",
-    //   icon: UserCog,
-    //   path: "/dashboard/admin-role",
-    // },
-    {
-      id: "logout",
-      label: "Log Out",
-      icon: LogOut,
-      action: () => setIsSignOutModalOpen(true),
-    },
   ];
 
-  const MenuItem = ({ item, isActive }) => {
-    const Icon = item.icon;
-    return item.path ? (
-      <Link
-        to={item.path}
-        className={`flex items-center gap-3 px-1.5 py-3 text-sm font-medium transition-all duration-200 rounded-lg mx-2 ${
-          isActive
-            ? "bg-white text-[#B34949]"
-            : "text-white/90 hover:bg-white/10"
-        }`}
-      >
-        <Icon size={18} />
-        {isOpen && <span>{item.label}</span>}
-      </Link>
-    ) : (
-      <button
-        onClick={item.action}
-        className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200 rounded-lg mx-2 w-full ${
-          isActive
-            ? "bg-white text-[#B34949]"
-            : "text-white/90 hover:bg-white/10"
-        }`}
-      >
-        <Icon size={18} />
-        {isOpen && <span>{item.label}</span>}
-      </button>
-    );
-  };
-
-  const handleSignOutConfirm = () => {
-    logout();
-    navigate("/admin/signin");
+  const isActive = (path) => {
+    if (path === "/dashboard") {
+      return currentPath === "/dashboard" || currentPath === "/dashboard/";
+    }
+    return currentPath.startsWith(path);
   };
 
   return (
     <>
       <style>{scrollbarStyles}</style>
 
-      {/* Collapsed Sidebar (Icons Only) */}
       <aside
         className={`fixed inset-y-0 left-0 bg-gradient-to-b from-[#B34949] via-[#bd2f31] to-[#9e0205] text-white transition-all duration-300 z-50 flex flex-col ${
           isOpen ? "w-64" : "w-16"
         } custom-scrollbar overflow-y-auto`}
       >
-        {/* Header: Logo + Toggle */}
-        <div className="flex items-center justify-between p-3 border-b border-white/10">
-          <div
-            className={`flex items-center gap-3 ${
-              isOpen ? "" : "justify-center"
-            }`}
-          >
-            <img src={logo} alt="Logo" className="h-8 w-auto" />
-            {/* {isOpen && <span className="font-bold text-lg">Sabilay</span>} */}
-          </div>
+        {/* Logo & Toggle */}
+        <div className="flex items-center justify-between p-4 border-b border-white/10">
           <button
             onClick={toggleSidebar}
-            className="text-white hover:bg-white/10 p-1.5 rounded-lg transition-colors"
-            aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+            className="text-white hover:bg-white/10 p-2 rounded"
           >
             {isOpen ? (
-              <XMarkIcon className="h-5 w-5" />
+              <div className="flex items-center gap-2">
+                <img src={logo} alt="Logo" className="h-9" />
+                <XMarkIcon className="h-6 w-6" />
+              </div>
             ) : (
-              <Menu className="h-5 w-5" />
+              <Menu className="h-6 w-6" />
             )}
           </button>
         </div>
 
-        {/* Menu Items */}
-        <nav className="flex-1 py-4">
-          <div className="space-y-1">
-            {menuItems.map((item) => (
-              <MenuItem
-                key={item.id}
-                item={item}
-                isActive={activeItem === item.id}
-              />
-            ))}
-          </div>
-
-          <div className="border-t border-white/10 mt-4 pt-4">
-            <div className="space-y-1">
-              {bottomItems.map((item) => (
-                <MenuItem
-                  key={item.id}
-                  item={item}
-                  isActive={activeItem === item.id}
-                />
-              ))}
-            </div>
-          </div>
+        {/* Menu */}
+        <nav className="flex-1 px-3 py-4 space-y-1">
+          {menuItems.map((item) => (
+            <Can perform={item.permission} key={item.path || item.label}>
+              <Link
+                to={item.path}
+                className={`
+  flex ${isOpen ? "justify-start pl-4" : "justify-center"} 
+  items-center gap-3 py-3 rounded-lg transition-all 
+  ${isActive(item.path) ? "bg-white text-[#B34949]" : "hover:bg-white/10"}
+`}
+              >
+                <item.icon size={20} />
+                {isOpen && <span>{item.label}</span>}
+              </Link>
+            </Can>
+          ))}
         </nav>
+
+        {/* Logout */}
+        <div className="p-3 border-t border-white/10">
+          <button
+            onClick={() => setIsSignOutModalOpen(true)}
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg hover:bg-white/10 transition-all text-sm"
+          >
+            <LogOut size={20} />
+            {isOpen && <span>Log Out</span>}
+          </button>
+        </div>
       </aside>
 
-      {/* Overlay for mobile (if needed) */}
+      {/* Mobile Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -236,7 +209,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       <SignOutModal
         isOpen={isSignOutModalOpen}
         onClose={() => setIsSignOutModalOpen(false)}
-        onConfirm={handleSignOutConfirm}
+        onConfirm={() => {
+          logout();
+        }}
       />
     </>
   );

@@ -42,7 +42,7 @@ const StockInventoryReportDetails = lazy(() =>
 );
 const SupplierList = lazy(() => import("../Components/Dashboard/SupplierList"));
 const Settings = lazy(() => import("../Components/Dashboard/Settings"));
-const AdminRole = lazy(() => import("../Components/Dashboard/AdminRole"));
+const Staff = lazy(() => import("../Components/Dashboard/Staff"));
 const ProductView = lazy(() => import("../Components/Dashboard/ProductView"));
 const Sidebar = lazy(() => import("../Components/Dashboard/Sidebar"));
 const CategoryProducts = lazy(() =>
@@ -246,10 +246,10 @@ const DashboardLayout = () => {
                 }
               />
               <Route
-                path="/admin-role"
+                path="/staff-role"
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
-                    <AdminRole />
+                    <Staff />
                   </MainContent>
                 }
               />

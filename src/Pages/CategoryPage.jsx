@@ -115,6 +115,17 @@ const CategoryPage = () => {
           created_at: item.created_at,
           category: item.category?.name || categoryName,
           badge: item.customize ? "Customizable" : null,
+          brand: {
+            id: item.brand?.id,
+            name: item.brand?.name || "No Brand",
+          },
+          supplier: {
+            id: item.supplier?.id,
+            name: item.supplier?.name || "No Supplier",
+          },
+          // Optional: also add arrays for filtering later
+          // brandId: item.brand?.id,
+          // supplierId: item.supplier?.id,
           image:
             item.images?.[0]?.url ||
             (item.images?.[0]?.path

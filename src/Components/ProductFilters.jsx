@@ -5,7 +5,8 @@ import SearchInput from "./SearchInput"; // ← THE MAGIC
 
 const ProductFilters = ({ products = [], onFiltered }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-
+  const [selectedBrands, setSelectedBrands] = useState([]);
+  const [selectedSuppliers, setSelectedSuppliers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [priceRange, setPriceRange] = useState([0, 100000]);
   const [showCustomizable, setShowCustomizable] = useState(false);
@@ -22,6 +23,25 @@ const ProductFilters = ({ products = [], onFiltered }) => {
     return prices.length
       ? [Math.min(...prices), Math.max(...prices)]
       : [0, 100000];
+  }, [products]);
+  const availableBrands = useMemo(() => {
+    const map = new Map();
+    products.forEach((p) => {
+      if (p.brand?.id) {
+        map.set(p.brand.id, p.brand.name);
+      }
+    });
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [products]);
+
+  const availableSuppliers = useMemo(() => {
+    const map = new Map();
+    products.forEach((p) => {
+      if (p.supplier?.id) {
+        map.set(p.supplier.id, p.supplier.name);
+      }
+    });
+    return Array.from(map, ([id, name]) => ({ id, name }));
   }, [products]);
 
   useEffect(() => {
@@ -63,6 +83,17 @@ const ProductFilters = ({ products = [], onFiltered }) => {
       );
     }
 
+    if (selectedBrands.length > 0) {
+      filtered = filtered.filter(
+        (p) => p.brand?.id && selectedBrands.includes(p.brand.id)
+      );
+    }
+    if (selectedSuppliers.length > 0) {
+      filtered = filtered.filter(
+        (p) => p.supplier?.id && selectedSuppliers.includes(p.supplier.id)
+      );
+    }
+
     return filtered;
   }, [
     products,
@@ -72,6 +103,8 @@ const ProductFilters = ({ products = [], onFiltered }) => {
     showPopular,
     showOnSale,
     showNew,
+    selectedBrands,
+    selectedSuppliers,
   ]);
 
   const handleFiltered = useCallback((list) => onFiltered(list), [onFiltered]);
@@ -87,6 +120,8 @@ const ProductFilters = ({ products = [], onFiltered }) => {
     setShowPopular(false);
     setShowOnSale(false);
     setShowNew(false);
+    setSelectedBrands([]);
+    setSelectedSuppliers([]);
   };
 
   const FilterContent = () => (
@@ -140,6 +175,48 @@ const ProductFilters = ({ products = [], onFiltered }) => {
           checked={showNew}
           onChange={setShowNew}
         />
+        <div className="space-y-3">
+          <h4 className="font-medium">Brand</h4>
+          {availableBrands.map((brand) => (
+            <label key={brand.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={selectedBrands.includes(brand.id)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedBrands([...selectedBrands, brand.id]);
+                  } else {
+                    setSelectedBrands(
+                      selectedBrands.filter((id) => id !== brand.id)
+                    );
+                  }
+                }}
+              />
+              <span>{brand.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-3 mt-6">
+        <h4 className="font-medium">Supplier</h4>
+        {availableSuppliers.map((supplier) => (
+          <label key={supplier.id} className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={selectedSuppliers.includes(supplier.id)}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedSuppliers((prev) => [...prev, supplier.id]);
+                } else {
+                  setSelectedSuppliers((prev) =>
+                    prev.filter((id) => id !== supplier.id)
+                  );
+                }
+              }}
+            />
+            <span>{supplier.name}</span>
+          </label>
+        ))}
       </div>
     </div>
   );

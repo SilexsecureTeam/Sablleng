@@ -22,6 +22,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, Link } from "react-router-dom";
 import StockInventoryReportForm from "./StockInventoryReportForm";
+import Can from "./Can"
 
 const Report = () => {
   const { auth } = useContext(AuthContext);
@@ -248,6 +249,7 @@ useEffect(() => {
     );
 
   return (
+    <Can perform='stocks.view'>
     <div className="min-h-screen bg-[#FAF7F5] p-4 md:p-6">
       <ToastContainer position="top-right" autoClose={3000} />
 
@@ -261,6 +263,7 @@ useEffect(() => {
             <strong>{currentMonth}</strong>
           </p>
         </div>
+        <Can perdorm="stocks.create">
         <button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center gap-2 bg-[#5F1327] h-fit hover:bg-[#B54F5E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
@@ -268,6 +271,7 @@ useEffect(() => {
           <Plus className="w-4 h-4" />
           Add Stock Inventory
         </button>
+        </Can>
       </div>
 
       <div className="max-w-7xl mx-auto">
@@ -437,18 +441,22 @@ useEffect(() => {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex gap-2">
+                        <Can perform="stocks.update">
                         <Link
                           to={`/dashboard/report/${item.id}`}
                           className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200"
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
+                        </Can>
+                        <Can perform="stocks.delete">
                         <button
                           onClick={() => handleDelete(item.id)}
                           className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                        </Can>
                       </div>
                     </td>
                   </tr>
@@ -528,6 +536,7 @@ useEffect(() => {
   </div>
 )}
     </div>
+    </Can >
   );
 };
 

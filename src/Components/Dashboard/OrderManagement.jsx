@@ -4,6 +4,7 @@ import { Search, Bell, Settings } from "lucide-react";
 import { AuthContext } from "../../context/AuthContextObject";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Can from "./Can"
 
 const OrderManagement = () => {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -147,6 +148,7 @@ const OrderManagement = () => {
   const handlePrevPage = () => setCurrentPage((p) => Math.max(1, p - 1));
 
   return (
+    <Can perform="orders.view">
     <div className="min-h-screen bg-[#FAF7F5] p-6">
       <div className="max-w-7xl mx-auto">
         <ToastContainer position="top-right" autoClose={3000} />
@@ -350,6 +352,7 @@ const OrderManagement = () => {
         </div>
       </div>
     </div>
+    </Can >
   );
 };
 

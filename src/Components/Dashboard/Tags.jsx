@@ -15,6 +15,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthContext } from "../../context/AuthContextObject";
 import { useNavigate } from "react-router-dom";
+import Can from "./Can";
 
 const Tags = () => {
   const { auth } = useContext(AuthContext);
@@ -251,359 +252,373 @@ const Tags = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F5] p-6">
-      <ToastContainer position="top-right" autoClose={3000} />
+    <Can perform="tags.view">
+      <div className="min-h-screen bg-[#FAF7F5] p-6">
+        <ToastContainer position="top-right" autoClose={3000} />
 
-      {/* Top Bar */}
-      <div className="flex justify-end items-center mb-6 gap-3">
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 bg-[#5F1327] hover:bg-[#B54F5E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-        >
-          <Zap className="w-4 h-4" />
-          Add Tag
-        </button>
-        <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-          <Bell className="w-5 h-5 text-gray-600" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
-        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-          <Settings className="w-5 h-5 text-gray-600" />
-        </button>
-      </div>
-
-      {/* Main Card */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h1 className="text-lg font-semibold text-[#141718] mb-6">
-          Product Tags
-        </h1>
-
-        {/* Search */}
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search tags..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
-            />
-          </div>
+        {/* Top Bar */}
+        <div className="flex justify-end items-center mb-6 gap-3">
+          <Can perform="tags.create">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 bg-[#5F1327] hover:bg-[#B54F5E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              Add Tag
+            </button>
+          </Can>
+          <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <Bell className="w-5 h-5 text-gray-600" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+          </button>
+          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <Settings className="w-5 h-5 text-gray-600" />
+          </button>
         </div>
 
-        {/* Tags Grid */}
-        {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-sm text-gray-500">Loading tags...</p>
+        {/* Main Card */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h1 className="text-lg font-semibold text-[#141718] mb-6">
+            Product Tags
+          </h1>
+
+          {/* Search */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search tags..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
+              />
+            </div>
           </div>
-        ) : error ? (
-          <div className="text-center py-12">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        ) : tags.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-sm text-gray-500">No tags found.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {tags.map((tag) => (
-              <div
-                key={tag.id}
-                className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow relative bg-white flex items-start gap-4"
-              >
-                {/* Tag Image */}
-                <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border">
-                  {tag.image_url ? (
-                    <img
-                      src={tag.image_url}
-                      alt={tag.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ImageIcon className="w-8 h-8 text-gray-400" />
+
+          {/* Tags Grid */}
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-sm text-gray-500">Loading tags...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          ) : tags.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-sm text-gray-500">No tags found.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {tags.map((tag) => (
+                <div
+                  key={tag.id}
+                  className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow relative bg-white flex items-start gap-4"
+                >
+                  {/* Tag Image */}
+                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border">
+                    {tag.image_url ? (
+                      <img
+                        src={tag.image_url}
+                        alt={tag.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="w-8 h-8 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tag Info */}
+                  <div className="flex-1">
+                    <h2 className="text-base font-semibold text-[#141718] mb-1">
+                      {tag.name}
+                    </h2>
+                  </div>
+
+                  {/* Status & Actions */}
+                  <div className="absolute top-4 right-4 space-y-1">
+                    <span
+                      className={`px-3 py-1 text-xs font-medium rounded block ${
+                        tag.status === "Active"
+                          ? "bg-[#EAFFD8] text-[#1B8401]"
+                          : "bg-gray-200 text-gray-600"
+                      }`}
+                    >
+                      {tag.status}
+                    </span>
+                    <div className="flex gap-2 mt-2">
+                      <Can perform="tags.edit">
+                        <button
+                          onClick={() => handleEdit(tag)}
+                          className="p-1 text-blue-600 hover:text-blue-800"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                      </Can>
+                      <Can perform="tags.view">
+                        <button
+                          onClick={() =>
+                            navigate(`/dashboard/tags/${tag.id}/categories`)
+                          }
+                          className="p-1 text-green-600 hover:text-green-800"
+                          title="View Categories"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </Can>
+                      <Can perform="tags.delete">
+                        <button
+                          onClick={() => handleDelete(tag.id)}
+                          className="p-1 text-red-600 hover:text-red-800"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </Can>
                     </div>
-                  )}
-                </div>
-
-                {/* Tag Info */}
-                <div className="flex-1">
-                  <h2 className="text-base font-semibold text-[#141718] mb-1">
-                    {tag.name}
-                  </h2>
-                </div>
-
-                {/* Status & Actions */}
-                <div className="absolute top-4 right-4 space-y-1">
-                  <span
-                    className={`px-3 py-1 text-xs font-medium rounded block ${
-                      tag.status === "Active"
-                        ? "bg-[#EAFFD8] text-[#1B8401]"
-                        : "bg-gray-200 text-gray-600"
-                    }`}
-                  >
-                    {tag.status}
-                  </span>
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={() => handleEdit(tag)}
-                      className="p-1 text-blue-600 hover:text-blue-800"
-                      title="Edit"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() =>
-                        navigate(`/dashboard/tags/${tag.id}/categories`)
-                      }
-                      className="p-1 text-green-600 hover:text-green-800"
-                      title="View Categories"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(tag.id)}
-                      className="p-1 text-red-600 hover:text-red-800"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Add Modal */}
+        {isAddModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-[#141718]">
+                  Add New Tag
+                </h2>
+                <button
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-            ))}
+              <form onSubmit={handleAddSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#414245] mb-1">
+                    Tag Name
+                  </label>
+                  <input
+                    type="text"
+                    value={addFormData.name}
+                    onChange={(e) =>
+                      setAddFormData((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
+                    placeholder="e.g. Christmas"
+                    required
+                  />
+                </div>
+
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-[#414245] mb-2">
+                    Tag Image <span className="text-gray-500">(Optional)</span>
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+                      {addFormData.imagePreview ? (
+                        <img
+                          src={addFormData.imagePreview}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="w-10 h-10 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">
+                        <Upload className="w-4 h-4" />
+                        Choose Image
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageChange(e, setAddFormData)}
+                          className="hidden"
+                        />
+                      </label>
+                      {addFormData.imagePreview && (
+                        <button
+                          type="button"
+                          onClick={() => removeImage(setAddFormData)}
+                          className="mt-2 text-xs text-red-600 hover:text-red-800"
+                        >
+                          Remove Image
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={addFormData.is_active}
+                    onChange={(e) =>
+                      setAddFormData((prev) => ({
+                        ...prev,
+                        is_active: e.target.checked,
+                      }))
+                    }
+                    className="mr-2"
+                  />
+                  <label className="text-sm font-medium text-[#414245]">
+                    Active
+                  </label>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200"
+                    disabled={isAdding}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isAdding}
+                    className="flex-1 bg-[#5F1327] text-white py-2 rounded-lg font-medium hover:bg-[#B54F5E] disabled:opacity-50"
+                  >
+                    {isAdding ? "Adding..." : "Add Tag"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Modal */}
+        {isEditModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-[#141718]">
+                  Edit Tag
+                </h2>
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#414245] mb-1">
+                    Tag Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.name}
+                    onChange={(e) =>
+                      setEditFormData((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
+                    required
+                  />
+                </div>
+
+                {/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-[#414245] mb-2">
+                    Tag Image
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+                      {editFormData.imagePreview ? (
+                        <img
+                          src={editFormData.imagePreview}
+                          alt="Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="w-10 h-10 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">
+                        <Upload className="w-4 h-4" />
+                        Change Image
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) =>
+                            handleImageChange(e, setEditFormData)
+                          }
+                          className="hidden"
+                        />
+                      </label>
+                      {editFormData.imagePreview && (
+                        <button
+                          type="button"
+                          onClick={() => removeImage(setEditFormData)}
+                          className="mt-2 block text-xs text-red-600 hover:text-red-800"
+                        >
+                          Remove Image
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={editFormData.is_active}
+                    onChange={(e) =>
+                      setEditFormData((prev) => ({
+                        ...prev,
+                        is_active: e.target.checked,
+                      }))
+                    }
+                    className="mr-2"
+                  />
+                  <label className="text-sm font-medium text-[#414245]">
+                    Active
+                  </label>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200"
+                    disabled={isEditing}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isEditing}
+                    className="flex-1 bg-[#5F1327] text-white py-2 rounded-lg font-medium hover:bg-[#B54F5E] disabled:opacity-50"
+                  >
+                    {isEditing ? "Updating..." : "Update Tag"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Add Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-[#141718]">
-                Add New Tag
-              </h2>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleAddSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#414245] mb-1">
-                  Tag Name
-                </label>
-                <input
-                  type="text"
-                  value={addFormData.name}
-                  onChange={(e) =>
-                    setAddFormData((prev) => ({
-                      ...prev,
-                      name: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
-                  placeholder="e.g. Christmas"
-                  required
-                />
-              </div>
-
-              {/* Image Upload */}
-              <div>
-                <label className="block text-sm font-medium text-[#414245] mb-2">
-                  Tag Image <span className="text-gray-500">(Optional)</span>
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
-                    {addFormData.imagePreview ? (
-                      <img
-                        src={addFormData.imagePreview}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <ImageIcon className="w-10 h-10 text-gray-400" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">
-                      <Upload className="w-4 h-4" />
-                      Choose Image
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleImageChange(e, setAddFormData)}
-                        className="hidden"
-                      />
-                    </label>
-                    {addFormData.imagePreview && (
-                      <button
-                        type="button"
-                        onClick={() => removeImage(setAddFormData)}
-                        className="mt-2 text-xs text-red-600 hover:text-red-800"
-                      >
-                        Remove Image
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={addFormData.is_active}
-                  onChange={(e) =>
-                    setAddFormData((prev) => ({
-                      ...prev,
-                      is_active: e.target.checked,
-                    }))
-                  }
-                  className="mr-2"
-                />
-                <label className="text-sm font-medium text-[#414245]">
-                  Active
-                </label>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200"
-                  disabled={isAdding}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isAdding}
-                  className="flex-1 bg-[#5F1327] text-white py-2 rounded-lg font-medium hover:bg-[#B54F5E] disabled:opacity-50"
-                >
-                  {isAdding ? "Adding..." : "Add Tag"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-[#141718]">Edit Tag</h2>
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#414245] mb-1">
-                  Tag Name
-                </label>
-                <input
-                  type="text"
-                  value={editFormData.name}
-                  onChange={(e) =>
-                    setEditFormData((prev) => ({
-                      ...prev,
-                      name: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
-                  required
-                />
-              </div>
-
-              {/* Image Upload */}
-              <div>
-                <label className="block text-sm font-medium text-[#414245] mb-2">
-                  Tag Image
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
-                    {editFormData.imagePreview ? (
-                      <img
-                        src={editFormData.imagePreview}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <ImageIcon className="w-10 h-10 text-gray-400" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">
-                      <Upload className="w-4 h-4" />
-                      Change Image
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleImageChange(e, setEditFormData)}
-                        className="hidden"
-                      />
-                    </label>
-                    {editFormData.imagePreview && (
-                      <button
-                        type="button"
-                        onClick={() => removeImage(setEditFormData)}
-                        className="mt-2 block text-xs text-red-600 hover:text-red-800"
-                      >
-                        Remove Image
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={editFormData.is_active}
-                  onChange={(e) =>
-                    setEditFormData((prev) => ({
-                      ...prev,
-                      is_active: e.target.checked,
-                    }))
-                  }
-                  className="mr-2"
-                />
-                <label className="text-sm font-medium text-[#414245]">
-                  Active
-                </label>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200"
-                  disabled={isEditing}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isEditing}
-                  className="flex-1 bg-[#5F1327] text-white py-2 rounded-lg font-medium hover:bg-[#B54F5E] disabled:opacity-50"
-                >
-                  {isEditing ? "Updating..." : "Update Tag"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+    </Can>
   );
 };
 

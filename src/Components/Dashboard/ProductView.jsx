@@ -5,6 +5,7 @@ import { ArrowLeft, Package, Edit3 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import EditProductForm from "./EditProductForm";
+import Can from "./Can";
 
 const ProductView = () => {
   const { id } = useParams();
@@ -125,14 +126,15 @@ const ProductView = () => {
               <Package className="w-6 h-6 text-[#5F1327]" />
               {product.name}
             </h1>
-
-            <button
-              onClick={handleEdit}
-              className="flex items-center gap-2 px-4 py-2 bg-[#5F1327] text-white rounded-md hover:bg-[#B54F5E] transition-colors text-sm font-medium"
-            >
-              <Edit3 className="w-4 h-4" />
-              Edit Product
-            </button>
+            <Can perform="products.update">
+              <button
+                onClick={handleEdit}
+                className="flex items-center gap-2 px-4 py-2 bg-[#5F1327] text-white rounded-md hover:bg-[#B54F5E] transition-colors text-sm font-medium"
+              >
+                <Edit3 className="w-4 h-4" />
+                Edit Product
+              </button>
+            </Can>
           </div>
         </div>
 
@@ -284,13 +286,15 @@ const ProductView = () => {
 
           {/* === BOTTOM EDIT BUTTON === */}
           <div className="flex justify-center pt-6 border-t">
-            <button
-              onClick={handleEdit}
-              className="flex items-center gap-2 px-6 py-3 bg-[#5F1327] text-white rounded-lg hover:bg-[#B54F5E] transition-colors font-medium shadow-md"
-            >
-              <Edit3 className="w-5 h-5" />
-              Edit Product
-            </button>
+            <Can perform="products.update">
+              <button
+                onClick={handleEdit}
+                className="flex items-center gap-2 px-6 py-3 bg-[#5F1327] text-white rounded-lg hover:bg-[#B54F5E] transition-colors font-medium shadow-md"
+              >
+                <Edit3 className="w-5 h-5" />
+                Edit Product
+              </button>
+            </Can>
           </div>
         </div>
       </div>
