@@ -13,7 +13,7 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [error, setError] = useState(null);
   const [selectedColor, setSelectedColor] = useState("black");
@@ -50,36 +50,49 @@ const ProductDetail = () => {
 
   useEffect(() => {
     const fetchProduct = async () => {
+      // Check cache first (instant repeat visits)
+      const cacheKey = `product_${id}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const {
+          product: cachedProduct,
+          related,
+          timestamp,
+        } = JSON.parse(cached);
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+          // 5 min cache
+          setProduct(cachedProduct);
+          setRelatedProducts(related || []);
+          setIsLoading(false);
+          // Restore selections
+          setSelectedSize(cachedProduct.sizes?.[0] || "no size");
+          if (cachedProduct.colours?.length > 0) {
+            setSelectedColor(cachedProduct.colours[0].value);
+          }
+          return;
+        }
+      }
+
       setIsLoading(true);
       setError(null);
 
       try {
         const productId = parseInt(id);
-        const response = await fetch(
-          `https://api.sablle.ng/api/products/${productId}`,
-          {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
 
-        let data;
-        if (!response.ok) {
-          data = await response.json().catch(() => ({}));
-          if (
-            response.status === 404 ||
-            (data &&
-              data.status === false &&
-              data.message === "Resource not found.")
-          ) {
-            throw new Error("Product not found");
-          }
-          throw new Error(`Failed to fetch product: ${response.statusText}`);
+        // PARALLEL FETCH — this is the big win
+        const [productResponse, allProductsResponse] = await Promise.all([
+          fetch(`https://api.sablle.ng/api/products/${productId}`),
+          fetch(`https://api.sablle.ng/api/products?per_page=100`), // adjust if you know limit
+        ]);
+
+        if (!productResponse.ok) {
+          const err = await productResponse.json().catch(() => ({}));
+          throw new Error(err.message || "Product not found");
         }
 
-        data = await response.json();
+        const data = await productResponse.json();
         const formattedProduct = {
-          id: data.id,
+          /* ← keep your exact formatting logic */ id: data.id,
           name: data.name || "",
           rawPrice: data.sale_price_inc_tax
             ? parseFloat(data.sale_price_inc_tax)
@@ -91,86 +104,89 @@ const ProductDetail = () => {
           badge: data.customize ? "Customizable" : null,
           images: data.images?.map(
             (img) => img.url || `https://api.sablle.ng/storage/${img.path}`
-          ) || ["/placeholder-image.jpg"], // All images as URLs
+          ) || ["/placeholder-image.jpg"],
           image:
             data.images?.[0]?.url ||
             (data.images?.[0]?.path
               ? `https://api.sablle.ng/storage/${data.images[0].path}`
-              : "/placeholder-image.jpg"), // Main image (first one)
+              : "/placeholder-image.jpg"),
           model: data.product_code || "N/A",
           customize: data.customize,
-          sizes: data.size || null, // Keep as-is for now
-          brand: data.brand?.name || "no brand", // From API brand
-          supplier: data.supplier?.name || "no supplier", // From API supplier
-          colours: data.colour || [], // From API colours
-          description: data.description || "", // From API description
+          sizes: data.size || null,
+          brand: data.brand?.name || "no brand",
+          supplier: data.supplier?.name || "no supplier",
+          colours: data.colour || [],
+          description: data.description || "",
         };
 
+        let related = [];
+        if (
+          formattedProduct.category !== "Uncategorized" &&
+          allProductsResponse.ok
+        ) {
+          const allData = await allProductsResponse.json();
+          const list = Array.isArray(allData.data) ? allData.data : [];
+          related = list
+            .filter(
+              (p) =>
+                p.category?.name === formattedProduct.category &&
+                p.id !== productId
+            )
+            .slice(0, 10)
+            .map((p) => ({
+              id: p.id,
+              name: p.name || "",
+              price: p.sale_price_inc_tax
+                ? `₦${parseFloat(p.sale_price_inc_tax).toLocaleString()}`
+                : "Price Unavailable",
+              category: p.category?.name || "Uncategorized",
+              badge: p.customize ? "Customizable" : null,
+              image:
+                p.images?.[0]?.url ||
+                (p.images?.[0]?.path
+                  ? `https://api.sablle.ng/storage/${p.images[0].path}`
+                  : "/placeholder-image.jpg"),
+            }));
+        }
+
+        // Cache for next visit
+        sessionStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            product: formattedProduct,
+            related,
+            timestamp: Date.now(),
+          })
+        );
+
         setProduct(formattedProduct);
+        setRelatedProducts(related);
         setSelectedSize(formattedProduct.sizes?.[0] || "no size");
         if (formattedProduct.colours?.length > 0) {
           setSelectedColor(formattedProduct.colours[0].value);
         }
-
-        if (formattedProduct.category !== "Uncategorized") {
-          const relatedResponse = await fetch(
-            `https://api.sablle.ng/api/products`,
-            {
-              method: "GET",
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-
-          if (relatedResponse.ok) {
-            const relatedData = await relatedResponse.json();
-            const relatedArray = Array.isArray(relatedData.data)
-              ? relatedData.data
-              : [];
-            const formattedRelated = relatedArray
-              .map((item) => ({
-                id: item.id,
-                name: item.name || "",
-                price: item.sale_price_inc_tax
-                  ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
-                  : "Price Unavailable",
-                category: item.category?.name || "Uncategorized",
-                badge: item.customize ? "Customizable" : null,
-                image:
-                  item.images?.[0]?.url ||
-                  (item.images?.[0]?.path
-                    ? `https://api.sablle.ng/storage/${item.images[0].path}`
-                    : "/placeholder-image.jpg"),
-              }))
-              .filter(
-                (p) =>
-                  p.category === formattedProduct.category &&
-                  p.id !== formattedProduct.id
-              );
-
-            setRelatedProducts(formattedRelated.slice(0, 10));
-          }
-        }
-
-        setSelectedThumbnail({
-          index: 0,
-          bgColor: "bg-blue-100",
-          image: formattedProduct.image,
-        });
       } catch (err) {
         setError(err.message);
-        // toast.error(`Error: ${err.message}`, {
-        //   position: "top-right",
-        //   autoClose: 5000,
-        // });
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (id) {
-      fetchProduct();
-    }
+    if (id) fetchProduct();
   }, [id]);
+
+  useEffect(() => {
+    if (product?.image) {
+      const img = new Image();
+      img.src = product.image;
+    }
+    if (product?.images?.length > 0) {
+      product.images.slice(0, 4).forEach((src) => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+  }, [product]);
 
   const scrollLeft = () => {
     if (sliderRef.current) {
@@ -303,9 +319,34 @@ const ProductDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-[1200px] mx-auto p-8 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5F1327] mx-auto"></div>
-        <p className="text-gray-600 mt-4">Loading product...</p>
+      <div className="max-w-[1200px] mx-auto p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 animate-pulse">
+          <div className="space-y-6">
+            <div className="bg-gray-200 rounded-lg h-96" />
+            <div className="flex gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="w-20 h-20 bg-gray-200 rounded" />
+              ))}
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="h-10 bg-gray-200 rounded w-3/4" />
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-full" />
+              <div className="h-4 bg-gray-200 rounded w-5/6" />
+              <div className="h-4 bg-gray-200 rounded w-4/5" />
+            </div>
+            <div className="space-y-4 pt-6">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-6 bg-gray-100 rounded w-48" />
+              ))}
+            </div>
+            <div className="flex gap-4 pt-8">
+              <div className="h-12 bg-gray-200 rounded-lg w-32" />
+              <div className="h-12 bg-gray-200 rounded-lg flex-1" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -612,100 +653,70 @@ const ProductDetail = () => {
       </div>
 
       {/* Related Products Slider */}
-      {relatedProducts.length > 0 && (
-        <div className="max-w-[1200px] mx-auto p-8">
-          <div className="bg-white rounded-lg shadow-sm p-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900">
-                Related Products
-              </h2>
-              <div className="flex space-x-2">
-                <button
-                  onClick={scrollLeft}
-                  className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
-                  aria-label="Scroll left"
-                >
-                  <svg
-                    className="w-6 h-6 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+      <React.Suspense fallback={<div className="h-96 bg-gray-50" />}>
+        {relatedProducts.length > 0 && (
+          <div className="max-w-[1200px] mx-auto p-8">
+            <div className="bg-white rounded-lg shadow-sm p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900">
+                  Related Products
+                </h2>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={scrollLeft}
+                    className="p-2 bg-gray-100 rounded-full hover:bg-gray-200"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                </button>
-                <button
-                  onClick={scrollRight}
-                  className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
-                  aria-label="Scroll right"
-                >
-                  <svg
-                    className="w-6 h-6 text-gray-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                    Left Arrow
+                  </button>
+                  <button
+                    onClick={scrollRight}
+                    className="p-2 bg-gray-100 rounded-full hover:bg-gray-200"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
+                    Right Arrow
+                  </button>
+                </div>
               </div>
-            </div>
-            <div
-              ref={sliderRef}
-              className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide space-x-6 pb-4"
-            >
-              {relatedProducts.map((relatedProduct) => (
-                <div
-                  key={relatedProduct.id}
-                  className="flex-none w-64 snap-start"
-                >
-                  <Link
-                    to={`/product/${relatedProduct.id}`}
-                    className="bg-white overflow-hidden block hover:shadow-lg transition-shadow duration-200"
-                    aria-label={`View details for ${relatedProduct.name}`}
+              <div
+                ref={sliderRef}
+                className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide space-x-6 pb-4"
+              >
+                {relatedProducts.map((relatedProduct) => (
+                  <div
+                    key={relatedProduct.id}
+                    className="flex-none w-64 snap-start"
                   >
-                    <div className="relative bg-[#F4F2F2] p-4 h-48 flex items-center justify-center">
-                      {relatedProduct.badge && (
-                        <div className="absolute top-6 left-0 bg-[#5F1327] text-white px-8 py-2 rounded text-sm font-medium">
-                          {relatedProduct.badge}
-                        </div>
-                      )}
-                      <img
-                        src={relatedProduct.image}
-                        alt={relatedProduct.name}
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    </div>
-                    <div className="py-4">
-                      <h3 className="font-medium text-gray-900 text-sm">
-                        {relatedProduct.name}
-                      </h3>
-                      <span className="text-lg font-semibold text-gray-900">
-                        {relatedProduct.price}
-                      </span>
-                      <div className="flex items-center justify-between">
-                        <span className="text-base text-[#5F1327] py-1 rounded">
-                          {relatedProduct.category}
+                    <Link
+                      to={`/product/${relatedProduct.id}`}
+                      className="block hover:shadow-lg transition-shadow"
+                    >
+                      <div className="relative bg-[#F4F2F2] p-4 h-48 flex items-center justify-center">
+                        {relatedProduct.badge && (
+                          <div className="absolute top-6 left-0 bg-[#5F1327] text-white px-8 py-2 rounded text-sm font-medium">
+                            {relatedProduct.badge}
+                          </div>
+                        )}
+                        <img
+                          src={relatedProduct.image}
+                          alt={relatedProduct.name}
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      </div>
+                      <div className="py-4">
+                        <h3 className="font-medium text-gray-900 text-sm">
+                          {relatedProduct.name}
+                        </h3>
+                        <span className="text-lg font-semibold text-gray-900">
+                          {relatedProduct.price}
                         </span>
                       </div>
-                    </div>
-                  </Link>
-                </div>
-              ))}
+                    </Link>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </React.Suspense>
     </div>
   );
 };
