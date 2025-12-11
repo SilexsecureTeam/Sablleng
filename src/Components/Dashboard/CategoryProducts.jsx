@@ -310,18 +310,20 @@ const CategoryProducts = () => {
                 disabled={currentPage === 1}
                 className={`px-4 py-2 border rounded-md text-sm font-medium ${
                   currentPage === 1
-                    ? "bg-gray-100 text-gray-400"
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const page = Math.max(
-                  1,
-                  Math.min(totalPages, currentPage - 2 + i)
-                );
-                return (
+
+              {/* Generate correct page numbers */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .slice(
+                  Math.max(0, currentPage - 3),
+                  Math.min(totalPages, currentPage + 2)
+                )
+                .map((page) => (
                   <button
                     key={page}
                     onClick={() => handlePageChange(page)}
@@ -333,14 +335,14 @@ const CategoryProducts = () => {
                   >
                     {page}
                   </button>
-                );
-              })}
+                ))}
+
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 className={`px-4 py-2 border rounded-md text-sm font-medium ${
                   currentPage === totalPages
-                    ? "bg-gray-100 text-gray-400"
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                     : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
               >

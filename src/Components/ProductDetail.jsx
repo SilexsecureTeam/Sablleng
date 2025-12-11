@@ -31,11 +31,6 @@ const ProductDetail = () => {
     backgroundColor: value,
   });
 
-  // const capitalizeFirstLetter = (str) => {
-  //   if (!str) return "";
-  //   return str.charAt(0).toUpperCase() + str.slice(1);
-  // };
-
   // Define thumbnails using actual product images (up to 4, cycle bg colors if fewer)
   const bgColors = [
     "bg-blue-100",
@@ -382,7 +377,8 @@ const ProductDetail = () => {
               </div>
               <div className="space-y-3">
                 <h1 className="text-2xl font-semibold text-gray-900">
-                  {product.name}
+                  {product.name.charAt(0).toUpperCase() +
+                    product.name.slice(1).toLowerCase()}
                 </h1>
                 <p className="text-gray-600 text-xl leading-relaxed">
                   {product.description
@@ -394,7 +390,10 @@ const ProductDetail = () => {
                 <div className="space-y-3">
                   <div className="flex">
                     <span className="text-gray-500 w-24">Color:</span>
-                    <span className="text-gray-900">{selectedColor}</span>
+                    <span className="text-gray-900">
+                      {selectedColor.charAt(0).toUpperCase() +
+                        selectedColor.slice(1).toLowerCase()}
+                    </span>
                   </div>
                   {/* <div className="flex">
                     <span className="text-gray-500 w-24">Size:</span>
@@ -406,11 +405,17 @@ const ProductDetail = () => {
                   </div> */}
                   <div className="flex">
                     <span className="text-gray-500 w-24">Brand:</span>
-                    <span className="text-gray-900">{product.brand}</span>
+                    <span className="text-gray-900">
+                      {product.brand.charAt(0).toUpperCase() +
+                        product.brand.slice(1).toLowerCase()}
+                    </span>
                   </div>
                   <div className="flex">
                     <span className="text-gray-500 w-24">Suppliers:</span>
-                    <span className="text-gray-900">{product.supplier}</span>
+                    <span className="text-gray-900">
+                      {product.supplier.charAt(0).toUpperCase() +
+                        product.supplier.slice(1).toLowerCase()}
+                    </span>
                   </div>
                   {/* <div className="flex">
                     <span className="text-gray-500 w-24">Material:</span>
@@ -418,11 +423,17 @@ const ProductDetail = () => {
                   </div> */}
                   <div className="flex">
                     <span className="text-gray-500 w-24">Category:</span>
-                    <span className="text-gray-900">{product.category}</span>
+                    <span className="text-gray-900">
+                      {product.category.charAt(0).toUpperCase() +
+                        product.category.slice(1).toLowerCase()}
+                    </span>
                   </div>
                   <div className="flex">
                     <span className="text-gray-500 w-24">Price:</span>
-                    <span className="text-gray-900">{product.price}</span>
+                    <span className="text-gray-900">
+                      {product.price.charAt(0).toUpperCase() +
+                        product.price.slice(1).toLowerCase()}
+                    </span>
                   </div>
                 </div>
                 <div className="space-x-3 flex items-center">
@@ -439,7 +450,9 @@ const ProductDetail = () => {
                             onClick={() => setSelectedColor(col.value)}
                             style={colorStyle(col.value)}
                             className={`w-6 h-6 rounded-full border-2 ${
-                              selectedColor === col.value
+                              selectedColor ===
+                              col.value.charAt(0).toUpperCase() +
+                                col.value.slice(1).toLowerCase()
                                 ? "border-gray-800"
                                 : "border-gray-300"
                             }`}
@@ -471,7 +484,8 @@ const ProductDetail = () => {
                           } transition-colors`}
                           disabled={sizes.length === 1 && size === "no size"}
                         >
-                          {size}
+                          {size.charAt(0).toUpperCase() +
+                            size.slice(1).toLowerCase()}
                         </button>
                       ))}
                     </div>
