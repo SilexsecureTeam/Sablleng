@@ -118,6 +118,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       path: "/dashboard/report",
       permission: "analytics.view",
     },
+    {
+      label: "EPOS",
+      icon: FileText,
+      path: "/dashboard/epos",
+      permission: "admin.only",
+    },
 
     // Bottom: Admin Only
     {

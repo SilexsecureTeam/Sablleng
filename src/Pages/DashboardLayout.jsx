@@ -48,6 +48,10 @@ const Sidebar = lazy(() => import("../Components/Dashboard/Sidebar"));
 const CategoryProducts = lazy(() =>
   import("../Components/Dashboard/CategoryProducts")
 );
+const EposLogs = lazy(() => import("../Components/Dashboard/EposLogs"));
+const EposLogDetails = lazy(() =>
+  import("../Components/Dashboard/EposLogDetails")
+);
 const OrderDetails = lazy(() => import("../Components/Dashboard/OrderDetails"));
 
 const LoadingSpinner = () => (
@@ -170,6 +174,22 @@ const DashboardLayout = () => {
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
                     <ProductList />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/epos"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <EposLogs />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/epos/id"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <EposLogDetails />
                   </MainContent>
                 }
               />
