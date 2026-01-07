@@ -142,14 +142,14 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
         });
 
         setSizes(
-          Array.isArray(data.size)
-            ? data.size.map((s) => s.value || "").filter(Boolean)
-            : [""]
+          Array.isArray(data.size) && data.size.length > 0 ? data.size : [""]
         );
 
+        // Fixed: store image id for existing images
         setImages({
           primary: data.images?.[0]
             ? {
+                id: data.images[0].id,
                 url:
                   data.images[0].url ||
                   `https://api.sablle.ng/storage/${data.images[0].path}`,
@@ -158,6 +158,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
             : null,
           thumbnail1: data.images?.[1]
             ? {
+                id: data.images[1].id,
                 url:
                   data.images[1].url ||
                   `https://api.sablle.ng/storage/${data.images[1].path}`,
@@ -166,6 +167,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
             : null,
           thumbnail2: data.images?.[2]
             ? {
+                id: data.images[2].id,
                 url:
                   data.images[2].url ||
                   `https://api.sablle.ng/storage/${data.images[2].path}`,
@@ -174,6 +176,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
             : null,
           thumbnail3: data.images?.[3]
             ? {
+                id: data.images[3].id,
                 url:
                   data.images[3].url ||
                   `https://api.sablle.ng/storage/${data.images[3].path}`,
@@ -341,14 +344,24 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
       if (formData.supplier)
         formDataToSend.append("supplier_id", formData.supplier);
 
-      // === IMAGES ===
+      // === IMAGES (fixed) ===
       const imageKeys = ["primary", "thumbnail1", "thumbnail2", "thumbnail3"];
+      let newImageIndex = 0;
+
       imageKeys.forEach((key, index) => {
-        if (images[key]?.id) {
-          formDataToSend.append(`existing_images[${index}]`, images[key].id);
-        } else if (images[key]?.file) {
-          formDataToSend.append(`images[${index}]`, images[key].file);
+        const img = images[key];
+
+        if (img) {
+          if (img.file) {
+            // New uploaded image – send in sequential order
+            formDataToSend.append(`images[${newImageIndex}]`, img.file);
+            newImageIndex++;
+          } else if (img.id) {
+            // Existing image to keep – send with original index
+            formDataToSend.append(`existing_images[${index}]`, img.id);
+          }
         }
+        // If img === null → nothing sent → backend treats as deletion
       });
 
       if (formData.couponCode)
