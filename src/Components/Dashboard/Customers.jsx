@@ -10,8 +10,8 @@ const API_BASE = "https://api.sablle.ng/api";
 const Customers = () => {
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
-const [availableRoles, setAvailableRoles] = useState([]);
-const [loadingRoles, setLoadingRoles] = useState(true);
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [loadingRoles, setLoadingRoles] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [customers, setCustomers] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
@@ -79,32 +79,32 @@ const [loadingRoles, setLoadingRoles] = useState(true);
     }
   };
   const fetchAvailableRoles = async () => {
-  try {
-    const res = await fetch(`${API_BASE}/roles`, {
-      headers: { Authorization: `Bearer ${auth.token}` },
-    });
-    const result = await res.json();
-
-    if (res.ok && result.data) {
-      // Sort admin first, then others
-      const sorted = result.data.sort((a, b) => {
-        if (a.name === "admin") return -1;
-        if (b.name === "admin") return 1;
-        return a.name.localeCompare(b.name);
+    try {
+      const res = await fetch(`${API_BASE}/roles`, {
+        headers: { Authorization: `Bearer ${auth.token}` },
       });
-      setAvailableRoles(sorted);
+      const result = await res.json();
+
+      if (res.ok && result.data) {
+        // Sort admin first, then others
+        const sorted = result.data.sort((a, b) => {
+          if (a.name === "admin") return -1;
+          if (b.name === "admin") return 1;
+          return a.name.localeCompare(b.name);
+        });
+        setAvailableRoles(sorted);
+      }
+    } catch (err) {
+      console.error("Failed to load roles:", err);
+      toast.error("Could not load roles list");
+    } finally {
+      setLoadingRoles(false);
     }
-  } catch (err) {
-    console.error("Failed to load roles:", err);
-    toast.error("Could not load roles list");
-  } finally {
-    setLoadingRoles(false);
-  }
-};
+  };
 
   useEffect(() => {
     fetchCustomers();
-    fetchAvailableRoles();        
+    fetchAvailableRoles();
   }, [auth.token]);
 
   // Search & Pagination (unchanged)
@@ -224,14 +224,14 @@ const [loadingRoles, setLoadingRoles] = useState(true);
               })}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          {/* <div className="flex items-center gap-3">
             <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <Bell className="w-5 h-5 text-gray-600" />
             </button>
             <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <Settings className="w-5 h-5 text-gray-600" />
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Search */}
@@ -407,27 +407,27 @@ const [loadingRoles, setLoadingRoles] = useState(true);
               <p className="text-gray-500">{selectedCustomer.email}</p>
             </div>
 
-           <select
-  defaultValue={selectedCustomer?.role }
-  onChange={(e) => handleUpdateRole(e.target.value)}
-  disabled={loadingRoles}
-  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] text-sm mb-5"
->
-  {loadingRoles ? (
-    <option>Loading roles...</option>
-  ) : availableRoles.length === 0 ? (
-    <option>No roles available</option>
-  ) : (
-    availableRoles.map((role) => (
-      <option key={role.id} value={role.name}>
-        {role.name
-          .split("_")
-          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(" ")}
-      </option>
-    ))
-  )}
-</select>
+            <select
+              defaultValue={selectedCustomer?.role}
+              onChange={(e) => handleUpdateRole(e.target.value)}
+              disabled={loadingRoles}
+              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] text-sm mb-5"
+            >
+              {loadingRoles ? (
+                <option>Loading roles...</option>
+              ) : availableRoles.length === 0 ? (
+                <option>No roles available</option>
+              ) : (
+                availableRoles.map((role) => (
+                  <option key={role.id} value={role.name}>
+                    {role.name
+                      .split("_")
+                      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                      .join(" ")}
+                  </option>
+                ))
+              )}
+            </select>
 
             <div className="flex justify-end">
               <button

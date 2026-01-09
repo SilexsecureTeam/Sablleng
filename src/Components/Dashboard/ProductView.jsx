@@ -32,6 +32,7 @@ const ProductView = () => {
 
       const data = await response.json();
       setProduct(data);
+      // console.log("Raw product images:", data.images);
     } catch (err) {
       setError(err.message);
       toast.error(`Error: ${err.message}`);
@@ -153,7 +154,7 @@ const ProductView = () => {
                     className="relative group overflow-hidden rounded-lg shadow-sm border border-gray-200"
                   >
                     <img
-                      src={img.url}
+                      src={`https://api.sablle.ng/storage/${img.path}`}
                       alt={`Product ${i + 1}`}
                       className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
                     />

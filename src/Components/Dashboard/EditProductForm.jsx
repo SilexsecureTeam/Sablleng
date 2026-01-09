@@ -344,25 +344,19 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
       if (formData.supplier)
         formDataToSend.append("supplier_id", formData.supplier);
 
-      // === IMAGES (fixed) ===
-      const imageKeys = ["primary", "thumbnail1", "thumbnail2", "thumbnail3"];
-      let newImageIndex = 0;
+      // === IMAGES - Only send NEW uploads; skip if none to preserve existing ones ===
 
-      imageKeys.forEach((key, index) => {
-        const img = images[key];
+      const newUploadedImages = Object.values(images).filter(
+        (img) => img?.file
+      );
 
-        if (img) {
-          if (img.file) {
-            // New uploaded image – send in sequential order
-            formDataToSend.append(`images[${newImageIndex}]`, img.file);
-            newImageIndex++;
-          } else if (img.id) {
-            // Existing image to keep – send with original index
-            formDataToSend.append(`existing_images[${index}]`, img.id);
-          }
-        }
-        // If img === null → nothing sent → backend treats as deletion
-      });
+      // Only send images[] if there are actually new files
+      if (newUploadedImages.length > 0) {
+        newUploadedImages.forEach((img, index) => {
+          formDataToSend.append(`images[${index}]`, img.file);
+        });
+      }
+      // If no new images → do NOTHING with images keys → backend should keep existing
 
       if (formData.couponCode)
         formDataToSend.append("coupon_code", formData.couponCode);
@@ -754,24 +748,35 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
                 </h2>
 
                 <div className="mb-4">
-                  <div className="relative w-full aspect-square bg-[#5F1327] rounded-lg overflow-hidden">
+                  <div className="relative w-full aspect-square bg-[#5F1327] rounded-lg overflow-hidden cursor-pointer">
                     {images.primary ? (
                       <>
                         <img
                           src={images.primary.url}
-                          alt="Primary product"
+                          alt="Primary"
                           className="w-full h-full object-cover"
                         />
                         <button
                           onClick={() => removeImage("primary")}
-                          disabled={isSubmitting}
-                          className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
+                          className="absolute top-2 right-2 p-1 bg-white rounded-full ..."
                         >
-                          <X className="w-4 h-4 text-gray-700" />
+                          <X className="w-4 h-4" />
                         </button>
                       </>
                     ) : (
-                      <div className="w-full h-full bg-[#5F1327]" />
+                      <label className="absolute inset-0 flex items-center justify-center cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          disabled={isSubmitting}
+                        />
+                        <div className="text-center text-white">
+                          <Upload className="w-8 h-8 mx-auto mb-1" />
+                          <p className="text-sm">Click to upload primary</p>
+                        </div>
+                      </label>
                     )}
                   </div>
                 </div>
@@ -794,7 +799,19 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
                         </button>
                       </>
                     ) : (
-                      <div className="w-full h-full bg-[#5F1327]" />
+                      <label className="absolute inset-0 flex items-center justify-center cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          disabled={isSubmitting}
+                        />
+                        <div className="text-center text-white">
+                          <Upload className="w-8 h-8 mx-auto mb-1" />
+                          {/* <p className="text-sm">Click to upload primary</p> */}
+                        </div>
+                      </label>
                     )}
                   </div>
                   <div className="relative w-20 h-20 bg-[#5F1327] rounded-md overflow-hidden">
@@ -814,7 +831,19 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
                         </button>
                       </>
                     ) : (
-                      <div className="w-full h-full bg-[#5F1327]" />
+                      <label className="absolute inset-0 flex items-center justify-center cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          disabled={isSubmitting}
+                        />
+                        <div className="text-center text-white">
+                          <Upload className="w-8 h-8 mx-auto mb-1" />
+                          {/* <p className="text-sm">Click to upload primary</p> */}
+                        </div>
+                      </label>
                     )}
                   </div>
                 </div>
@@ -837,7 +866,19 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
                         </button>
                       </>
                     ) : (
-                      <div className="w-full h-full bg-[#5F1327]" />
+                      <label className="absolute inset-0 flex items-center justify-center cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          disabled={isSubmitting}
+                        />
+                        <div className="text-center text-white">
+                          <Upload className="w-8 h-8 mx-auto mb-1" />
+                          {/* <p className="text-sm">Click to upload primary</p> */}
+                        </div>
+                      </label>
                     )}
                   </div>
                 </div>

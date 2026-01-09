@@ -4,7 +4,7 @@ import { Search, Bell, Settings } from "lucide-react";
 import { AuthContext } from "../../context/AuthContextObject";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Can from "./Can"
+import Can from "./Can";
 
 const OrderManagement = () => {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -149,210 +149,210 @@ const OrderManagement = () => {
 
   return (
     <Can perform="orders.view">
-    <div className="min-h-screen bg-[#FAF7F5] p-6">
-      <div className="max-w-7xl mx-auto">
-        <ToastContainer position="top-right" autoClose={3000} />
+      <div className="min-h-screen bg-[#FAF7F5] p-6">
+        <div className="max-w-7xl mx-auto">
+          <ToastContainer position="top-right" autoClose={3000} />
 
-        {/* HEADER */}
-        <div className="flex items-start justify-between text-[#414245] mb-4">
-          <div>
-            <h1 className="text-2xl font-medium">Orders</h1>
-            <p className="text-sm md:text-base mt-1">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
+          {/* HEADER */}
+          <div className="flex items-start justify-between text-[#414245] mb-4">
+            <div>
+              <h1 className="text-2xl font-medium">Orders</h1>
+              <p className="text-sm md:text-base mt-1">
+                {new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+            </div>
+            {/* <div className="flex items-center gap-3">
             <button className="p-2 hover:bg-gray-100 rounded-lg">
               <Bell className="w-5 h-5 text-gray-600" />
             </button>
             <button className="p-2 hover:bg-gray-100 rounded-lg">
               <Settings className="w-5 h-5 text-gray-600" />
             </button>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl">
-          {/* TITLE */}
-          <div className="px-6 py-5">
-            <h2 className="text-lg font-semibold text-gray-900">Orders</h2>
+          </div> */}
           </div>
 
-          {/* SEARCH */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by Order Reference or Customer's Name"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
-              />
+          <div className="bg-white rounded-xl">
+            {/* TITLE */}
+            <div className="px-6 py-5">
+              <h2 className="text-lg font-semibold text-gray-900">Orders</h2>
             </div>
-          </div>
 
-          {/* FILTERS: All, Paid, Pending */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex gap-2">
-              {filters.map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setActiveFilter(filter)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeFilter === filter
-                      ? "bg-[#5F1327] text-white"
-                      : "bg-[#DFDFDF] text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* LOADING */}
-          {isLoading && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5F1327]"></div>
-              <p className="text-gray-600 mt-4">Loading orders...</p>
-            </div>
-          )}
-
-          {/* ERROR */}
-          {error && !isLoading && (
-            <div className="px-6 py-12 text-center">
-              <p className="text-red-500 text-sm">{error}</p>
-              <button
-                onClick={fetchOrders}
-                className="mt-4 px-4 py-2 bg-[#5F1327] text-white rounded-md hover:bg-[#4A0F1F]"
-              >
-                Retry
-              </button>
-            </div>
-          )}
-
-          {/* TABLE */}
-          {!isLoading && !error && (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Order ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Customer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Items
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Total
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {paginatedOrders.map((order, index) => (
-                    <tr
-                      key={startIndex + index}
-                      className="hover:bg-gray-50 text-[#414245]"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {order?.id?.slice(0, 7)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {order.customer}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {order.items}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {order.total}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
-                            order.status
-                          )}`}
-                        >
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {order.date}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <button
-                          onClick={() =>
-                            navigate(`/dashboard/orders/${order.id}/details`)
-                          }
-                          className="text-sm text-[#0B36B5] hover:text-blue-800 font-medium"
-                        >
-                          Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* EMPTY */}
-          {!isLoading && !error && paginatedOrders.length === 0 && (
-            <div className="px-6 py-12 text-center">
-              <p className="text-gray-500 text-sm">No orders found.</p>
-            </div>
-          )}
-
-          {/* PAGINATION */}
-          {!isLoading && !error && filteredOrders.length > 0 && (
-            <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
-              <p className="text-sm text-gray-700">
-                Page {currentPage} of {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                  className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                    currentPage === 1
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                  className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                    currentPage === totalPages
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-white text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  Next
-                </button>
+            {/* SEARCH */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by Order Reference or Customer's Name"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
+                />
               </div>
             </div>
-          )}
+
+            {/* FILTERS: All, Paid, Pending */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex gap-2">
+                {filters.map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setActiveFilter(filter)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      activeFilter === filter
+                        ? "bg-[#5F1327] text-white"
+                        : "bg-[#DFDFDF] text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* LOADING */}
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5F1327]"></div>
+                <p className="text-gray-600 mt-4">Loading orders...</p>
+              </div>
+            )}
+
+            {/* ERROR */}
+            {error && !isLoading && (
+              <div className="px-6 py-12 text-center">
+                <p className="text-red-500 text-sm">{error}</p>
+                <button
+                  onClick={fetchOrders}
+                  className="mt-4 px-4 py-2 bg-[#5F1327] text-white rounded-md hover:bg-[#4A0F1F]"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {/* TABLE */}
+            {!isLoading && !error && (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Order ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Customer
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Items
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Total
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {paginatedOrders.map((order, index) => (
+                      <tr
+                        key={startIndex + index}
+                        className="hover:bg-gray-50 text-[#414245]"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {order?.id?.slice(0, 7)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {order.customer}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {order.items}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {order.total}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
+                              order.status
+                            )}`}
+                          >
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {order.date}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <button
+                            onClick={() =>
+                              navigate(`/dashboard/orders/${order.id}/details`)
+                            }
+                            className="text-sm text-[#0B36B5] hover:text-blue-800 font-medium"
+                          >
+                            Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* EMPTY */}
+            {!isLoading && !error && paginatedOrders.length === 0 && (
+              <div className="px-6 py-12 text-center">
+                <p className="text-gray-500 text-sm">No orders found.</p>
+              </div>
+            )}
+
+            {/* PAGINATION */}
+            {!isLoading && !error && filteredOrders.length > 0 && (
+              <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                <p className="text-sm text-gray-700">
+                  Page {currentPage} of {totalPages}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 1}
+                    className={`px-4 py-2 border rounded-md text-sm font-medium ${
+                      currentPage === 1
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={handleNextPage}
+                    disabled={currentPage === totalPages}
+                    className={`px-4 py-2 border rounded-md text-sm font-medium ${
+                      currentPage === totalPages
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-white text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-    </Can >
+    </Can>
   );
 };
 
