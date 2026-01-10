@@ -5,16 +5,17 @@ import { AuthContext } from "../context/AuthContextObject";
 import "react-toastify/dist/ReactToastify.css";
 import ImageUploadComponent from "./ImageUploadComponent";
 import RelatedProducts from "../Components/RelatedProducts";
+import { useQuery } from "@tanstack/react-query";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const { addItem } = useContext(CartContext);
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [product, setProduct] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [product, setProduct] = useState(null);
+  // const [isLoading, setIsLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [error, setError] = useState(null);
+  // const [error, setError] = useState(null);
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -31,121 +32,84 @@ const ProductDetail = () => {
     "bg-red-100",
     "bg-yellow-100",
   ];
+
+  const {
+    data: product,
+    isLoading,
+    isError,
+    error,
+    isFetching,
+  } = useQuery({
+    queryKey: ["product", id],
+    queryFn: async () => {
+      const productId = parseInt(id);
+
+      const [productResponse] = await Promise.all([
+        fetch(`https://api.sablle.ng/api/products/${productId}`, {
+          cache: "no-store",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache, no-store",
+          },
+        }),
+        fetch(`https://api.sablle.ng/api/products?per_page=100`),
+      ]);
+
+      if (!productResponse.ok) {
+        const err = await productResponse.json().catch(() => ({}));
+        throw new Error(err.message || "Product not found");
+      }
+
+      const data = await productResponse.json();
+
+      const formattedProduct = {
+        id: data.id,
+        name: data.name || "",
+        rawPrice: data.sale_price_inc_tax
+          ? parseFloat(data.sale_price_inc_tax)
+          : 0,
+        price: data.sale_price_inc_tax
+          ? `₦${parseFloat(data.sale_price_inc_tax).toLocaleString()}`
+          : "Price Unavailable",
+        category: data.category?.name || "Uncategorized",
+        categoryId: data.category?.id,
+        badge: data.customize ? "Customizable" : null,
+        images: data.images?.map(
+          (img) => img.url || `https://api.sablle.ng/storage/${img.path}`
+        ) || ["/placeholder-image.jpg"],
+        image:
+          data.images?.[0]?.url ||
+          (data.images?.[0]?.path
+            ? `https://api.sablle.ng/storage/${data.images[0].path}`
+            : "/placeholder-image.jpg"),
+        model: data.product_code || "N/A",
+        customize: data.customize,
+        sizes: data.size || null,
+        brand: data.brand?.name || "no brand",
+        supplier: data.supplier?.name || "no supplier",
+        colours: data.colours || [],
+        description: data.description || "",
+      };
+
+      // Set initial selections
+      if (formattedProduct.sizes?.length > 0) {
+        setSelectedSize(formattedProduct.sizes[0]);
+      }
+      if (formattedProduct.colours?.length > 0) {
+        setSelectedColor(formattedProduct.colours[0].value);
+      }
+
+      return formattedProduct;
+    },
+    enabled: !!id,
+  });
+
   const thumbnails = product?.images
     ? product.images.map((img, index) => ({
         bgColor: bgColors[index % bgColors.length],
         image: img,
       }))
     : [];
-
-  useEffect(() => {
-    const fetchProduct = async () => {
-      const cacheKey = `product_${id}`;
-      // const cached = sessionStorage.getItem(cacheKey);
-      // if (cached) {
-      //   const { product: cachedProduct, timestamp } = JSON.parse(cached);
-      //   if (Date.now() - timestamp < 5 * 60 * 1000) {
-      //     setProduct(cachedProduct);
-      //     setIsLoading(false);
-      //     setSelectedSize(cachedProduct.sizes?.[0] || "no size");
-      //     if (cachedProduct.colours?.length > 0) {
-      //       setSelectedColor(cachedProduct.colours[0].value);
-      //     }
-      //     return;
-      //   }
-      // }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const productId = parseInt(id);
-
-        const timestamp = Date.now(); // ← new line
-        const url = `https://api.sablle.ng/api/products/${productId}?_=${timestamp}`; // ← cache-busting
-
-        const [productResponse] = await Promise.all([
-          fetch(url, {
-            // ← changed to use url variable
-            cache: "no-store", // never store in any cache
-            headers: {
-              "Content-Type": "application/json",
-              "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
-              Pragma: "no-cache",
-              Expires: "0",
-            },
-          }),
-          fetch(
-            `https://api.sablle.ng/api/products?per_page=100?_=${timestamp}`,
-            {
-              cache: "no-store",
-              headers: {
-                "Cache-Control":
-                  "no-cache, no-store, must-revalidate, max-age=0",
-                Pragma: "no-cache",
-                Expires: "0",
-              },
-            }
-          ),
-        ]);
-
-        if (!productResponse.ok) {
-          const err = await productResponse.json().catch(() => ({}));
-          throw new Error(err.message || "Product not found");
-        }
-
-        const data = await productResponse.json();
-        const formattedProduct = {
-          id: data.id,
-          name: data.name || "",
-          rawPrice: data.sale_price_inc_tax
-            ? parseFloat(data.sale_price_inc_tax)
-            : 0,
-          price: data.sale_price_inc_tax
-            ? `₦${parseFloat(data.sale_price_inc_tax).toLocaleString()}`
-            : "Price Unavailable",
-          category: data.category?.name || "Uncategorized",
-          categoryId: data.category?.id,
-          badge: data.customize ? "Customizable" : null,
-          images: data.images?.map(
-            (img) => img.url || `https://api.sablle.ng/storage/${img.path}`
-          ) || ["/placeholder-image.jpg"],
-          image:
-            data.images?.[0]?.url ||
-            (data.images?.[0]?.path
-              ? `https://api.sablle.ng/storage/${data.images[0].path}`
-              : "/placeholder-image.jpg"),
-          model: data.product_code || "N/A",
-          customize: data.customize,
-          sizes: data.size || null,
-          brand: data.brand?.name || "no brand",
-          supplier: data.supplier?.name || "no supplier",
-          colours: data.colours || [],
-          description: data.description || "",
-        };
-
-        sessionStorage.setItem(
-          cacheKey,
-          JSON.stringify({
-            product: formattedProduct,
-            timestamp: Date.now(),
-          })
-        );
-
-        setProduct(formattedProduct);
-        setSelectedSize(formattedProduct.sizes?.[0] || "no size");
-        if (formattedProduct.colours?.length > 0) {
-          setSelectedColor(formattedProduct.colours[0].value);
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (id) fetchProduct();
-  }, [id]);
 
   useEffect(() => {
     if (product?.image) {
@@ -274,11 +238,11 @@ const ProductDetail = () => {
     );
   }
 
-  if (error || !product) {
+  if (isError || !product) {
     return (
       <div className="max-w-[1200px] mx-auto p-8 text-center">
         <h2 className="text-2xl font-semibold text-gray-900">
-          {error || "Product not found"}
+          {error?.message || "Product not found"}
         </h2>
         <Link
           to="/product"
@@ -577,6 +541,12 @@ const ProductDetail = () => {
         categoryId={product.categoryId}
         currentProductId={product.id}
       />
+
+      {isFetching && !isLoading && (
+        <div className="fixed bottom-4 right-4 bg-gray-800/80 text-white px-3 py-1 rounded-full text-xs shadow-lg">
+          Updating...
+        </div>
+      )}
     </div>
   );
 };
