@@ -41,19 +41,19 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       const cacheKey = `product_${id}`;
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) {
-        const { product: cachedProduct, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < 5 * 60 * 1000) {
-          setProduct(cachedProduct);
-          setIsLoading(false);
-          setSelectedSize(cachedProduct.sizes?.[0] || "no size");
-          if (cachedProduct.colours?.length > 0) {
-            setSelectedColor(cachedProduct.colours[0].value);
-          }
-          return;
-        }
-      }
+      // const cached = sessionStorage.getItem(cacheKey);
+      // if (cached) {
+      //   const { product: cachedProduct, timestamp } = JSON.parse(cached);
+      //   if (Date.now() - timestamp < 5 * 60 * 1000) {
+      //     setProduct(cachedProduct);
+      //     setIsLoading(false);
+      //     setSelectedSize(cachedProduct.sizes?.[0] || "no size");
+      //     if (cachedProduct.colours?.length > 0) {
+      //       setSelectedColor(cachedProduct.colours[0].value);
+      //     }
+      //     return;
+      //   }
+      // }
 
       setIsLoading(true);
       setError(null);
@@ -61,9 +61,32 @@ const ProductDetail = () => {
       try {
         const productId = parseInt(id);
 
+        const timestamp = Date.now(); // ← new line
+        const url = `https://api.sablle.ng/api/products/${productId}?_=${timestamp}`; // ← cache-busting
+
         const [productResponse] = await Promise.all([
-          fetch(`https://api.sablle.ng/api/products/${productId}`),
-          fetch(`https://api.sablle.ng/api/products?per_page=100`),
+          fetch(url, {
+            // ← changed to use url variable
+            cache: "no-store", // never store in any cache
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+              Pragma: "no-cache",
+              Expires: "0",
+            },
+          }),
+          fetch(
+            `https://api.sablle.ng/api/products?per_page=100?_=${timestamp}`,
+            {
+              cache: "no-store",
+              headers: {
+                "Cache-Control":
+                  "no-cache, no-store, must-revalidate, max-age=0",
+                Pragma: "no-cache",
+                Expires: "0",
+              },
+            }
+          ),
         ]);
 
         if (!productResponse.ok) {
