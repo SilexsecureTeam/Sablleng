@@ -7,6 +7,7 @@ export const getTagCategories = (tag) => {
     .map((cat) => ({
       id: cat.id,
       name: cat.name,
+       image: cat.image,  
       slug: cat.name
         .toLowerCase()
         .replace(/\s+/g, "-")

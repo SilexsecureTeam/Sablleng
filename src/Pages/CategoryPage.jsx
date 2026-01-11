@@ -1,7 +1,7 @@
 // src/Pages/CategoryPage.jsx
 import React, { useState, useEffect, useMemo, useContext } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { Heart } from "lucide-react";
+import { Heart, Image as ImageIcon } from "lucide-react";
 import { CartContext } from "../context/CartContextObject";
 import ProductFilters from "../Components/ProductFilters"; // ← THE BEAST
 import Noti from "../Components/Noti";
@@ -130,7 +130,7 @@ const CategoryPage = () => {
             item.images?.[0]?.url ||
             (item.images?.[0]?.path
               ? `https://api.sablle.ng/storage/${item.images[0].path}`
-              : "/placeholder-image.jpg"),
+              : null),
         }));
 
         setRawProducts(formatted);
@@ -238,15 +238,23 @@ const CategoryPage = () => {
                                 {product.customization.length}+ customs
                               </span>
                             )}
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              className="max-h-full max-w-full object-contain"
-                              loading="lazy"
-                              onError={(e) =>
-                                (e.target.src = "/placeholder-image.jpg")
-                              }
-                            />
+
+                            {product.image ? (
+                              <img
+                                src={product.image}
+                                alt={product.name}
+                                className="max-h-full max-w-full object-contain"
+                                loading="lazy"
+                                onError={(e) => {
+                                  e.target.style.display = "none"; // Hide broken image
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <ImageIcon className="w-16 h-16 text-gray-400" />{" "}
+                                {/* Adjust size if needed */}
+                              </div>
+                            )}
                           </div>
                         </Link>
 

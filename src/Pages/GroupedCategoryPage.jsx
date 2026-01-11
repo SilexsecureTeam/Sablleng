@@ -1,13 +1,12 @@
 // Updated GroupedCategoryPage.jsx
 import React from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-// import { toast, ToastContainer } from "react-toastify";
-// import "react-toastify/dist/ReactToastify.css";
 import { getTagCategories } from "../utils/categoryGroups";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
 import Noti from "../Components/Noti";
 import { useTags } from "../context/TagContext";
+import { Image as ImageIcon } from "lucide-react";
 
 const GroupedCategoryPage = () => {
   const { mainSlug } = useParams();
@@ -18,116 +17,6 @@ const GroupedCategoryPage = () => {
   const matchedTag = tags.find((tag) => tag.slug === mainSlug);
   const subCategories = matchedTag ? getTagCategories(matchedTag) : [];
   const tagName = matchedTag?.name || "Collection";
-
-  // useEffect(() => {
-  //   const CACHE_KEY = "sablle_tags";
-  //   // const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
-  //   const CACHE_EXPIRY = 30 * 1000; // 30 seconds
-
-  //   const fetchTags = async () => {
-  //     try {
-  //       setIsLoading(true);
-  //       setError(null);
-
-  //       // Check cache first
-  //       const cached = localStorage.getItem(CACHE_KEY);
-  //       const now = new Date().getTime();
-  //       let formattedTags = [];
-
-  //       if (cached) {
-  //         const { data, timestamp } = JSON.parse(cached);
-  //         if (now - timestamp < CACHE_EXPIRY) {
-  //           formattedTags = data;
-  //         } else {
-  //           // Cache expired, fetch fresh
-  //           const response = await fetch("https://api.sablle.ng/api/tags", {
-  //             method: "GET",
-  //             headers: { "Content-Type": "application/json" },
-  //           });
-
-  //           if (!response.ok) {
-  //             throw new Error(`Failed to fetch tags: ${response.statusText}`);
-  //           }
-
-  //           const data = await response.json();
-  //           formattedTags = Array.isArray(data)
-  //             ? data.filter((item) => item.is_active === true)
-  //             : [];
-
-  //           // Cache fresh data
-  //           localStorage.setItem(
-  //             CACHE_KEY,
-  //             JSON.stringify({
-  //               data: formattedTags,
-  //               timestamp: now,
-  //             })
-  //           );
-  //         }
-  //       } else {
-  //         // No cache, fetch
-  //         const response = await fetch("https://api.sablle.ng/api/tags", {
-  //           method: "GET",
-  //           headers: { "Content-Type": "application/json" },
-  //         });
-
-  //         if (!response.ok) {
-  //           throw new Error(`Failed to fetch tags: ${response.statusText}`);
-  //         }
-
-  //         const data = await response.json();
-  //         formattedTags = Array.isArray(data)
-  //           ? data.filter((item) => item.is_active === true)
-  //           : [];
-
-  //         // Cache it
-  //         localStorage.setItem(
-  //           CACHE_KEY,
-  //           JSON.stringify({
-  //             data: formattedTags,
-  //             timestamp: now,
-  //           })
-  //         );
-  //       }
-
-  //       setTags(formattedTags);
-
-  //       // Find the tag matching the slug
-  //       const matchedTag = formattedTags.find((tag) => tag.slug === mainSlug);
-
-  //       if (matchedTag) {
-  //         setTagName(matchedTag.name);
-  //         const subs = getTagCategories(matchedTag);
-  //         setSubCategories(subs);
-
-  //         if (subs.length > 0) {
-  //           // toast.success(`Loaded ${subs.length} categories!`, {
-  //           //   position: "top-right",
-  //           //   autoClose: 3000,
-  //           // });
-  //         } else {
-  //           // toast.info("No categories found—check back soon!", {
-  //           //   position: "top-right",
-  //           //   autoClose: 5000,
-  //           // });
-  //         }
-  //       } else {
-  //         throw new Error("Tag not found");
-  //       }
-  //     } catch (err) {
-  //       console.error("Fetch tags error:", err);
-  //       setError(err.message);
-  //       // toast.error(`Error: ${err.message}`, {
-  //       //   position: "top-right",
-  //       //   autoClose: 5000,
-  //       // });
-  //       setSubCategories([]);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-
-  //   fetchTags();
-  // }, [mainSlug]);
 
   if (isLoading) {
     return (
@@ -171,12 +60,27 @@ const GroupedCategoryPage = () => {
                   to={`/categories/${sub.slug}`}
                   className="group overflow-hidden duration-300 block"
                 >
-                  <div className="h-48 md:h-52 lg:h-56 overflow-hidden rounded-xl flex items-center justify-center bg-[#F4F2F2]">
-                    <img
-                      src="/placeholder-image.jpg"
-                      alt={sub.name}
-                      className="max-h-full max-w-full object-contain"
-                    />
+                  <div className="h-48 md:h-52 lg:h-56 overflow-hidden rounded-t-xl flex items-center justify-center bg-[#F4F2F2]">
+                    {sub.image ? (
+                      <img
+                        src={`https://api.sablle.ng/storage/${sub.image}`}
+                        alt={sub.name}
+                        className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                        onError={(e) => {
+                          console.warn(
+                            `Image failed to load for ${sub.name}:`,
+                            e.target.src
+                          );
+                          e.target.onerror = null;
+                          e.target.src = "/placeholder-image.jpg";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="w-full h-full text-gray-400" />
+                      </div>
+                    )}
                   </div>
                   <div className="p-4 text-center">
                     <h3 className="text-sm md:text-base font-light text-[#333333] mt-2 hover:text-[#5F1327] transition-colors duration-300">

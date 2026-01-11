@@ -515,7 +515,7 @@ const Header = React.memo(() => {
           </div>
 
           {/* Mobile: Hamburger, Logo, Icons Row */}
-          <div className="md:hidden flex items-center justify-between py-3">
+          <div className="md:hidden flex items-center justify-between py-3 px-3">
             {/* Left: Hamburger */}
             <button
               onClick={(e) => {

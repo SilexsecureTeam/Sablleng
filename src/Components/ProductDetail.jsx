@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import ImageUploadComponent from "./ImageUploadComponent";
 import RelatedProducts from "../Components/RelatedProducts";
 import { useQuery } from "@tanstack/react-query";
+import { Image as ImageIcon } from "lucide-react";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -74,14 +75,15 @@ const ProductDetail = () => {
         category: data.category?.name || "Uncategorized",
         categoryId: data.category?.id,
         badge: data.customize ? "Customizable" : null,
-        images: data.images?.map(
-          (img) => img.url || `https://api.sablle.ng/storage/${img.path}`
-        ) || ["/placeholder-image.jpg"],
+        images:
+          data.images?.map(
+            (img) => img.url || `https://api.sablle.ng/storage/${img.path}`
+          ) || [],
         image:
           data.images?.[0]?.url ||
           (data.images?.[0]?.path
             ? `https://api.sablle.ng/storage/${data.images[0].path}`
-            : "/placeholder-image.jpg"),
+            : null),
         model: data.product_code || "N/A",
         customize: data.customize,
         sizes: data.size || null,
@@ -270,15 +272,21 @@ const ProductDetail = () => {
                 <div
                   className={`rounded-lg p-8 flex items-center justify-center ${selectedThumbnail.bgColor}`}
                 >
-                  <img
-                    src={
-                      selectedThumbnail.image ||
-                      product.images?.[0] ||
-                      product.image
-                    }
-                    alt={product.name}
-                    className="max-h-64 md:h-80 max-w-full object-contain"
-                  />
+                  {product.images?.length > 0 || product.image ? (
+                    <img
+                      src={
+                        selectedThumbnail.image ||
+                        product.images?.[0] ||
+                        product.image
+                      }
+                      alt={product.name}
+                      className="max-h-64 md:h-80 max-w-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="w-24 h-40 md:h-60 text-gray-400" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex space-x-4">
                   {thumbnails.map((thumbnail, index) => (

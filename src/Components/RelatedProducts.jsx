@@ -1,6 +1,7 @@
 // src/Components/RelatedProducts.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { Image as ImageIcon } from "lucide-react";
 
 const RelatedProducts = ({ categoryId, currentProductId }) => {
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -53,7 +54,7 @@ const RelatedProducts = ({ categoryId, currentProductId }) => {
               p.images?.[0]?.url ||
               (p.images?.[0]?.path
                 ? `https://api.sablle.ng/storage/${p.images[0].path}`
-                : "/placeholder-image.jpg"),
+                : null),
           }));
 
         setRelatedProducts(related);
@@ -130,12 +131,22 @@ const RelatedProducts = ({ categoryId, currentProductId }) => {
                         {p.badge}
                       </div>
                     )}
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      className="max-h-full max-w-full object-contain"
-                      onError={(e) => (e.target.src = "/placeholder-image.jpg")}
-                    />
+
+                    {p.image ? (
+                      <img
+                        src={p.image}
+                        alt={p.name}
+                        className="max-h-full max-w-full object-contain"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="w-16 h-16 text-gray-400" />{" "}
+                        {/* Adjust size as needed */}
+                      </div>
+                    )}
                   </div>
                   <div className="py-4 px-2">
                     <h3 className="font-medium text-gray-900 text-sm line-clamp-2">

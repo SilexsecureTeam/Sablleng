@@ -8,6 +8,8 @@ import {
   Eye,
   Search,
   Trash2,
+  Upload,
+  Image as ImageIcon,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -32,9 +34,9 @@ const Categories = () => {
     name: "",
     description: "",
     image: null,
+    imagePreview: null,
     tag: null,
   });
-  const [addImagePreview, setAddImagePreview] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
 
   // Edit Modal
@@ -44,6 +46,8 @@ const Categories = () => {
     description: "",
     is_active: true,
     tag: null,
+    image: null,
+    imagePreview: null,
   });
   const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -54,30 +58,55 @@ const Categories = () => {
   const [deletingName, setDeletingName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Base URL for images (adjust if your storage is served differently)
+  const IMAGE_BASE_URL = "https://api.sablle.ng/storage/";
+
   // Handle Tag Change
   const handleTagChange = (selectedOption, isEdit = false) => {
     const setter = isEdit ? setEditFormData : setAddFormData;
     setter((prev) => ({ ...prev, tag: selectedOption || null }));
   };
 
-  // Add Category
-  const handleAddInputChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === "image" && files[0]) {
-      const file = files[0];
-      setAddFormData((prev) => ({ ...prev, image: file }));
-      const reader = new FileReader();
-      reader.onloadend = () => setAddImagePreview(reader.result);
-      reader.readAsDataURL(file);
-    } else {
-      setAddFormData((prev) => ({ ...prev, [name]: value }));
+  // Handle image change (shared for add & edit)
+  const handleImageChange = (e, isEdit = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file");
+      return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const setter = isEdit ? setEditFormData : setAddFormData;
+      setter((prev) => ({
+        ...prev,
+        image: file,
+        imagePreview: reader.result,
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
+  const removeImage = (isEdit = false) => {
+    const setter = isEdit ? setEditFormData : setAddFormData;
+    setter((prev) => ({
+      ...prev,
+      image: null,
+      imagePreview: null,
+    }));
+  };
+
+  // Add Category
   const handleAddSubmit = async (e) => {
     e.preventDefault();
-    if (!addFormData.name.trim()) return toast.error("Name required.");
-    if (!addFormData.tag) return toast.error("Tag required.");
+    if (!addFormData.name.trim()) return toast.error("Name is required.");
+    if (!addFormData.tag) return toast.error("Tag is required.");
 
     setIsAdding(true);
     const submitData = new FormData();
@@ -92,11 +121,21 @@ const Categories = () => {
         headers: { Authorization: `Bearer ${auth.token}` },
         body: submitData,
       });
-      if (!res.ok) throw new Error((await res.json()).message || "Failed");
-      toast.success("Category added!");
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to add category");
+      }
+
+      toast.success("Category added successfully!");
       setIsAddModalOpen(false);
-      setAddFormData({ name: "", description: "", image: null, tag: null });
-      setAddImagePreview(null);
+      setAddFormData({
+        name: "",
+        description: "",
+        image: null,
+        imagePreview: null,
+        tag: null,
+      });
       loadData();
     } catch (err) {
       toast.error(err.message);
@@ -113,37 +152,53 @@ const Categories = () => {
       description: category.description || "",
       is_active: category.is_active,
       tag: tags.find((t) => t.value === category.tag_id) || null,
+      image: null, // new file only
+      imagePreview: category.image
+        ? `${IMAGE_BASE_URL}${category.image}`
+        : null,
     });
     setIsEditModalOpen(true);
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    if (!editFormData.name.trim()) return toast.error("Name required.");
-    if (!editFormData.tag) return toast.error("Tag required.");
+    if (!editFormData.name.trim()) return toast.error("Name is required.");
+    if (!editFormData.tag) return toast.error("Tag is required.");
 
     setIsEditing(true);
-    const submitData = {
-      name: editFormData.name,
-      description: editFormData.description,
-      is_active: editFormData.is_active,
-      tag_id: editFormData.tag.value,
-    };
+
+    const submitData = new FormData();
+    submitData.append("_method", "PATCH");
+    submitData.append("name", editFormData.name);
+    submitData.append("description", editFormData.description || "");
+    submitData.append("is_active", editFormData.is_active ? "1" : "0");
+    submitData.append("tag_id", editFormData.tag.value);
+
+    // Image handling
+    if (editFormData.image instanceof File) {
+      submitData.append("image", editFormData.image);
+    } else if (editFormData.image === null && !editFormData.imagePreview) {
+      // If user removed image completely → send empty to remove
+      submitData.append("image", "");
+    }
+    // If neither → don't send → keep existing image
 
     try {
       const res = await fetch(
         `https://api.sablle.ng/api/categories/${editingId}`,
         {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${auth.token}`,
-          },
-          body: JSON.stringify(submitData),
+          method: "POST", // Laravel accepts PATCH via _method in FormData
+          headers: { Authorization: `Bearer ${auth.token}` },
+          body: submitData,
         }
       );
-      if (!res.ok) throw new Error((await res.json()).message || "Failed");
-      toast.success("Category updated!");
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to update category");
+      }
+
+      toast.success("Category updated successfully!");
       setIsEditModalOpen(false);
       loadData();
     } catch (err) {
@@ -153,14 +208,13 @@ const Categories = () => {
     }
   };
 
-  // DELETE: Open Confirm Modal
+  // Delete
   const confirmDelete = (id, name) => {
     setDeletingId(id);
     setDeletingName(name);
     setIsDeleteModalOpen(true);
   };
 
-  // DELETE: Confirm Action
   const handleDelete = async () => {
     if (!deletingId) return;
 
@@ -183,7 +237,7 @@ const Categories = () => {
       setIsDeleteModalOpen(false);
       setDeletingId(null);
       setDeletingName("");
-      loadData(); // Refresh list
+      loadData();
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -191,7 +245,7 @@ const Categories = () => {
     }
   };
 
-  // Main Load Function
+  // Load Data
   const loadData = async () => {
     if (!auth.token) {
       toast.error("Please verify OTP to continue.", { autoClose: 3000 });
@@ -203,6 +257,7 @@ const Categories = () => {
     setError(null);
 
     try {
+      // Tags
       const tagsRes = await fetch("https://api.sablle.ng/api/tags", {
         headers: { Authorization: `Bearer ${auth.token}` },
       });
@@ -215,9 +270,9 @@ const Categories = () => {
       const tagNameMap = {};
       tagOptions.forEach((t) => (tagNameMap[t.value] = t.label));
 
+      // Categories
       const catsRes = await fetch("https://api.sablle.ng/api/categories", {
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${auth.token}`,
         },
       });
@@ -233,6 +288,7 @@ const Categories = () => {
         tagName: item.tag_id ? tagNameMap[item.tag_id] || "Unknown" : "None",
         status: item.is_active ? "Active" : "Inactive",
         is_active: item.is_active,
+        image: item.image || null, // ← added
       }));
 
       setAllCategories(formatted);
@@ -250,7 +306,7 @@ const Categories = () => {
     }
   };
 
-  // Search
+  // Search effect
   useEffect(() => {
     if (!searchQuery.trim()) {
       setCategories(allCategories);
@@ -262,7 +318,6 @@ const Categories = () => {
     setCategories(filtered);
   }, [searchQuery, allCategories]);
 
-  // Initial Load
   useEffect(() => {
     loadData();
   }, [auth.token, navigate]);
@@ -279,13 +334,6 @@ const Categories = () => {
           <Zap className="w-4 h-4" />
           Add Category
         </button>
-        {/* <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-          <Bell className="w-5 h-5 text-gray-600" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
-        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-          <Settings className="w-5 h-5 text-gray-600" />
-        </button> */}
       </div>
 
       <div className="bg-white rounded-lg shadow-sm p-6">
@@ -323,8 +371,37 @@ const Categories = () => {
             {categories.map((category) => (
               <div
                 key={category.id}
-                className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow relative bg-white"
+                className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow relative bg-white flex items-start gap-4"
               >
+                {/* Category Image */}
+                <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border">
+                  {category.image ? (
+                    <img
+                      src={`${IMAGE_BASE_URL}${category.image}`}
+                      alt={category.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = "/fallback-placeholder.jpg"; // optional fallback
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 pr-20">
+                  <h2 className="text-base font-semibold text-[#141718] mb-1">
+                    {category.name}
+                  </h2>
+                  <p className="text-sm text-[#6C7275] mb-1">
+                    Tag: {category.tagName}
+                  </p>
+                </div>
+
+                {/* Status & Actions */}
                 <div className="absolute top-4 right-4 space-y-1">
                   <span
                     className={`px-3 py-1 text-xs font-medium rounded block ${
@@ -356,21 +433,12 @@ const Categories = () => {
                           `/dashboard/categories/${category.id}/products`
                         )
                       }
-                      className="p-1 text-green-600 hover:text-green--800"
+                      className="p-1 text-green-600 hover:text-green-800"
                       title="View Products"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                   </div>
-                </div>
-
-                <div className="pr-20">
-                  <h2 className="text-base font-semibold text-[#141718] mb-1">
-                    {category.name}
-                  </h2>
-                  <p className="text-sm text-[#6C7275] mb-1">
-                    Tag: {category.tagName}
-                  </p>
                 </div>
               </div>
             ))}
@@ -400,27 +468,37 @@ const Categories = () => {
                 </label>
                 <input
                   type="text"
-                  name="name"
                   value={addFormData.name}
-                  onChange={handleAddInputChange}
+                  onChange={(e) =>
+                    setAddFormData((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
                   placeholder="e.g. Electronics"
                   required
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
                   Description
                 </label>
                 <textarea
-                  name="description"
                   value={addFormData.description}
-                  onChange={handleAddInputChange}
+                  onChange={(e) =>
+                    setAddFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327] resize-none"
                   placeholder="Brief description..."
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
                   Tag
@@ -435,46 +513,49 @@ const Categories = () => {
                   isClearable
                 />
               </div>
+
+              {/* Image Upload */}
               <div>
-                <label className="block text-sm font-medium text-[#414245] mb-1">
-                  Category Image
+                <label className="block text-sm font-medium text-[#414245] mb-2">
+                  Category Image{" "}
+                  <span className="text-gray-500">(Optional)</span>
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                  {addImagePreview ? (
-                    <div className="space-y-2">
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+                    {addFormData.imagePreview ? (
                       <img
-                        src={addImagePreview}
+                        src={addFormData.imagePreview}
                         alt="Preview"
-                        className="mx-auto h-32 w-32 object-cover rounded-md"
+                        className="w-full h-full object-cover"
                       />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAddFormData((prev) => ({ ...prev, image: null }));
-                          setAddImagePreview(null);
-                        }}
-                        className="text-sm text-red-600 hover:text-red-800"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="cursor-pointer">
+                    ) : (
+                      <ImageIcon className="w-10 h-10 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">
+                      <Upload className="w-4 h-4" />
+                      Choose Image
                       <input
                         type="file"
-                        name="image"
                         accept="image/*"
-                        onChange={handleAddInputChange}
+                        onChange={(e) => handleImageChange(e, false)}
                         className="hidden"
                       />
-                      <div className="text-gray-500">
-                        <p className="text-sm">Click to upload image</p>
-                        <p className="text-xs mt-1">PNG, JPG up to 5MB</p>
-                      </div>
                     </label>
-                  )}
+                    {addFormData.imagePreview && (
+                      <button
+                        type="button"
+                        onClick={() => removeImage(false)}
+                        className="mt-2 text-xs text-red-600 hover:text-red-800 block"
+                      >
+                        Remove Image
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -530,6 +611,7 @@ const Categories = () => {
                   required
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
                   Description
@@ -546,6 +628,7 @@ const Categories = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327] resize-none"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
                   Tag
@@ -560,6 +643,48 @@ const Categories = () => {
                   isClearable
                 />
               </div>
+
+              {/* Image Upload */}
+              <div>
+                <label className="block text-sm font-medium text-[#414245] mb-2">
+                  Category Image
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
+                    {editFormData.imagePreview ? (
+                      <img
+                        src={editFormData.imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ImageIcon className="w-10 h-10 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">
+                      <Upload className="w-4 h-4" />
+                      Change Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageChange(e, true)}
+                        className="hidden"
+                      />
+                    </label>
+                    {editFormData.imagePreview && (
+                      <button
+                        type="button"
+                        onClick={() => removeImage(true)}
+                        className="mt-2 text-xs text-red-600 hover:text-red-800 block"
+                      >
+                        Remove Image
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -576,6 +701,7 @@ const Categories = () => {
                   Active
                 </label>
               </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -598,7 +724,7 @@ const Categories = () => {
         </div>
       )}
 
-      {/* DELETE CONFIRM MODAL */}
+      {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
@@ -612,6 +738,7 @@ const Categories = () => {
             </div>
             <p className="text-sm text-gray-600 mb-4">
               Are you sure you want to delete <strong>"{deletingName}"</strong>?
+              <br />
               This action cannot be undone.
             </p>
             <div className="flex gap-3">
