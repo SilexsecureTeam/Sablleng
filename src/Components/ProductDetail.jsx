@@ -372,24 +372,28 @@ const ProductDetail = () => {
                   <label className="text-gray-900 font-medium">
                     Select color:
                   </label>
+
                   {product.colours && product.colours.length > 0 ? (
-                    <select
-                      value={selectedColor}
-                      onChange={(e) => setSelectedColor(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
-                    >
-                      <option value="" disabled>
-                        Choose a color
-                      </option>
+                    <div className="flex items-center gap-3">
                       {product.colours
-                        .filter((col) => col && col.value)
+                        .filter((col) => col?.value)
                         .map((col) => (
-                          <option key={col.id} value={col.value}>
-                            {col.value.charAt(0).toUpperCase() +
-                              col.value.slice(1).toLowerCase()}
-                          </option>
+                          <button
+                            key={col.id}
+                            type="button"
+                            onClick={() => setSelectedColor(col.value)}
+                            className={`w-8 h-8 rounded-full border-2 transition-all
+              ${
+                selectedColor === col.value
+                  ? "border-gray-900 scale-110"
+                  : "border-gray-300"
+              }
+            `}
+                            style={{ backgroundColor: col.value }}
+                            title={col.value}
+                          />
                         ))}
-                    </select>
+                    </div>
                   ) : (
                     <span className="text-gray-700">No Color Available</span>
                   )}

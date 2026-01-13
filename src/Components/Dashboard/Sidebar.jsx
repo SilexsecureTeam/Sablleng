@@ -17,6 +17,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  LayoutPanelTop,
 } from "lucide-react";
 
 import { AuthContext } from "../../context/AuthContextObject";
@@ -74,6 +75,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: "Categories",
       icon: Grid,
       path: "/dashboard/categories",
+      permission: "admin.only",
+    },
+    {
+      label: "Hero Banners",
+      icon: LayoutPanelTop,
+      path: "/dashboard/hero",
       permission: "admin.only",
     },
     {

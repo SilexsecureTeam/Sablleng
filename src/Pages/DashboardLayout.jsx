@@ -34,6 +34,9 @@ const Tags = lazy(() => import("../Components/Dashboard/Tags"));
 const TagCategories = lazy(() =>
   import("../Components/Dashboard/TagCategories")
 );
+const HeroSlides = lazy(() =>
+  import("../Components/Dashboard/HeroSlides")
+);
 const EditSupplierForm = lazy(() =>
   import("../Components/Dashboard/EditSupplierForm")
 );
@@ -142,6 +145,14 @@ const DashboardLayout = () => {
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
                     <DeliveryFeeManager />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/hero"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <HeroSlides />
                   </MainContent>
                 }
               />

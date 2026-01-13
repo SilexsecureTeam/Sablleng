@@ -1,126 +1,129 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import hero1 from "../assets/hero1.jpg";
-import hero2 from "../assets/hero2.jpg";
-import hero3 from "../assets/hero3.png";
-import hero4 from "../assets/hero4.jpg";
-import hero5 from "../assets/hero5.jpg";
-import hero6 from "../assets/hero6.jpg";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay } from "swiper/modules";
 
-const images = [hero1, hero2, hero3, hero4, hero5, hero6];
+// Import Swiper styles
+import "swiper/css";
+import "swiper/css/autoplay";
 
 export default function Hero1() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
-  const totalSlides = images.length;
+  const [slides, setSlides] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => {
-        if (prev === totalSlides - 1) {
-          setDirection(-1);
-          return prev - 1;
-        } else if (prev === 0) {
-          setDirection(1);
-          return prev + 1;
-        } else {
-          return prev + direction;
-        }
-      });
-    }, 9000); // slide interval time in ms
+    const fetchSlides = async () => {
+      try {
+        const res = await fetch("https://api.sablle.ng/api/hero-slides", {
+          headers: { Accept: "application/json" },
+        });
 
-    return () => clearInterval(interval);
-  }, [direction, totalSlides]);
+        if (!res.ok) throw new Error("Failed");
 
-  const getOverlayContent = (index) => {
-    switch (index) {
-      case 0: // First image: Text overlay
-        return (
-          <div className="absolute inset-0 flex items-center justify-center text-white">
-            <h2 className="text-3xl md:text-6xl text-center font-bold mb-4 drop-shadow-lg flex flex-col items-center gap-4">
-              <span className="leading-tight">
-                {" "}
-                {/* Tightens line height for the text stack */}
-                Up to 50% <br />
-                Off on
-              </span>
-              <span className="bg-[#5F1327] text-white px-8 py-2 text-2xl md:text-4xl rounded-full inline-block">
-                {" "}
-                {/* inline-block + py for vertical padding */}
-                Confectionaries
-              </span>
-            </h2>
-          </div>
+        const data = await res.json();
+        let list = Array.isArray(data.data) ? data.data : [];
+
+        // Sort by order
+        list.sort(
+          (a, b) => (Number(a.order) || 9999) - (Number(b.order) || 9999)
         );
-      case 1: // Second image: Button to For Him
-        return (
-          <Link
-            to="/groups/for-him"
-            className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-[#5F1327] text-white px-4 py-4 md:px-8 rounded-full font-semibold text-base md:text-xl shadow-lg hover:bg-[#8B1A3A] hover:scale-105 hover:shadow-2xl transition-all duration-300 ease-out drop-shadow-lg"
-          >
-            Shop For Him
-          </Link>
-        );
-      case 2: // Third image: No overlay (or add if needed)
-        return null;
-      case 3: // Fourth image: Button to For Her
-        return (
-          <Link
-            to="/groups/for-her"
-            className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-[#5F1327] text-white px-4 py-4 md:px-8 rounded-full font-semibold text-base md:text-xl shadow-lg hover:bg-[#8B1A3A] hover:scale-105 hover:shadow-2xl transition-all duration-300 ease-out drop-shadow-lg"
-          >
-            Shop For Her
-          </Link>
-        );
-      case 4: // Fifth image: Button to Hampers
-        return (
-          <Link
-            to="/groups/hampers"
-            className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-[#5F1327] text-white px-4 py-4 md:px-8 rounded-full font-semibold text-base md:text-xl shadow-lg hover:bg-[#8B1A3A] hover:scale-105 hover:shadow-2xl transition-all duration-300 ease-out drop-shadow-lg"
-          >
-            Explore Hampers
-          </Link>
-        );
-      case 5: // Sixth image: Button to Exclusive at sabblle
-        return (
-          <Link
-            to="/groups/exclusive-at-sabblle"
-            className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 bg-[#5F1327] text-white  px-4 py-4 md:px-8 rounded-full font-semibold text-base md:text-xl shadow-lg hover:bg-[#8B1A3A] hover:scale-105 hover:shadow-2xl transition-all duration-300 ease-out drop-shadow-lg"
-          >
-            Exclusive Deals
-          </Link>
-        );
-      default:
-        return null;
+
+        setSlides(list);
+      } catch (err) {
+        console.error(err);
+        setSlides([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSlides();
+  }, []);
+
+  if (isLoading) {
+    return <div className="h-[40vh] sm:h-[60vh] bg-gray-100 animate-pulse" />;
+  }
+
+  if (slides.length === 0) {
+    return (
+      <div className="h-[40vh] bg-gray-200 flex items-center justify-center text-gray-500">
+        No hero slides available
+      </div>
+    );
+  }
+
+  const getOverlay = (slide) => {
+    // Your existing logic - can stay exactly the same
+    if (
+      slide.title?.toLowerCase().includes("confectionaries") ||
+      slide.title?.includes("50%")
+    ) {
+      return (
+        <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
+          <h2 className="text-3xl md:text-6xl text-center font-bold mb-4 drop-shadow-lg flex flex-col items-center gap-4">
+            <span className="leading-tight">
+              Up to 50% <br /> Off on
+            </span>
+            <span className="bg-[#5F1327] text-white px-8 py-2 text-2xl md:text-4xl rounded-full inline-block">
+              Confectionaries
+            </span>
+          </h2>
+        </div>
+      );
     }
+
+    if (slide.link_url) {
+      return (
+        <Link
+          to={
+            slide.link_url.startsWith("http")
+              ? new URL(slide.link_url).pathname
+              : slide.link_url
+          }
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#5F1327] text-white px-4 py-4 md:px-8 rounded-full font-semibold text-base md:text-xl shadow-lg hover:bg-[#8B1A3A] hover:scale-105 transition-all duration-300"
+        >
+          {slide.title || "Shop Now"}
+        </Link>
+      );
+    }
+
+    // fallback
+    return slide.title ? (
+      <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
+        <h2 className="text-4xl md:text-6xl font-bold text-center drop-shadow-2xl px-6">
+          {slide.title}
+        </h2>
+      </div>
+    ) : null;
   };
 
   return (
     <div className="relative w-full overflow-hidden">
-      {/* Responsive height: 40vh on mobile, scaling up to 70vh on large screens */}
-      <div className="h-[40vh] sm:h-[50vh] md:h-[60vh] lg:h-[70vh] xl:h-[80vh]">
-        <div
-          className="flex h-full w-[600%] transition-transform duration-1000 ease-in-out" // Updated for 6 images
-          style={{
-            transform: `translateX(-${currentIndex * (100 / totalSlides)}%)`,
-          }}
-        >
-          {images.map((src, i) => (
+      <Swiper
+        modules={[Autoplay]}
+        spaceBetween={0}
+        slidesPerView={1}
+        loop={slides.length > 1}
+        autoplay={{
+          delay: 9000,
+          disableOnInteraction: false,
+        }}
+        speed={1000}
+        className="h-[40vh] sm:h-[50vh] md:h-[60vh] lg:h-[70vh] xl:h-[80vh] w-full"
+      >
+        {slides.map((slide) => (
+          <SwiperSlide key={slide.id}>
             <div
-              key={i}
-              className="w-full h-full relative flex items-center justify-center" // Added relative for overlays
+              className="w-full h-full bg-cover bg-center relative"
               style={{
-                backgroundImage: `url(${src})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                backgroundRepeat: "no-repeat",
+                backgroundImage: `url(${slide.image_url})`,
               }}
             >
-              {getOverlayContent(i)}
+              {getOverlay(slide)}
             </div>
-          ))}
-        </div>
-      </div>
+          </SwiperSlide>
+        ))}
+      </Swiper>
     </div>
   );
 }
