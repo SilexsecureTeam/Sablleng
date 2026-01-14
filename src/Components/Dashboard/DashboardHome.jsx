@@ -169,9 +169,9 @@ const DashboardHome = () => {
               Welcome back! Here's what's happening with your store today
             </p>
           </div>
-          <button className="flex items-center gap-1 text-sm font-medium bg-white px-4 py-2 rounded">
+          {/* <button className="flex items-center gap-1 text-sm font-medium bg-white px-4 py-2 rounded">
             New Category
-          </button>
+          </button> */}
         </div>
 
         {/* Top Metrics - unchanged */}

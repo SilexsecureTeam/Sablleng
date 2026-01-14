@@ -2,7 +2,7 @@ import React, { useState, useContext } from "react";
 import { CartContext } from "../context/CartContextObject";
 import { AuthContext } from "../context/AuthContextObject";
 import { useNavigate, useLocation } from "react-router-dom";
-// import { toast, ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import i2 from "../assets/i2.png";
 import PaystackPop from "@paystack/inline-js";
@@ -201,23 +201,23 @@ const PaymentComponent = () => {
       localStorage.setItem("cart_total", 0);
       localStorage.removeItem("cart_session_id");
 
-      // toast.success("Payment successful! Redirecting...", {
-      //   position: "top-right",
-      //   autoClose: 3000,
-      //   onClose: () =>
-      //     navigate("/order-success", {
-      //       state: {
-      //         orderId: orderReference, // Use order_reference for consistency
-      //         items,
-      //         subtotal,
-      //         vat,
-      //         delivery,
-      //         total,
-      //         address: selectedAddress,
-      //         paymentMethod: "Paystack",
-      //       },
-      //     }),
-      // });
+      toast.success("Payment successful! Redirecting...", {
+        position: "top-right",
+        autoClose: 3000,
+        onClose: () =>
+          navigate("/order-success", {
+            state: {
+              orderId: orderReference,
+              items,
+              subtotal,
+              vat,
+              delivery,
+              total,
+              address: selectedAddress,
+              paymentMethod: "Paystack",
+            },
+          }),
+      });
     } catch (error) {
       // toast.error(`Verification request failed: ${error.message}`, {
       //   position: "top-right",
@@ -253,30 +253,30 @@ const PaymentComponent = () => {
       localStorage.setItem("cart_total", 0);
       localStorage.removeItem("cart_session_id");
 
-      // toast.success("Order placed successfully!", {
-      //   position: "top-right",
-      //   autoClose: 3000,
-      //   onClose: () =>
-      //     navigate("/order-success", {
-      //       state: {
-      //         orderId: cleanOrderId,
-      //         items,
-      //         subtotal,
-      //         vat,
-      //         delivery,
-      //         total,
-      //         address: selectedAddress,
-      //         paymentMethod: "Cash on Delivery",
-      //       },
-      //     }),
-      // });
+      toast.success("Order placed successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+        onClose: () =>
+          navigate("/order-success", {
+            state: {
+              orderId: cleanOrderId,
+              items,
+              subtotal,
+              vat,
+              delivery,
+              total,
+              address: selectedAddress,
+              paymentMethod: "Cash on Delivery",
+            },
+          }),
+      });
       setIsProcessingPayment(false);
     }
   };
 
   return (
     <div className="max-w-[1200px] mx-auto p-4 lg:p-6">
-      {/* <ToastContainer position="top-right" autoClose={3000} /> */}
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="grid md:grid-cols-2 gap-8 lg:gap-20">
         <div className="space-y-6">
           <div>

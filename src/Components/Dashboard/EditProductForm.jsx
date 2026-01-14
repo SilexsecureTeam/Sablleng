@@ -19,12 +19,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
     couponCode: "",
   });
   const [sizes, setSizes] = useState([""]);
-  const [images, setImages] = useState({
-    primary: null,
-    thumbnail1: null,
-    thumbnail2: null,
-    thumbnail3: null,
-  });
+  const [images, setImages] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -145,45 +140,13 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
           Array.isArray(data.size) && data.size.length > 0 ? data.size : [""]
         );
 
-        // Fixed: store image id for existing images
-        setImages({
-          primary: data.images?.[0]
-            ? {
-                id: data.images[0].id,
-                url:
-                  data.images[0].url ||
-                  `https://api.sablle.ng/storage/${data.images[0].path}`,
-                file: null,
-              }
-            : null,
-          thumbnail1: data.images?.[1]
-            ? {
-                id: data.images[1].id,
-                url:
-                  data.images[1].url ||
-                  `https://api.sablle.ng/storage/${data.images[1].path}`,
-                file: null,
-              }
-            : null,
-          thumbnail2: data.images?.[2]
-            ? {
-                id: data.images[2].id,
-                url:
-                  data.images[2].url ||
-                  `https://api.sablle.ng/storage/${data.images[2].path}`,
-                file: null,
-              }
-            : null,
-          thumbnail3: data.images?.[3]
-            ? {
-                id: data.images[3].id,
-                url:
-                  data.images[3].url ||
-                  `https://api.sablle.ng/storage/${data.images[3].path}`,
-                file: null,
-              }
-            : null,
-        });
+        setImages(
+          data.images?.map((img) => ({
+            id: img.id,
+            url: `https://api.sablle.ng/storage/${img.path}`,
+            file: null,
+          })) || []
+        );
       } catch (error) {
         toast.error(`Error: ${error.message}`);
         onCancel();
@@ -259,26 +222,52 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
     const file = e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
-      toast.error("Only images (JPEG, PNG) under 5MB are allowed");
+      toast.error("Only images under 5MB allowed");
       return;
     }
+
     const reader = new FileReader();
     reader.onloadend = () => {
-      const newImage = { file, url: reader.result };
-      setImages((prev) => {
-        if (!prev.primary) return { ...prev, primary: newImage };
-        if (!prev.thumbnail1) return { ...prev, thumbnail1: newImage };
-        if (!prev.thumbnail2) return { ...prev, thumbnail2: newImage };
-        if (!prev.thumbnail3) return { ...prev, thumbnail3: newImage };
-        toast.error("Maximum 4 images allowed");
-        return prev;
-      });
+      setImages((prev) => [...prev, { url: reader.result, file, id: null }]);
     };
     reader.readAsDataURL(file);
   };
 
-  const removeImage = (imageType) => {
-    setImages((prev) => ({ ...prev, [imageType]: null }));
+  const removeImage = (index) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const prepareImagesForSend = async () => {
+    const finalFiles = [];
+    for (const img of images) {
+      if (img.file) {
+        finalFiles.push(img.file);
+      } else if (img.url) {
+        try {
+          const response = await fetch(img.url, {
+            cache: "no-cache",
+            headers: {
+              Authorization: `Bearer ${auth.token}`,
+            },
+          });
+          if (!response.ok) throw new Error("Fetch failed");
+          const blob = await response.blob();
+          const ext = blob.type.split("/")[1] || "png";
+          const file = new File(
+            [blob],
+            `product-image-${img.id || Date.now()}.${ext}`,
+            {
+              type: blob.type,
+            }
+          );
+          finalFiles.push(file);
+        } catch (err) {
+          console.error("Failed to prepare image:", img.url, err);
+          // Skip this image if fetch fails (you can toast if you want)
+        }
+      }
+    }
+    return finalFiles;
   };
 
   const handleApplyCoupon = () => {
@@ -325,38 +314,31 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
       formDataToSend.append("customize", formData.allowCustomization ? 1 : 0);
       formDataToSend.append("description", formData.description);
 
-      // === SIZES ===
+      // Sizes
       sizes
         .filter((s) => s.trim())
         .forEach((s, i) => {
           formDataToSend.append(`size[${i}]`, s.trim());
         });
 
-      // === COLORS ===
+      // Colors
       formData.colors
         .filter((c) => c.trim())
         .forEach((c, i) => {
           formDataToSend.append(`colours[${i}]`, c.trim());
         });
 
-      // === BRAND & SUPPLIER ===
+      // Brand & Supplier
       if (formData.brand) formDataToSend.append("brand_id", formData.brand);
       if (formData.supplier)
         formDataToSend.append("supplier_id", formData.supplier);
 
-      // === IMAGES - Only send NEW uploads; skip if none to preserve existing ones ===
-
-      const newUploadedImages = Object.values(images).filter(
-        (img) => img?.file
-      );
-
-      // Only send images[] if there are actually new files
-      if (newUploadedImages.length > 0) {
-        newUploadedImages.forEach((img, index) => {
-          formDataToSend.append(`images[${index}]`, img.file);
-        });
-      }
-      // If no new images → do NOTHING with images keys → backend should keep existing
+      // Images - full replacement
+      const finalFiles = await prepareImagesForSend();
+      console.log(`Sending ${finalFiles.length} images (full replacement)`);
+      finalFiles.forEach((file, idx) => {
+        formDataToSend.append(`images[${idx}]`, file);
+      });
 
       if (formData.couponCode)
         formDataToSend.append("coupon_code", formData.couponCode);
@@ -747,140 +729,39 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
                   Product Images
                 </h2>
 
-                <div className="mb-4">
-                  <div className="relative w-full aspect-square bg-[#5F1327] rounded-lg overflow-hidden cursor-pointer">
-                    {images.primary ? (
-                      <>
-                        <img
-                          src={images.primary.url}
-                          alt="Primary"
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          onClick={() => removeImage("primary")}
-                          className="absolute top-2 right-2 p-1 bg-white rounded-full ..."
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </>
-                    ) : (
-                      <label className="absolute inset-0 flex items-center justify-center cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                          disabled={isSubmitting}
-                        />
-                        <div className="text-center text-white">
-                          <Upload className="w-8 h-8 mx-auto mb-1" />
-                          <p className="text-sm">Click to upload primary</p>
-                        </div>
-                      </label>
-                    )}
-                  </div>
-                </div>
+                <div className="grid grid-cols-4 gap-4 mb-4">
+                  {images.map((img, idx) => (
+                    <div
+                      key={idx}
+                      className="relative w-20 h-20 bg-gray-200 rounded-md overflow-hidden"
+                    >
+                      <img
+                        src={img.url}
+                        alt={`Image ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        onClick={() => removeImage(idx)}
+                        disabled={isSubmitting}
+                        className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full text-xs"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
 
-                <div className="flex gap-3 mb-4">
-                  <div className="relative w-20 h-20 bg-[#5F1327] rounded-md overflow-hidden">
-                    {images.thumbnail1 ? (
-                      <>
-                        <img
-                          src={images.thumbnail1.url}
-                          alt="Thumbnail 1"
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          onClick={() => removeImage("thumbnail1")}
-                          disabled={isSubmitting}
-                          className="absolute top-1 right-1 p-0.5 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
-                        >
-                          <X className="w-3 h-3 text-gray-700" />
-                        </button>
-                      </>
-                    ) : (
-                      <label className="absolute inset-0 flex items-center justify-center cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                          disabled={isSubmitting}
-                        />
-                        <div className="text-center text-white">
-                          <Upload className="w-8 h-8 mx-auto mb-1" />
-                          {/* <p className="text-sm">Click to upload primary</p> */}
-                        </div>
-                      </label>
-                    )}
-                  </div>
-                  <div className="relative w-20 h-20 bg-[#5F1327] rounded-md overflow-hidden">
-                    {images.thumbnail2 ? (
-                      <>
-                        <img
-                          src={images.thumbnail2.url}
-                          alt="Thumbnail 2"
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          onClick={() => removeImage("thumbnail2")}
-                          disabled={isSubmitting}
-                          className="absolute top-1 right-1 p-0.5 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
-                        >
-                          <X className="w-3 h-3 text-gray-700" />
-                        </button>
-                      </>
-                    ) : (
-                      <label className="absolute inset-0 flex items-center justify-center cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                          disabled={isSubmitting}
-                        />
-                        <div className="text-center text-white">
-                          <Upload className="w-8 h-8 mx-auto mb-1" />
-                          {/* <p className="text-sm">Click to upload primary</p> */}
-                        </div>
-                      </label>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <div className="relative w-20 h-20 bg-[#5F1327] rounded-md overflow-hidden mx-auto">
-                    {images.thumbnail3 ? (
-                      <>
-                        <img
-                          src={images.thumbnail3.url}
-                          alt="Thumbnail 3"
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          onClick={() => removeImage("thumbnail3")}
-                          disabled={isSubmitting}
-                          className="absolute top-1 right-1 p-0.5 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
-                        >
-                          <X className="w-3 h-3 text-gray-700" />
-                        </button>
-                      </>
-                    ) : (
-                      <label className="absolute inset-0 flex items-center justify-center cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                          disabled={isSubmitting}
-                        />
-                        <div className="text-center text-white">
-                          <Upload className="w-8 h-8 mx-auto mb-1" />
-                          {/* <p className="text-sm">Click to upload primary</p> */}
-                        </div>
-                      </label>
-                    )}
-                  </div>
+                  {images.length < 7 && (
+                    <label className="w-20 h-20 border-2 border-dashed border-gray-400 rounded-md flex items-center justify-center cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        disabled={isSubmitting}
+                      />
+                      <Upload size={24} className="text-gray-500" />
+                    </label>
+                  )}
                 </div>
 
                 <div>

@@ -87,8 +87,8 @@ const ProductDetail = () => {
         model: data.product_code || "N/A",
         customize: data.customize,
         sizes: data.size || null,
-        brand: data.brand?.name || "no brand",
-        supplier: data.supplier?.name || "no supplier",
+        brand: data.brand?.name || "",
+        supplier: data.supplier?.name || "",
         colours: data.colours || [],
         description: data.description || "",
       };
@@ -325,58 +325,75 @@ const ProductDetail = () => {
                 </p>
 
                 <div className="space-y-3">
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Color:</span>
-                    <span className="text-gray-900">
-                      {selectedColor
-                        ? selectedColor.charAt(0).toUpperCase() +
-                          selectedColor.slice(1).toLowerCase()
-                        : "No Color Selected"}
-                    </span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Brand:</span>
-                    <span className="text-gray-900">
-                      {product.brand
-                        ? product.brand.charAt(0).toUpperCase() +
-                          product.brand.slice(1).toLowerCase()
-                        : "No Brand"}
-                    </span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Suppliers:</span>
-                    <span className="text-gray-900">
-                      {product.supplier
-                        ? product.supplier.charAt(0).toUpperCase() +
-                          product.supplier.slice(1).toLowerCase()
-                        : "No Supplier"}
-                    </span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Category:</span>
-                    <span className="text-gray-900">
-                      {product.category
-                        ? product.category.charAt(0).toUpperCase() +
-                          product.category.slice(1).toLowerCase()
-                        : "Uncategorized"}
-                    </span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Price:</span>
-                    <span className="text-gray-900">
-                      {product.price || "Price Unavailable"}
-                    </span>
-                  </div>
+                  {/* Selected Color – only show if user picked one */}
+                  {selectedColor && (
+                    <div className="flex">
+                      <span className="text-gray-500 w-24">Color:</span>
+                      <span className="text-gray-900">
+                        {selectedColor.charAt(0).toUpperCase() +
+                          selectedColor.slice(1).toLowerCase()}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Brand – only if product.brand exists and isn't empty */}
+                  {product.brand &&
+                    typeof product.brand === "string" &&
+                    product.brand.trim() && (
+                      <div className="flex">
+                        <span className="text-gray-500 w-24">Brand:</span>
+                        <span className="text-gray-900">
+                          {product.brand.charAt(0).toUpperCase() +
+                            product.brand.slice(1).toLowerCase()}
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Supplier – same check */}
+                  {product.supplier &&
+                    typeof product.supplier === "string" &&
+                    product.supplier.trim() && (
+                      <div className="flex">
+                        <span className="text-gray-500 w-24">Suppliers:</span>
+                        <span className="text-gray-900">
+                          {product.supplier.charAt(0).toUpperCase() +
+                            product.supplier.slice(1).toLowerCase()}
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Category – only show if it exists */}
+                  {product.category &&
+                    typeof product.category === "string" &&
+                    product.category.trim() && (
+                      <div className="flex">
+                        <span className="text-gray-500 w-24">Category:</span>
+                        <span className="text-gray-900">
+                          {product.category.charAt(0).toUpperCase() +
+                            product.category.slice(1).toLowerCase()}
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Price – show only if price exists and is truthy (you can adjust condition if price can be 0) */}
+                  {product.price != null && (
+                    <div className="flex">
+                      <span className="text-gray-500 w-24">Price:</span>
+                      <span className="text-gray-900">
+                        {product.price}
+                        {/* Optional: add currency if needed → ₦{product.price.toLocaleString()} */}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="space-x-3 flex items-center">
-                  <label className="text-gray-900 font-medium">
-                    Select color:
-                  </label>
-
-                  {product.colours && product.colours.length > 0 ? (
+                  {product.colours?.length > 0 && (
                     <div className="flex items-center gap-3">
+                      <label className="text-gray-500 font-medium">
+                        Select color:
+                      </label>
                       {product.colours
-                        .filter((col) => col?.value)
+                        .filter((col) => col?.value) // only colors with actual value
                         .map((col) => (
                           <button
                             key={col.id}
@@ -387,23 +404,21 @@ const ProductDetail = () => {
                 selectedColor === col.value
                   ? "border-gray-900 scale-110"
                   : "border-gray-300"
-              }
-            `}
+              }`}
                             style={{ backgroundColor: col.value }}
                             title={col.value}
                           />
                         ))}
                     </div>
-                  ) : (
-                    <span className="text-gray-700">No Color Available</span>
                   )}
                 </div>
 
-                {product.sizes && product.sizes.length > 0 ? (
+                {product.sizes?.length > 0 && (
                   <div className="space-x-3 flex items-center">
-                    <label className="text-gray-900 font-medium">
+                    <label className="text-gray-500 font-medium">
                       Select size:
                     </label>
+
                     <select
                       value={selectedSize || ""}
                       onChange={(e) => setSelectedSize(e.target.value)}
@@ -413,7 +428,12 @@ const ProductDetail = () => {
                         Choose a size
                       </option>
                       {product.sizes
-                        .filter((size) => size && typeof size === "string")
+                        .filter(
+                          (size) =>
+                            size &&
+                            typeof size === "string" &&
+                            size.trim() !== ""
+                        )
                         .map((size) => (
                           <option key={size} value={size}>
                             {size.charAt(0).toUpperCase() +
@@ -421,11 +441,6 @@ const ProductDetail = () => {
                           </option>
                         ))}
                     </select>
-                  </div>
-                ) : (
-                  <div className="flex">
-                    <span className="text-gray-500 w-24">Choose a size</span>
-                    <span className="text-gray-900">No Available Size</span>
                   </div>
                 )}
                 <div className="space-x-3 flex items-center">
