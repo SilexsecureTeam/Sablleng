@@ -1,18 +1,54 @@
-import React from "react";
-import trust1 from "../assets/trust1.png";
-import trust2 from "../assets/trust2.png";
-import trust3 from "../assets/trust3.png";
-import trust4 from "../assets/trust4.png";
-import trust5 from "../assets/trust5.png";
+import React, { useState, useEffect } from "react";
 
 const Trust = () => {
-  const partners = [
-    { src: trust1, alt: "Trusted Partner 1" },
-    { src: trust2, alt: "Trusted Partner 2" },
-    { src: trust3, alt: "Trusted Partner 3" },
-    { src: trust4, alt: "Trusted Partner 4" },
-    { src: trust5, alt: "Trusted Partner 5" },
-  ];
+  const [logos, setLogos] = useState([]);
+  // const [heading, setHeading] = useState("Trusted by Leading Organizations");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetch("https://api.sablle.ng/api/trusted-organizations")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load trusted partners");
+        return res.json();
+      })
+      .then((json) => {
+        const data = json.data || [];
+        const activeSections = Array.isArray(data)
+          ? data.filter((s) => s.is_active === true)
+          : [];
+
+        // Merge all logos from active sections
+        const allLogos = activeSections.flatMap(
+          (section) => section.logos || []
+        );
+
+        // Optional: use heading from the first active section (or fallback)
+        // const firstHeading =
+        //   activeSections[0]?.heading || "Trusted by Leading Organizations";
+
+        setLogos(allLogos);
+        // setHeading(firstHeading);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return <div className="py-12 text-center">Loading partners...</div>;
+  }
+
+  if (error) {
+    console.error(error);
+    return null; // or show error message
+  }
+
+  if (logos.length === 0) {
+    return null; // or <div className="py-12 text-center">No partners available</div>
+  }
 
   return (
     <section className="py-12 md:py-16">
@@ -20,28 +56,32 @@ const Trust = () => {
         <h2 className="text-2xl md:text-3xl font-light text-black text-center mb-4">
           Trusted by Leading Organizations
         </h2>
+
         <div className="overflow-x-hidden">
           <div className="flex gap-6 md:gap-8 py-4 animate-scroll">
-            {partners.map((partner, index) => (
+            {/* Original logos */}
+            {logos.map((logo) => (
               <div
-                key={index}
+                key={logo.id}
                 className="flex-none w-32 sm:w-40 md:w-48 h-20 md:h-24 flex items-center justify-center"
               >
                 <img
-                  src={partner.src}
-                  alt={partner.alt}
+                  src={logo.url}
+                  alt={logo.name || "Trusted Partner"}
                   className="max-w-full max-h-full object-contain p-4"
                 />
               </div>
             ))}
-            {partners.map((partner, index) => (
+
+            {/* Duplicate for seamless infinite scroll */}
+            {logos.map((logo) => (
               <div
-                key={`duplicate-${index}`}
+                key={`duplicate-${logo.id}`}
                 className="flex-none w-32 sm:w-40 md:w-48 h-20 md:h-24 flex items-center justify-center"
               >
                 <img
-                  src={partner.src}
-                  alt={partner.alt}
+                  src={logo.url}
+                  alt={logo.name || "Trusted Partner"}
                   className="max-w-full max-h-full object-contain p-4"
                 />
               </div>

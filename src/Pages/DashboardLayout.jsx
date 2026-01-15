@@ -12,6 +12,11 @@ const DashboardHome = lazy(() =>
 const OrderManagement = lazy(() =>
   import("../Components/Dashboard/OrderManagement")
 );
+const AboutUsAdmin = lazy(() => import("../Components/Dashboard/AboutUsAdmin"));
+const TeamAdmin = lazy(() => import("../Components/Dashboard/TeamAdmin"));
+const TrustedOrganizationsAdmin = lazy(() =>
+  import("../Components/Dashboard/TrustedOrganizationsAdmin")
+);
 const Customers = lazy(() => import("../Components/Dashboard/Customers"));
 const CouponCode = lazy(() => import("../Components/Dashboard/CouponCode"));
 const Categories = lazy(() => import("../Components/Dashboard/Categories"));
@@ -34,9 +39,7 @@ const Tags = lazy(() => import("../Components/Dashboard/Tags"));
 const TagCategories = lazy(() =>
   import("../Components/Dashboard/TagCategories")
 );
-const HeroSlides = lazy(() =>
-  import("../Components/Dashboard/HeroSlides")
-);
+const HeroSlides = lazy(() => import("../Components/Dashboard/HeroSlides"));
 const EditSupplierForm = lazy(() =>
   import("../Components/Dashboard/EditSupplierForm")
 );
@@ -281,6 +284,30 @@ const DashboardLayout = () => {
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
                     <Staff />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/about"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <AboutUsAdmin />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/team"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <TeamAdmin />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/partnership-logos"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <TrustedOrganizationsAdmin />
                   </MainContent>
                 }
               />

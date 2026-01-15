@@ -84,6 +84,24 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       permission: "admin.only",
     },
     {
+      label: "About Us",
+      icon: LayoutPanelTop,
+      path: "/dashboard/about",
+      permission: "admin.only",
+    },
+    {
+      label: "Team Management",
+      icon: LayoutPanelTop,
+      path: "/dashboard/team",
+      permission: "admin.only",
+    },
+    {
+      label: "Partnership Logos",
+      icon: LayoutPanelTop,
+      path: "/dashboard/partnership-logos",
+      permission: "admin.only",
+    },
+    {
       label: "Tags",
       icon: Tag,
       path: "/dashboard/tags",
