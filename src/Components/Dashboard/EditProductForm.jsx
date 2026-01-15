@@ -357,57 +357,53 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
         formDataToSend.append("supplier_id", formData.supplier);
 
       // === IMAGES - Only send NEW uploads; skip if none to preserve existing ones ===
+// Collect ALL images that should still exist after this update
+const imagesToKeepAndSend = [];
 
-      // Safe: preserve existing unless user uploads new
-      // Prepare all images to send (existing kept + new uploads)
-      const imagesToSend = [];
+// Go through current UI state
+Object.values(images).forEach((img) => {
+  if (!img) return; // skipped / deleted slot
 
-      // Collect existing images that are still present (not deleted in UI)
-      if (images.primary && !images.primary.file) {
-        // existing, not replaced
-        const file = await urlToFile(
-          images.primary.url,
-          `primary-${product.id}.jpg`
-        );
-        if (file) imagesToSend.push(file);
-      }
-      if (images.thumbnail1 && !images.thumbnail1.file) {
-        const file = await urlToFile(
-          images.thumbnail1.url,
-          `thumb1-${product.id}.jpg`
-        );
-        if (file) imagesToSend.push(file);
-      }
-      if (images.thumbnail2 && !images.thumbnail2.file) {
-        const file = await urlToFile(
-          images.thumbnail2.url,
-          `thumb2-${product.id}.jpg`
-        );
-        if (file) imagesToSend.push(file);
-      }
-      if (images.thumbnail3 && !images.thumbnail3.file) {
-        const file = await urlToFile(
-          images.thumbnail3.url,
-          `thumb3-${product.id}.jpg`
-        );
-        if (file) imagesToSend.push(file);
-      }
-
-      // Add new/replaced uploads (they already have .file)
-      Object.values(images).forEach((img) => {
-        if (img?.file instanceof File) {
-          imagesToSend.push(img.file);
-        }
+  if (img.file instanceof File) {
+    // New or replaced upload → send the actual file
+    imagesToKeepAndSend.push(img.file);
+  } else if (img.url && !img.file) {
+    // Existing image that user did NOT replace or delete
+    // We need to re-send it → convert URL back to File
+    // (this is the part we kept from your original code)
+    const promise = urlToFile(img.url, `existing-${Date.now()}.jpg`)
+      .then(file => {
+        if (file) imagesToKeepAndSend.push(file);
+      })
+      .catch(err => {
+        console.warn("Failed to re-download existing image:", err);
+        // Important: do NOT throw — just skip this image
       });
 
-      // Now send them all
-      if (imagesToSend.length > 0) {
-        imagesToSend.forEach((file, index) => {
-          formDataToSend.append(`images[${index}]`, file);
-        });
-      } else {
-        // No images at all → send nothing → keep existing (but if user deleted all, they stay)
-      }
+    // We'll await all these later
+    imagesToKeepAndSend.push(promise); // placeholder for now
+  }
+});
+
+// Wait for all re-downloads to finish (if any)
+await Promise.all(
+  imagesToKeepAndSend.filter(item => item instanceof Promise)
+);
+
+// Now filter out the promises and keep only Files
+const finalFiles = imagesToKeepAndSend.filter(item => item instanceof File);
+
+// Send them in order (primary first, then thumbnails)
+if (finalFiles.length > 0) {
+  finalFiles.forEach((file, index) => {
+    formDataToSend.append(`images[${index}]`, file);
+  });
+} else {
+  // If user deleted ALL images → send nothing or empty array if backend requires
+  // formDataToSend.append('images[]', '');  // optional - test what backend wants
+}
+
+
 
       if (formData.couponCode)
         formDataToSend.append("coupon_code", formData.couponCode);

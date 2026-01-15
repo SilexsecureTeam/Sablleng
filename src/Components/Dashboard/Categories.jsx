@@ -35,7 +35,7 @@ const Categories = () => {
     description: "",
     image: null,
     imagePreview: null,
-    tag: [],
+    tags: [],
   });
   const [isAdding, setIsAdding] = useState(false);
 
@@ -45,7 +45,7 @@ const Categories = () => {
     name: "",
     description: "",
     is_active: true,
-    tag: [],
+    tags: [],
     image: null,
     imagePreview: null,
   });
@@ -62,10 +62,10 @@ const Categories = () => {
   const IMAGE_BASE_URL = "https://api.sablle.ng/storage/";
 
   // Handle Tag Change
-  const handleTagChange = (selectedOptions, isEdit = false) => {
-    const setter = isEdit ? setEditFormData : setAddFormData;
-    setter((prev) => ({ ...prev, tag: selectedOptions || [] }));
-  };
+  // const handleTagChange = (selectedOption, isEdit = false) => {
+  //   const setter = isEdit ? setEditFormData : setAddFormData;
+  //   setter((prev) => ({ ...prev, tag: selectedOption || null }));
+  // };
 
   // Handle image change (shared for add & edit)
   const handleImageChange = (e, isEdit = false) => {
@@ -106,16 +106,15 @@ const Categories = () => {
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     if (!addFormData.name.trim()) return toast.error("Name is required.");
-    if (addFormData.tag.length === 0)
-      return toast.error("At least one tag is required.");
-    // same for editFormData.tag.length === 0
+ if (!addFormData.tags?.length) return toast.error("At least one tag is required.");
+
     setIsAdding(true);
     const submitData = new FormData();
     submitData.append("name", addFormData.name);
     submitData.append("description", addFormData.description || "");
-    addFormData.tag.forEach((t) => {
-      submitData.append("tag_ids[]", t.value);
-    });
+     addFormData.tags?.forEach(tag => {
+   submitData.append("tag_ids[]", tag.value);
+ });
     if (addFormData.image) submitData.append("image", addFormData.image);
 
     try {
@@ -137,7 +136,7 @@ const Categories = () => {
         description: "",
         image: null,
         imagePreview: null,
-        tag: [],
+        tag: null,
       });
       loadData();
     } catch (err) {
@@ -154,11 +153,7 @@ const Categories = () => {
       name: category.name,
       description: category.description || "",
       is_active: category.is_active,
-      tag: category.tags
-        ? tags.filter((t) =>
-            category.tags.some((attached) => attached.id === t.value)
-          )
-        : [],
+      tags: tags.filter(t => category.tag_ids?.includes(t.value)) || [],
       image: null, // new file only
       imagePreview: category.image
         ? `${IMAGE_BASE_URL}${category.image}`
@@ -170,7 +165,7 @@ const Categories = () => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editFormData.name.trim()) return toast.error("Name is required.");
-    if (!editFormData.tag) return toast.error("Tag is required.");
+    if (!editFormData.tags?.length) return toast.error("At least one tag is required.");
 
     setIsEditing(true);
 
@@ -179,9 +174,9 @@ const Categories = () => {
     submitData.append("name", editFormData.name);
     submitData.append("description", editFormData.description || "");
     submitData.append("is_active", editFormData.is_active ? "1" : "0");
-    editFormData.tag.forEach((t) => {
-      submitData.append("tag_ids[]", t.value);
-    });
+   editFormData.tags?.forEach(tag => {
+  submitData.append("tag_ids[]", tag.value);
+ });
 
     // Image handling
     if (editFormData.image instanceof File) {
@@ -289,21 +284,16 @@ const Categories = () => {
       const catsData = await catsRes.json();
       const catsArray = Array.isArray(catsData.data) ? catsData.data : catsData;
 
-      const formatted = catsArray.map((item) => {
-        const attachedTags = item.tags || []; // array of tag objects
-        const tagNames = attachedTags.map((t) => t.name).join(", ") || "None";
-
-        return {
-          id: item.id,
-          name: item.name,
-          description: item.description || "",
-          tag_id: null, // no longer needed
-          tagName: tagNames, // now "X-mas, For Him" or "None"
-          status: item.is_active ? "Active" : "Inactive",
-          is_active: item.is_active,
-          image: item.image || null,
-        };
-      });
+      const formatted = catsArray.map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description || "",
+         tag_ids: item.tags?.map(t => t.id) || [],                           
+ tagNames: item.tags?.map(t => t.name).join(", ") || "None", 
+        status: item.is_active ? "Active" : "Inactive",
+        is_active: item.is_active,
+        image: item.image || null, // ← added
+      }));
 
       setAllCategories(formatted);
       setCategories(formatted);
@@ -411,7 +401,7 @@ const Categories = () => {
                     {category.name}
                   </h2>
                   <p className="text-sm text-[#6C7275] mb-1">
-                    Tag: {category.tagName}
+                    Tag: {category.tagNames}
                   </p>
                 </div>
 
@@ -519,12 +509,11 @@ const Categories = () => {
                 </label>
                 <Select
                   options={tags}
-                  value={addFormData.tag}
-                  onChange={(opts) => handleTagChange(opts, true)}
-                  placeholder="Select one or more tags..."
+                  value={addFormData.tags}
+                  onChange={(selected) => setAddFormData(prev => ({ ...prev, tags: selected }))}
+                  placeholder="Select a tag..."
                   className="react-select-container"
                   classNamePrefix="react-select"
-                  isClearable
                   isMulti
                 />
               </div>
@@ -650,13 +639,12 @@ const Categories = () => {
                 </label>
                 <Select
                   options={tags}
-                  value={editFormData.tag}
-                  onChange={(opts) => handleTagChange(opts, false)}
-                  placeholder="Select one or more tags..."
+                  value={editFormData.tags}
+                 onChange={(selected) => setEditFormData(prev => ({ ...prev, tags: selected }))}
+                  placeholder="Select a tag..."
                   className="react-select-container"
                   classNamePrefix="react-select"
-                  isClearable
-                  isMulti
+                 isMulti
                 />
               </div>
 
