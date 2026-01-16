@@ -4,6 +4,7 @@ import Noti from "../Components/Noti";
 import Contact from "../Components/Contact";
 import Footer from "../Components/Footer";
 import Chero from "../Components/Chero";
+import Trust from "../Components/Trust";
 
 const ContactPage = () => {
   return (
@@ -11,6 +12,7 @@ const ContactPage = () => {
       <Noti />
       <Header />
       <Chero />
+      <Trust />
       <Contact />
       <Footer />
     </div>

@@ -5,6 +5,7 @@ import Footer from "../Components/Footer";
 import Experince from "../Components/Experince";
 import Discount from "../Components/Discount";
 import FAQSection from "../Components/FAQSection";
+import Trust from "../Components/Trust";
 
 const FaqPage = () => {
   return (
@@ -12,6 +13,7 @@ const FaqPage = () => {
       <Noti />
       <Header />
       <FAQSection />
+      <Trust />
       <Experince />
       <Discount />
       <Footer />

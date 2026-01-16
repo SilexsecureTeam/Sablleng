@@ -7,7 +7,8 @@ import Create from "../Components/Create";
 import Category1 from "../Components/Category1";
 import Experince from "../Components/Experince";
 import Discount from "../Components/Discount";
-import Partners from "../Components/Partners";
+// import Partners from "../Components/Partners";
+import Trust from "../Components/Trust";
 
 const HomePage = () => {
   return (
@@ -17,9 +18,10 @@ const HomePage = () => {
       <Hero1 />
       <Category1 />
       <Create />
+      <Trust />
       <Experince />
       <Discount />
-      <Partners />
+      {/* <Partners /> */}
       <Footer />
     </div>
   );

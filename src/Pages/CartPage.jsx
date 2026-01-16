@@ -5,6 +5,7 @@ import ShoppingCart from "../Components/ShoppingCart";
 import Footer from "../Components/Footer";
 import Experince from "../Components/Experince";
 import Discount from "../Components/Discount";
+import Trust from "../Components/Trust";
 
 const CartPage = () => {
   return (
@@ -12,6 +13,7 @@ const CartPage = () => {
       <Noti />
       <Header />
       <ShoppingCart />
+      <Trust />
       <Experince />
       <Discount />
       <Footer />
