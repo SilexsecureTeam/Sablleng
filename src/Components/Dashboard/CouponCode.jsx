@@ -1,18 +1,22 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useMemo } from "react";
 import { Bell, Settings, Plus, X, Edit2, Trash2 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthContext } from "../../context/AuthContextObject";
 import { useNavigate } from "react-router-dom";
+import Select from "react-select";
+import { List } from "react-window";
 
 const CouponCode = () => {
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
   const [coupons, setCoupons] = useState([]);
+  const [products, setProducts] = useState([]); // all available products
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [productsLoading, setProductsLoading] = useState(true);
 
-  // Add Modal (updated: usage_limit optional)
+  // Add Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addForm, setAddForm] = useState({
     promotion_name: "",
@@ -24,9 +28,10 @@ const CouponCode = () => {
     usage_limit: "",
     is_active: true,
   });
+  const [selectedAddProducts, setSelectedAddProducts] = useState([]); // react-select format
   const [isAdding, setIsAdding] = useState(false);
 
-  // Edit Modal (unchanged)
+  // Edit Modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     promotion_name: "",
@@ -34,13 +39,83 @@ const CouponCode = () => {
     value: "",
     is_active: true,
   });
+  const [selectedEditProducts, setSelectedEditProducts] = useState([]); // react-select format
   const [editingId, setEditingId] = useState(null);
-  const [editingCoupon, setEditingCoupon] = useState(null); // Store full coupon for display
+  const [editingCoupon, setEditingCoupon] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
   const API_BASE = "https://api.sablle.ng/api";
 
-  // Fetch Coupons (unchanged)
+  const MenuList = (props) => {
+    const { children, maxHeight, getValue, options } = props;
+    const height = 35;
+
+    // 1. Early bailout for invalid or empty states
+    if (!Array.isArray(children) || children.length === 0) {
+      return <div>{children}</div>;
+    }
+
+    // 2. For extremely large lists (>3000), fall back to non-virtualized for safety
+    //    (you can increase this threshold after testing)
+    if (children.length > 3000) {
+      console.warn(
+        `Large list detected (${children.length} items) - falling back to non-virtualized`,
+      );
+      return <div style={{ maxHeight, overflowY: "auto" }}>{children}</div>;
+    }
+
+    // 3. Small lists → no virtualization needed
+    if (children.length < 15) {
+      return <div>{children}</div>;
+    }
+
+    // 4. Safe selected value + clamped offset
+    const selected = getValue() || [];
+    const firstSelected = Array.isArray(selected) ? selected[0] : null;
+    let initialOffset = 0;
+
+    if (firstSelected && Array.isArray(options)) {
+      const index = options.indexOf(firstSelected);
+      if (index > 0) {
+        // only if valid positive index
+        initialOffset = index * height;
+      }
+    }
+
+    // 5. Explicit prop validation before rendering List
+    if (
+      typeof maxHeight !== "number" ||
+      maxHeight <= 0 ||
+      typeof height !== "number" ||
+      height <= 0 ||
+      typeof children.length !== "number"
+    ) {
+      console.warn("Invalid props for List - falling back");
+      return <div style={{ maxHeight, overflowY: "auto" }}>{children}</div>;
+    }
+    console.log("Rendering List with props:", {
+      height: maxHeight,
+      itemCount: children.length,
+      itemSize: height,
+      initialOffset,
+      childrenType: Array.isArray(children) ? "array" : typeof children,
+    });
+    return (
+      <List
+        height={maxHeight}
+        itemCount={children.length}
+        itemSize={height}
+        initialScrollOffset={initialOffset}
+        // Optional: add overscanCount to pre-render a few more items
+        overscanCount={5}
+      >
+        {({ index, style }) => (
+          <div style={style}>{children[index] || null}</div>
+        )}
+      </List>
+    );
+  };
+  // Fetch Coupons
   const fetchCoupons = async () => {
     if (!auth.token) {
       toast.error("Please verify OTP to continue.", { autoClose: 3000 });
@@ -61,8 +136,7 @@ const CouponCode = () => {
       });
 
       if (response.status === 401) throw new Error("Unauthorized.");
-      if (!response.ok)
-        throw new Error(`Failed to fetch coupons: ${response.statusText}`);
+      if (!response.ok) throw new Error(`Failed: ${response.statusText}`);
 
       const data = await response.json();
       const couponArray = Array.isArray(data.coupons) ? data.coupons : [];
@@ -73,29 +147,29 @@ const CouponCode = () => {
           title: c.promotion_name || "Unnamed Coupon",
           code: c.code,
           type: c.type,
-          discount: Number(c.value || 0), // Coerce to number with fallback
+          discount: Number(c.value || 0),
           start_date: c.start_date,
           expires_at: c.expires_at,
           startDate: new Date(c.start_date).toLocaleDateString("en-GB"),
           endDate: new Date(c.expires_at).toLocaleDateString("en-GB"),
           usage_limit: c.usage_limit,
-          uses: `${c.times_used || 0}/${c.usage_limit || 0}`,
+          uses: `${c.times_used || 0}/${c.usage_limit || "∞"}`,
           status: c.is_active ? "Active" : "Inactive",
           is_active:
             c.is_active === 1 || c.is_active === "1" || c.is_active === true,
+          products: c.products || [], // keep attached products
           updated_at: new Date(c.updated_at).toLocaleDateString("en-GB", {
             day: "2-digit",
             month: "short",
             year: "numeric",
           }),
-        }))
+        })),
       );
 
       toast.success("Coupons loaded!", { autoClose: 2000 });
     } catch (err) {
       setError(err.message);
       toast.error(`Error: ${err.message}`, { autoClose: 5000 });
-      setCoupons([]);
       if (err.message.includes("Unauthorized")) {
         setTimeout(() => navigate("/admin/signin"), 2000);
       }
@@ -104,11 +178,40 @@ const CouponCode = () => {
     }
   };
 
+  // Fetch Products
+  const fetchProducts = async () => {
+    if (!auth.token) return;
+    setProductsLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/products`, {
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to load products");
+
+      const data = await res.json();
+      const prodList = Array.isArray(data)
+        ? data
+        : data.products || data.data || [];
+      setProducts(prodList);
+    } catch (err) {
+      console.error("Products fetch failed:", err);
+      toast.error("Could not load product list");
+    } finally {
+      setProductsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchCoupons();
+    fetchProducts();
   }, [auth.token, navigate]);
 
-  // Handle Add (updated: make usage_limit optional)
+  // ── Add Handlers ──────────────────────────────────────────────
+
   const handleAddChange = (e) => {
     const { name, value, type, checked } = e.target;
     setAddForm((prev) => ({
@@ -119,6 +222,7 @@ const CouponCode = () => {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+
     if (
       !addForm.code ||
       !addForm.value ||
@@ -127,23 +231,22 @@ const CouponCode = () => {
       !addForm.start_date ||
       !addForm.expires_at
     ) {
-      toast.error("Please fill all required fields with valid values.", {
-        position: "top-right",
-      });
+      toast.error("Please fill all required fields with valid values.");
       return;
     }
-    // FIX: Optional usage_limit validation
+
     if (
       addForm.usage_limit &&
       (isNaN(addForm.usage_limit) || addForm.usage_limit < 0)
     ) {
       toast.error(
-        "Usage limit must be a valid non-negative number if provided."
+        "Usage limit must be a valid non-negative number if provided.",
       );
       return;
     }
 
     setIsAdding(true);
+
     const formData = new FormData();
     if (addForm.promotion_name)
       formData.append("promotion_name", addForm.promotion_name);
@@ -152,11 +255,14 @@ const CouponCode = () => {
     formData.append("value", addForm.value);
     formData.append("start_date", addForm.start_date);
     formData.append("expires_at", addForm.expires_at);
-    // FIX: Append usage_limit only if provided
-    if (addForm.usage_limit) {
+    if (addForm.usage_limit)
       formData.append("usage_limit", addForm.usage_limit);
-    }
     formData.append("is_active", addForm.is_active ? "1" : "0");
+
+    // Attach selected products
+    selectedAddProducts.forEach((opt) => {
+      formData.append("product_ids[]", opt.value);
+    });
 
     try {
       const response = await fetch(`${API_BASE}/coupons`, {
@@ -170,18 +276,9 @@ const CouponCode = () => {
         throw new Error(err.message || "Failed to add coupon");
       }
 
-      toast.success("Coupon added!", { autoClose: 3000 });
+      toast.success("Coupon created!", { autoClose: 3000 });
       setIsAddModalOpen(false);
-      setAddForm({
-        promotion_name: "",
-        code: "",
-        type: "percent",
-        value: "",
-        start_date: "",
-        expires_at: "",
-        usage_limit: "",
-        is_active: true,
-      });
+      resetAddForm();
       fetchCoupons();
     } catch (err) {
       toast.error(`Error: ${err.message}`, { autoClose: 5000 });
@@ -190,16 +287,39 @@ const CouponCode = () => {
     }
   };
 
-  // Handle Edit (unchanged)
+  const resetAddForm = () => {
+    setAddForm({
+      promotion_name: "",
+      code: "",
+      type: "percent",
+      value: "",
+      start_date: "",
+      expires_at: "",
+      usage_limit: "",
+      is_active: true,
+    });
+    setSelectedAddProducts([]);
+  };
+
+  // ── Edit Handlers ─────────────────────────────────────────────
+
   const openEdit = (coupon) => {
     setEditForm({
       promotion_name: coupon.title === "Unnamed Coupon" ? "" : coupon.title,
       code: coupon.code,
-      value: coupon.discount, // Set value for editing
+      value: coupon.discount,
       is_active: coupon.is_active,
     });
+
+    // Pre-select attached products
+    const preSelected = (coupon.products || []).map((p) => ({
+      value: p.id,
+      label: `${p.name} `,
+    }));
+
+    setSelectedEditProducts(preSelected);
     setEditingId(coupon.id);
-    setEditingCoupon(coupon); // Store full for display
+    setEditingCoupon(coupon);
     setIsEditModalOpen(true);
   };
 
@@ -213,32 +333,36 @@ const CouponCode = () => {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+
     if (
       !editForm.code ||
       !editForm.value ||
       isNaN(editForm.value) ||
       editForm.value <= 0
     ) {
-      toast.error("Please fill the code and value fields with valid values.");
+      toast.error("Please fill code and value with valid values.");
       return;
     }
 
     setIsEditing(true);
 
-    try {
-      const formData = new FormData();
-      if (editForm.promotion_name)
-        formData.append("promotion_name", editForm.promotion_name);
-      formData.append("code", editForm.code);
-      formData.append("value", editForm.value); // Append value
-      formData.append("is_active", editForm.is_active ? "1" : "0");
-      formData.append("_method", "PATCH");
+    const formData = new FormData();
+    if (editForm.promotion_name)
+      formData.append("promotion_name", editForm.promotion_name);
+    formData.append("code", editForm.code);
+    formData.append("value", editForm.value);
+    formData.append("is_active", editForm.is_active ? "1" : "0");
+    formData.append("_method", "PATCH");
 
+    // Attach selected products (can be empty = remove all associations)
+    selectedEditProducts.forEach((opt) => {
+      formData.append("product_ids[]", opt.value);
+    });
+
+    try {
       const response = await fetch(`${API_BASE}/coupons/${editingId}`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-        },
+        headers: { Authorization: `Bearer ${auth.token}` },
         body: formData,
       });
 
@@ -257,21 +381,18 @@ const CouponCode = () => {
     }
   };
 
-  // Handle Delete (unchanged)
-  const handleDelete = async (id) => {
-    // if (!confirm("Are you sure you want to delete this coupon?")) return;
+  // ── Delete (unchanged) ────────────────────────────────────────
 
+  const handleDelete = async (id) => {
     try {
       const response = await fetch(`${API_BASE}/coupons/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-        },
+        headers: { Authorization: `Bearer ${auth.token}` },
       });
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || "Failed to delete coupon");
+        throw new Error(err.message || "Failed to delete");
       }
 
       toast.success("Coupon deleted!", { autoClose: 3000 });
@@ -281,7 +402,7 @@ const CouponCode = () => {
     }
   };
 
-  // PromotionCard Component (updated: conditional styling for inactive)
+  // PromotionCard (minor update: show product count)
   const PromotionCard = ({
     title,
     code,
@@ -295,13 +416,12 @@ const CouponCode = () => {
     onEdit,
     onDelete,
   }) => {
-    const displayDiscount = discount || 0;
     const symbol = type === "percent" ? "%" : "₦";
-    // FIX: Conditional classes for status badge
     const isActive = status === "Active";
     const badgeClasses = isActive
       ? "bg-[#EAFFD8] text-[#1B8401]"
-      : "bg-red-100 text-red-700"; // Red for inactive
+      : "bg-red-100 text-red-700";
+
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-6 relative">
         <div className="absolute top-4 right-4 flex gap-1">
@@ -335,24 +455,38 @@ const CouponCode = () => {
 
           <div className="mb-4">
             <p className="text-3xl font-bold text-[#333333]">
-              {displayDiscount} {symbol}
+              {discount} {symbol}
             </p>
           </div>
 
           <div className="space-y-1">
             <p className="text-xs text-[#5E5E5E]">Start: {startDate}</p>
             <p className="text-xs text-[#5E5E5E]">End: {endDate}</p>
-            <p className="text-xs text-[#333333] font-medium mt-2">{uses}</p>
+            <p className="text-xs text-[#333333] font-medium mt-2">
+              {uses} • {coupon.products?.length || 0} product
+              {coupon.products?.length !== 1 ? "s" : ""}
+            </p>
           </div>
         </div>
       </div>
     );
   };
 
+  // Prepare options for react-select (shared for add & edit)
+  const productOptions = useMemo(
+    () =>
+      products.map((p) => ({
+        value: p.id,
+        label: `${p.name}`, // Keep no ID as per your version
+      })),
+    [products],
+  );
+
   return (
     <div className="min-h-screen bg-[#FAF7F5] text-[#414245] p-6">
       <ToastContainer position="top-right" autoClose={3000} />
-      {/* Top Bar (unchanged) */}
+
+      {/* Top Bar */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-medium">Promotions</h1>
@@ -376,12 +510,12 @@ const CouponCode = () => {
             onClick={() => setIsAddModalOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-[#5F1327] hover:bg-[#B54F5E] text-white rounded-md text-sm font-medium transition-colors"
           >
-            <Plus className="w-4 h-4" />
-            Create Promotion
+            <Plus className="w-4 h-4" /> Create Promotion
           </button>
         </div>
       </div>
-      {/* Main Card (unchanged) */}
+
+      {/* Main content */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-base font-semibold text-[#414245] mb-6">
           Promotions
@@ -427,7 +561,8 @@ const CouponCode = () => {
           </div>
         )}
       </div>
-      {/* Add Modal (updated: remove required from usage_limit input) */}
+
+      {/* ── ADD MODAL ────────────────────────────────────────────────── */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
@@ -442,6 +577,7 @@ const CouponCode = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
             <form onSubmit={handleAddSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
@@ -456,9 +592,10 @@ const CouponCode = () => {
                   placeholder="e.g. Black Friday Sale"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
-                  Code
+                  Code *
                 </label>
                 <input
                   type="text"
@@ -470,9 +607,10 @@ const CouponCode = () => {
                   required
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
-                  Type
+                  Type *
                 </label>
                 <select
                   name="type"
@@ -485,9 +623,10 @@ const CouponCode = () => {
                   <option value="fixed">Fixed Amount (₦)</option>
                 </select>
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
-                  Value
+                  Value *
                 </label>
                 <input
                   type="number"
@@ -501,9 +640,10 @@ const CouponCode = () => {
                   required
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
-                  Start Date
+                  Start Date *
                 </label>
                 <input
                   type="date"
@@ -514,9 +654,10 @@ const CouponCode = () => {
                   required
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
-                  Expires At
+                  Expires At *
                 </label>
                 <input
                   type="date"
@@ -527,6 +668,7 @@ const CouponCode = () => {
                   required
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
                   Usage Limit (Optional)
@@ -541,18 +683,45 @@ const CouponCode = () => {
                   placeholder="e.g. 100"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#414245] mb-1">
+                  Applicable Products *
+                </label>
+
+                {productsLoading ? (
+                  <div className="py-2 text-gray-500 text-center">
+                    Loading products...
+                  </div>
+                ) : (
+                  <Select
+                    isMulti
+                    name="products"
+                    options={productOptions}
+                    value={selectedAddProducts}
+                    onChange={setSelectedAddProducts}
+                    className="basic-multi-select"
+                    classNamePrefix="select"
+                    placeholder="Search or select products..."
+                    components={{ MenuList }}
+                    required
+                  />
+                )}
+              </div>
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
                   name="is_active"
                   checked={addForm.is_active}
-                  className="mr-2"
                   onChange={handleAddChange}
+                  className="mr-2"
                 />
                 <label className="text-sm font-medium text-[#414245]">
                   Active
                 </label>
               </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -574,7 +743,8 @@ const CouponCode = () => {
           </div>
         </div>
       )}
-      {/* Edit Modal (unchanged) */}
+
+      {/* ── EDIT MODAL ───────────────────────────────────────────────── */}
       {isEditModalOpen && editingCoupon && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
@@ -589,36 +759,38 @@ const CouponCode = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
             <form onSubmit={handleEditSubmit} className="space-y-4">
-              {/* Read-only display for non-editable fields */}
-              <div className="space-y-2">
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-1">
-                    Type:{" "}
-                    <span className="font-medium">
-                      {editingCoupon.type === "percent"
-                        ? "Percentage (%)"
-                        : "Fixed Amount (₦)"}
-                    </span>
-                  </p>
-                  <p className="text-xs text-gray-500 mb-1">
-                    Start:{" "}
-                    <span className="font-medium">
-                      {editingCoupon.startDate}
-                    </span>
-                  </p>
-                  <p className="text-xs text-gray-500 mb-1">
-                    End:{" "}
-                    <span className="font-medium">{editingCoupon.endDate}</span>
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Usage:{" "}
-                    <span className="font-medium">{editingCoupon.uses}</span>
-                  </p>
-                </div>
+              {/* Read-only info */}
+              <div className="bg-gray-50 p-3 rounded-lg space-y-2 text-xs">
+                <p>
+                  Type:{" "}
+                  <span className="font-medium">
+                    {editingCoupon.type === "percent"
+                      ? "Percentage (%)"
+                      : "Fixed Amount (₦)"}
+                  </span>
+                </p>
+                <p>
+                  Start:{" "}
+                  <span className="font-medium">{editingCoupon.startDate}</span>
+                </p>
+                <p>
+                  End:{" "}
+                  <span className="font-medium">{editingCoupon.endDate}</span>
+                </p>
+                <p>
+                  Usage:{" "}
+                  <span className="font-medium">{editingCoupon.uses}</span>
+                </p>
+                <p>
+                  Current products:{" "}
+                  <span className="font-medium">
+                    {editingCoupon.products?.length || 0}
+                  </span>
+                </p>
               </div>
 
-              {/* Editable fields */}
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
                   Promotion Name (Optional)
@@ -632,9 +804,10 @@ const CouponCode = () => {
                   placeholder="e.g. Black Friday Sale"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
-                  Code
+                  Code *
                 </label>
                 <input
                   type="text"
@@ -645,9 +818,10 @@ const CouponCode = () => {
                   required
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-[#414245] mb-1">
-                  Value
+                  Value *
                 </label>
                 <input
                   type="number"
@@ -657,10 +831,33 @@ const CouponCode = () => {
                   step="0.01"
                   min="0"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F1327]"
-                  placeholder="e.g. 20"
                   required
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#414245] mb-1">
+                  Applicable Products
+                </label>
+                {productsLoading ? (
+                  <div className="py-2 text-gray-500 text-center">
+                    Loading products...
+                  </div>
+                ) : (
+                  <Select
+                    isMulti
+                    name="products"
+                    options={productOptions}
+                    value={selectedEditProducts}
+                    onChange={setSelectedEditProducts}
+                    className="basic-multi-select"
+                    classNamePrefix="select"
+                    placeholder="Search or select products..."
+                    components={{ MenuList }}
+                  />
+                )}
+              </div>
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -673,6 +870,7 @@ const CouponCode = () => {
                   Active
                 </label>
               </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
