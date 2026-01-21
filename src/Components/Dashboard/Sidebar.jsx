@@ -68,6 +68,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       path: "/dashboard/product-list",
       permission: "products.view",
     },
+    {
+      label: "Customized",
+      icon: List,
+      path: "/dashboard/customizations",
+      permission: "products.view",
+    },
 
     // ADMIN-ONLY MENUS — No permission needed in list (admin bypasses all)
     // These will be wrapped in <Can perform="admin.only"> or just use a dummy permission

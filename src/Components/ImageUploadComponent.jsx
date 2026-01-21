@@ -2,7 +2,7 @@ import React, { useState, useContext, useRef, useEffect } from "react";
 import { CartContext } from "../context/CartContextObject";
 import { useNavigate } from "react-router-dom";
 import { X, Upload, Image, RotateCcw } from "lucide-react";
-// import { toast, ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const ImageUploadComponent = ({ product, auth, onBack }) => {
@@ -13,12 +13,12 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
   const [dragOver, setDragOver] = useState(false);
   const [text, setText] = useState("");
   const [instruction, setInstruction] = useState("");
-  const [position, setPosition] = useState("top-left");
-  const [imageCoordinates, setImageCoordinates] = useState({ x: 100, y: 100 });
-  const [textCoordinates, setTextCoordinates] = useState({ x: 100, y: 160 });
+  const [position, setPosition] = useState("center");
+  const [imageCoordinates, setImageCoordinates] = useState({ x: 0, y: 0 });
+  const [textCoordinates, setTextCoordinates] = useState({ x: 0, y: 0 });
   const [fontSize, setFontSize] = useState(24);
-  const [textColor, setTextColor] = useState("#000000");
-  const [imageSize, setImageSize] = useState(0.5);
+  const [textColor, setTextColor] = useState("#FFFFFF");
+  const [imageSize, setImageSize] = useState(0.1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [isDragging, setIsDragging] = useState(null);
@@ -28,23 +28,35 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
   // Update coordinates based on position selection
   useEffect(() => {
     if (!product || !canvasRef.current) return;
+
     const canvas = canvasRef.current;
+    if (canvas.width <= 1 || canvas.height <= 1) return; // wait for real dimensions
+
     const { width, height } = canvas;
+    const logoSize = width * imageSize; // current size of the logo
+
     const positions = {
-      "top-left": { x: width * 0.1, y: height * 0.1 },
-      "top-right": { x: width * 0.9 - 100, y: height * 0.1 },
-      "bottom-left": { x: width * 0.1, y: height * 0.9 - 50 },
-      "bottom-right": { x: width * 0.9 - 100, y: height * 0.9 - 50 },
-      center: { x: width * 0.5 - 50, y: height * 0.5 - 25 },
+      "top-left": { x: width * 0.12, y: height * 0.12 },
+      "top-right": { x: width * 0.88, y: height * 0.12 },
+      "bottom-left": { x: width * 0.12, y: height * 0.88 },
+      "bottom-right": { x: width * 0.88, y: height * 0.88 },
+      center: { x: width / 2, y: height / 2 },
     };
-    if (positions[position]) {
-      setImageCoordinates(positions[position]);
-      setTextCoordinates({
-        ...positions[position],
-        y: positions[position].y + 60,
-      });
-    }
-  }, [position, product]);
+
+    const pos = positions[position] || positions["center"];
+
+    // Center the logo on the chosen point
+    setImageCoordinates({
+      x: pos.x,
+      y: pos.y,
+    });
+
+    // Position text centered below the logo
+    setTextCoordinates({
+      x: pos.x,
+      y: pos.y + logoSize / 2 + fontSize * 0.8 + 15, // just below + breathing room
+    });
+  }, [position, product, imageSize, fontSize]);
 
   // Redraw canvas for preview
   useEffect(() => {
@@ -68,17 +80,39 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
             imageCoordinates.x - logoSize / 2,
             imageCoordinates.y - logoSize / 2,
             logoSize,
-            logoSize
+            logoSize,
           );
         };
       }
 
       if (text) {
         ctx.font = `${fontSize}px Arial`;
-        ctx.fillStyle = textColor;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
+
+        // Stroke (outline)
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 3; // thickness of outline
+        ctx.strokeText(text, textCoordinates.x, textCoordinates.y);
+
+        // Fill (white text on top)
+        ctx.fillStyle = "#FFFFFF";
         ctx.fillText(text, textCoordinates.x, textCoordinates.y);
+      }
+
+      if (instruction) {
+        const instrFontSize = Math.max(12, fontSize * 0.9); // smaller than main text
+        ctx.font = `${instrFontSize}px Arial`;
+        ctx.fillStyle = "#666666"; // gray or keep white: textColor
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        // Place below the main text
+        ctx.fillText(
+          instruction,
+          textCoordinates.x,
+          textCoordinates.y + instrFontSize + 10,
+        );
       }
 
       if (isDragging === "image" && uploadedImage) {
@@ -89,7 +123,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
           imageCoordinates.x - logoSize / 2,
           imageCoordinates.y - logoSize / 2,
           logoSize,
-          logoSize
+          logoSize,
         );
       } else if (isDragging === "text" && text) {
         ctx.strokeStyle = "#5F1327";
@@ -98,7 +132,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
           textCoordinates.x - 50,
           textCoordinates.y - fontSize / 2,
           100,
-          fontSize
+          fontSize,
         );
       }
     };
@@ -112,6 +146,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     textColor,
     imageSize,
     isDragging,
+    instruction,
   ]);
 
   const handleFileSelect = (file) => {
@@ -129,6 +164,9 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
       setUploadedImage(e.target.result);
       setUploadedFile(file);
       setIsModalOpen(false);
+
+      // Force position update right after upload
+      setPosition((prev) => prev); // trigger useEffect by "changing" position
     };
     reader.readAsDataURL(file);
   };
@@ -200,11 +238,11 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     const logoSize = canvas.width * imageSize;
     const boundedX = Math.max(
       logoSize / 2,
-      Math.min(canvas.width - logoSize / 2, x)
+      Math.min(canvas.width - logoSize / 2, x),
     );
     const boundedY = Math.max(
       logoSize / 2,
-      Math.min(canvas.height - logoSize / 2, y)
+      Math.min(canvas.height - logoSize / 2, y),
     );
 
     if (isDragging === "image") {
@@ -228,16 +266,16 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     setTextCoordinates({ x: 100, y: 160 });
     setFontSize(24);
     setTextColor("#000000");
-    setImageSize(0.5);
+    setImageSize(0.1);
     // toast.info("Customizations reset", {
     //   position: "top-right",
-    //   autoClose: 3000,
+    //   autoClose: 3,
     // });
   };
 
   const adjustImageSize = (delta) => {
     setImageSize((prev) => {
-      const newSize = Math.max(0.2, Math.min(1.0, prev + delta));
+      const newSize = Math.max(0.1, Math.min(0.5, prev + delta));
       return newSize;
     });
   };
@@ -282,18 +320,17 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
           errorData.error ||
-            `Failed to submit customization: ${response.statusText}`
+            `Failed to submit customization: ${response.statusText}`,
         );
       }
 
       const data = await response.json();
-      // toast.success("Customization submitted successfully!", {
-      //   position: "top-right",
-      //   autoClose: 3000,
-      // });
+      toast.success("Customization submitted successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
 
-      const combinedImage =
-        data.customized_image_url || (await generateCombinedImage());
+      const combinedImage = data.customized_image_url || product.image;
       addItem({
         id: product.id,
         name: product.name,
@@ -330,51 +367,51 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     }
   };
 
-  const generateCombinedImage = () => {
-    return new Promise((resolve) => {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-      const productImg = new window.Image();
-      productImg.src = product?.image || "";
-      productImg.onload = () => {
-        canvas.width = productImg.width;
-        canvas.height = productImg.height;
-        ctx.drawImage(productImg, 0, 0, canvas.width, canvas.height);
+  // const generateCombinedImage = () => {
+  //   return new Promise((resolve) => {
+  //     const canvas = canvasRef.current;
+  //     const ctx = canvas.getContext("2d");
+  //     const productImg = new window.Image();
+  //     productImg.src = product?.image || "";
+  //     productImg.onload = () => {
+  //       canvas.width = productImg.width;
+  //       canvas.height = productImg.height;
+  //       ctx.drawImage(productImg, 0, 0, canvas.width, canvas.height);
 
-        if (uploadedImage) {
-          const logoImg = new window.Image();
-          logoImg.src = uploadedImage;
-          logoImg.onload = () => {
-            const logoSize = canvas.width * imageSize;
-            ctx.drawImage(
-              logoImg,
-              imageCoordinates.x - logoSize / 2,
-              imageCoordinates.y - logoSize / 2,
-              logoSize,
-              logoSize
-            );
-            if (text) {
-              ctx.font = `${fontSize}px Arial`;
-              ctx.fillStyle = textColor;
-              ctx.textAlign = "center";
-              ctx.textBaseline = "middle";
-              ctx.fillText(text, textCoordinates.x, textCoordinates.y);
-            }
-            resolve(canvas.toDataURL("image/png"));
-          };
-        } else if (text) {
-          ctx.font = `${fontSize}px Arial`;
-          ctx.fillStyle = textColor;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(text, textCoordinates.x, textCoordinates.y);
-          resolve(canvas.toDataURL("image/png"));
-        } else {
-          resolve(canvas.toDataURL("image/png"));
-        }
-      };
-    });
-  };
+  //       if (uploadedImage) {
+  //         const logoImg = new window.Image();
+  //         logoImg.src = uploadedImage;
+  //         logoImg.onload = () => {
+  //           const logoSize = canvas.width * imageSize;
+  //           ctx.drawImage(
+  //             logoImg,
+  //             imageCoordinates.x - logoSize / 2,
+  //             imageCoordinates.y - logoSize / 2,
+  //             logoSize,
+  //             logoSize,
+  //           );
+  //           if (text) {
+  //             ctx.font = `${fontSize}px Arial`;
+  //             ctx.fillStyle = textColor;
+  //             ctx.textAlign = "center";
+  //             ctx.textBaseline = "middle";
+  //             ctx.fillText(text, textCoordinates.x, textCoordinates.y);
+  //           }
+  //           resolve(canvas.toDataURL("image/png"));
+  //         };
+  //       } else if (text) {
+  //         ctx.font = `${fontSize}px Arial`;
+  //         ctx.fillStyle = textColor;
+  //         ctx.textAlign = "center";
+  //         ctx.textBaseline = "middle";
+  //         ctx.fillText(text, textCoordinates.x, textCoordinates.y);
+  //         resolve(canvas.toDataURL("image/png"));
+  //       } else {
+  //         resolve(canvas.toDataURL("image/png"));
+  //       }
+  //     };
+  //   });
+  // };
 
   if (!product) {
     return (
@@ -392,7 +429,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
 
   return (
     <div className="bg-white">
-      {/* <ToastContainer /> */}
+      <ToastContainer />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 lg:p-6">
         <div>
           <div className="flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 p-8 min-h-[400px]">
@@ -498,9 +535,9 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
                   </label>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => adjustImageSize(-0.1)}
+                      onClick={() => adjustImageSize(-0.01)}
                       className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md"
-                      disabled={isSubmitting || imageSize <= 0.2}
+                      disabled={isSubmitting || imageSize <= 0.1}
                     >
                       -
                     </button>
@@ -515,9 +552,9 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
                       disabled={isSubmitting}
                     />
                     <button
-                      onClick={() => adjustImageSize(0.1)}
+                      onClick={() => adjustImageSize(0.01)}
                       className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md"
-                      disabled={isSubmitting || imageSize >= 1.0}
+                      disabled={isSubmitting || imageSize >= 0.5}
                     >
                       +
                     </button>
@@ -537,14 +574,14 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
                   className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#5F1327]"
                   disabled={isSubmitting}
                 >
-                  {[16, 24, 32, 40].map((size) => (
+                  {[12, 16, 20, 24, 28, 32, 36, 40, 48, 56, 64].map((size) => (
                     <option key={size} value={size}>
                       {size}px
                     </option>
                   ))}
                 </select>
               </div>
-              <div>
+              <div className="hidden">
                 <label className="block text-sm font-medium text-gray-700">
                   Text Color
                   <span className="text-xs text-gray-500 ml-1">
@@ -564,19 +601,19 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
         </div>
 
         <div>
-          <div className="flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 p-8 min-h-[400px]">
-            <div className="bg-gray-50 rounded-lg p-8 text-center flex-1 flex flex-col justify-center">
+          <div className="flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 p-2 min-h-[400px]">
+            <div className="bg-gray-50 rounded-lg p-2 text-center flex-1 flex flex-col justify-center">
               <canvas
                 ref={canvasRef}
-                className="w-64 h-64 mx-auto cursor-move border border-gray-200 rounded"
+                className="w-64 h-64 md:w-90 mx-auto cursor-move border border-gray-200 rounded"
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
               />
-              <p className="mt-2 text-sm text-gray-500">
+              {/* <p className="mt-2 text-sm text-gray-500">
                 Drag image or text to adjust position
-              </p>
+              </p> */}
             </div>
           </div>
           <div className="space-y-3 mt-4">

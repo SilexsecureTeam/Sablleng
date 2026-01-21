@@ -6,59 +6,65 @@ import "../global.css";
 import { lazy } from "react";
 
 // Lazy-loaded components
-const DashboardHome = lazy(() =>
-  import("../Components/Dashboard/DashboardHome")
+const DashboardHome = lazy(
+  () => import("../Components/Dashboard/DashboardHome"),
 );
-const OrderManagement = lazy(() =>
-  import("../Components/Dashboard/OrderManagement")
+const OrderManagement = lazy(
+  () => import("../Components/Dashboard/OrderManagement"),
 );
 const AboutUsAdmin = lazy(() => import("../Components/Dashboard/AboutUsAdmin"));
 const TeamAdmin = lazy(() => import("../Components/Dashboard/TeamAdmin"));
-const TrustedOrganizationsAdmin = lazy(() =>
-  import("../Components/Dashboard/TrustedOrganizationsAdmin")
+const TrustedOrganizationsAdmin = lazy(
+  () => import("../Components/Dashboard/TrustedOrganizationsAdmin"),
 );
 const Customers = lazy(() => import("../Components/Dashboard/Customers"));
 const CouponCode = lazy(() => import("../Components/Dashboard/CouponCode"));
 const Categories = lazy(() => import("../Components/Dashboard/Categories"));
-const DeliveryFeeManager = lazy(() =>
-  import("../Components/Dashboard/DeliveryFeeManager")
+const DeliveryFeeManager = lazy(
+  () => import("../Components/Dashboard/DeliveryFeeManager"),
 );
-const Customization = lazy(() =>
-  import("../Components/Dashboard/Customization")
+const Customization = lazy(
+  () => import("../Components/Dashboard/Customization"),
 );
-const TaxManagement = lazy(() =>
-  import("../Components/Dashboard/TaxManagement")
+const TaxManagement = lazy(
+  () => import("../Components/Dashboard/TaxManagement"),
 );
 const BrandList = lazy(() => import("../Components/Dashboard/BrandList"));
 const Report = lazy(() => import("../Components/Dashboard/Report"));
 const ProductList = lazy(() => import("../Components/Dashboard/ProductList"));
-const ProductReviews = lazy(() =>
-  import("../Components/Dashboard/ProductReviews")
+const ProductReviews = lazy(
+  () => import("../Components/Dashboard/ProductReviews"),
 );
 const Tags = lazy(() => import("../Components/Dashboard/Tags"));
-const TagCategories = lazy(() =>
-  import("../Components/Dashboard/TagCategories")
+const TagCategories = lazy(
+  () => import("../Components/Dashboard/TagCategories"),
 );
 const HeroSlides = lazy(() => import("../Components/Dashboard/HeroSlides"));
-const EditSupplierForm = lazy(() =>
-  import("../Components/Dashboard/EditSupplierForm")
+const EditSupplierForm = lazy(
+  () => import("../Components/Dashboard/EditSupplierForm"),
 );
-const StockInventoryReportDetails = lazy(() =>
-  import("../Components/Dashboard/StockInventoryReportDetails")
+const StockInventoryReportDetails = lazy(
+  () => import("../Components/Dashboard/StockInventoryReportDetails"),
 );
 const SupplierList = lazy(() => import("../Components/Dashboard/SupplierList"));
 const Settings = lazy(() => import("../Components/Dashboard/Settings"));
 const Staff = lazy(() => import("../Components/Dashboard/Staff"));
 const ProductView = lazy(() => import("../Components/Dashboard/ProductView"));
 const Sidebar = lazy(() => import("../Components/Dashboard/Sidebar"));
-const CategoryProducts = lazy(() =>
-  import("../Components/Dashboard/CategoryProducts")
+const CategoryProducts = lazy(
+  () => import("../Components/Dashboard/CategoryProducts"),
 );
 const EposLogs = lazy(() => import("../Components/Dashboard/EposLogs"));
-const EposLogDetails = lazy(() =>
-  import("../Components/Dashboard/EposLogDetails")
+const EposLogDetails = lazy(
+  () => import("../Components/Dashboard/EposLogDetails"),
 );
 const OrderDetails = lazy(() => import("../Components/Dashboard/OrderDetails"));
+const CustomizedProductsList = lazy(
+  () => import("../Components/Dashboard/CustomizedProductsList"),
+);
+const ProductCustomizationsDetail = lazy(
+  () => import("../Components/Dashboard/ProductCustomizationsDetail"),
+);
 
 const LoadingSpinner = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -212,6 +218,22 @@ const DashboardLayout = () => {
                 element={
                   <MainContent toggleSidebar={toggleSidebar}>
                     <ProductView />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/customizations"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <CustomizedProductsList />
+                  </MainContent>
+                }
+              />
+              <Route
+                path="/customizations/:productId"
+                element={
+                  <MainContent toggleSidebar={toggleSidebar}>
+                    <ProductCustomizationsDetail />
                   </MainContent>
                 }
               />
