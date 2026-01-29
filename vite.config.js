@@ -7,15 +7,6 @@ export default defineConfig({
   plugins: [react(),
     tailwindcss(),
   ],
-    server: {
-    proxy: {
-      '/storage': {
-        target: 'https://api.sablle.ng',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
   define: { global: 'globalThis' },
   optimizeDeps: { include: ['buffer'] },
 })

@@ -130,7 +130,7 @@ const OrderDetails = () => {
 
         const logoImg = new Image();
         logoImg.crossOrigin = "anonymous";
-        logoImg.src = `/storage/${cust.image_path}`;
+        logoImg.src = proxiedLogoSrc;
 
         logoImg.onload = () => {
           console.log("Logo loaded OK via proxy");
@@ -397,12 +397,12 @@ const OrderDetails = () => {
                         <div className="relative w-16 h-16 flex-shrink-0">
                           {item.product?.images?.length > 0 ? (
                             <img
-                              src={`/storage/${item.product.images[0].path}`} // use .path from your API
+                              src={`${baseUrl}${item.product.images[0].path}`} // use .path from your API
                               alt={item.product.name}
                               className="w-full h-full object-cover rounded border border-gray-200 cursor-pointer hover:opacity-90 transition"
                               onClick={() =>
                                 setSelectedImage({
-                                  src: `/storage/${item.product.images[0].path}`,
+                                  src: `${baseUrl}${item.product.images[0].path}`,
                                   alt: item.product.name,
                                   item, // pass full item so we can access customization in modal
                                 })
@@ -545,9 +545,9 @@ const OrderDetails = () => {
                   {/* Show composite if ready, else loading */}
                   {compositeImage ? (
                     <img
-                      src={`https://api.allorigins.win/raw?url=${encodeURIComponent(selectedImage.src)}`}
-                      alt={selectedImage.alt}
-                      className="max-w-full max-h-[75vh] mx-auto object-contain rounded-lg shadow-lg"
+                      src={compositeImage}
+                      alt={`${selectedImage.item.product.name} - Customized Preview`}
+                      className="max-w-full max-h-[70vh] mx-auto object-contain rounded-lg shadow-lg border border-gray-200"
                     />
                   ) : (
                     <div className="text-center py-12">
