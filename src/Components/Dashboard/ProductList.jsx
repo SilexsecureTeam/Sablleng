@@ -75,15 +75,13 @@ const ProductList = () => {
     fetchProducts();
   }, [auth.token]);
 
-  const filteredProducts = allProducts.filter((product) =>
-    [product.product, product.sku, product.category].some((field) =>
-      field?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+  const filteredProducts = allProducts.filter((item) =>
+    item.product?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   useEffect(() => {
     const newTotalPages = Math.ceil(
-      filteredProducts.length / PRODUCTS_PER_PAGE
+      filteredProducts.length / PRODUCTS_PER_PAGE,
     );
     setTotalPages(newTotalPages || 1);
     if (currentPage > newTotalPages && newTotalPages > 0) {
@@ -93,7 +91,7 @@ const ProductList = () => {
 
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * PRODUCTS_PER_PAGE,
-    currentPage * PRODUCTS_PER_PAGE
+    currentPage * PRODUCTS_PER_PAGE,
   );
 
   const handleEdit = (index) => {
@@ -114,7 +112,7 @@ const ProductList = () => {
           headers: {
             Authorization: `Bearer ${auth.token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -158,8 +156,8 @@ const ProductList = () => {
   const handleUpdateProduct = (updatedProduct) => {
     setAllProducts((prev) =>
       prev.map((item) =>
-        item.id === updatedProduct.id ? updatedProduct : item
-      )
+        item.id === updatedProduct.id ? updatedProduct : item,
+      ),
     );
     setIsEditModalOpen(false);
     setSelectedProduct(null);

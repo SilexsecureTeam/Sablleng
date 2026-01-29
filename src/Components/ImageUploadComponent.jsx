@@ -13,9 +13,9 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
   const [dragOver, setDragOver] = useState(false);
   const [text, setText] = useState("");
   const [instruction, setInstruction] = useState("");
-  const [position, setPosition] = useState("center");
+  const [position, setPosition] = useState("top-left");
   const [imageCoordinates, setImageCoordinates] = useState({ x: 0, y: 0 });
-  const [textCoordinates, setTextCoordinates] = useState({ x: 0, y: 0 });
+  const [textCoordinates, setTextCoordinates] = useState({ x: 0, y: 60 });
   const [fontSize, setFontSize] = useState(24);
   const [textColor, setTextColor] = useState("#FFFFFF");
   const [imageSize, setImageSize] = useState(0.1);
@@ -25,7 +25,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
   const { addItem } = useContext(CartContext);
   const canvasRef = useRef(null);
 
-  // Update coordinates based on position selection
+  // Update TEXT coordinates based on position selection (logo is now independent)
   useEffect(() => {
     if (!product || !canvasRef.current) return;
 
@@ -33,7 +33,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     if (canvas.width <= 1 || canvas.height <= 1) return; // wait for real dimensions
 
     const { width, height } = canvas;
-    const logoSize = width * imageSize; // current size of the logo
 
     const positions = {
       "top-left": { x: width * 0.12, y: height * 0.12 },
@@ -45,18 +44,12 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
 
     const pos = positions[position] || positions["center"];
 
-    // Center the logo on the chosen point
-    setImageCoordinates({
-      x: pos.x,
-      y: pos.y,
-    });
-
-    // Position text centered below the logo
+    // Only update TEXT position (centered on the preset point)
     setTextCoordinates({
       x: pos.x,
-      y: pos.y + logoSize / 2 + fontSize * 0.8 + 15, // just below + breathing room
+      y: pos.y + fontSize * 0.6, // slight offset downward so text feels centered
     });
-  }, [position, product, imageSize, fontSize]);
+  }, [position, product, fontSize]);
 
   // Redraw canvas for preview
   useEffect(() => {
@@ -100,21 +93,6 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
         ctx.fillText(text, textCoordinates.x, textCoordinates.y);
       }
 
-      if (instruction) {
-        const instrFontSize = Math.max(12, fontSize * 0.9); // smaller than main text
-        ctx.font = `${instrFontSize}px Arial`;
-        ctx.fillStyle = "#666666"; // gray or keep white: textColor
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        // Place below the main text
-        ctx.fillText(
-          instruction,
-          textCoordinates.x,
-          textCoordinates.y + instrFontSize + 10,
-        );
-      }
-
       if (isDragging === "image" && uploadedImage) {
         const logoSize = canvas.width * imageSize;
         ctx.strokeStyle = "#5F1327";
@@ -146,8 +124,11 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     textColor,
     imageSize,
     isDragging,
-    instruction,
   ]);
+
+  useEffect(() => {
+    console.log("isDragging changed to:", isDragging);
+  }, [isDragging]);
 
   const handleFileSelect = (file) => {
     if (!file) return;
@@ -163,10 +144,17 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     reader.onload = (e) => {
       setUploadedImage(e.target.result);
       setUploadedFile(file);
+      if (!imageCoordinates.x && !imageCoordinates.y) {
+        // only set if not already positioned
+        const canvas = canvasRef.current;
+        if (canvas && canvas.width > 1) {
+          setImageCoordinates({
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+          });
+        }
+      }
       setIsModalOpen(false);
-
-      // Force position update right after upload
-      setPosition((prev) => prev); // trigger useEffect by "changing" position
     };
     reader.readAsDataURL(file);
   };
@@ -203,51 +191,110 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
   };
 
   const handleMouseDown = (e) => {
+    e.preventDefault(); // stop browser defaults like text selection
+
     const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const scaledX = (e.clientX - rect.left) * scaleX;
+    const scaledY = (e.clientY - rect.top) * scaleY;
+
+    console.log("Scaled mouse down at:", { scaledX, scaledY }); // debug
+
     const logoSize = canvas.width * imageSize;
 
-    if (
-      uploadedImage &&
-      x >= imageCoordinates.x - logoSize / 2 &&
-      x <= imageCoordinates.x + logoSize / 2 &&
-      y >= imageCoordinates.y - logoSize / 2 &&
-      y <= imageCoordinates.y + logoSize / 2
-    ) {
-      setIsDragging("image");
-    } else if (
-      text &&
-      x >= textCoordinates.x - 50 &&
-      x <= textCoordinates.x + 50 &&
-      y >= textCoordinates.y - fontSize / 2 &&
-      y <= textCoordinates.y + fontSize / 2
-    ) {
-      setIsDragging("text");
+    if (uploadedImage) {
+      const left = imageCoordinates.x - logoSize / 2;
+      const right = imageCoordinates.x + logoSize / 2;
+      const top = imageCoordinates.y - logoSize / 2;
+      const bottom = imageCoordinates.y + logoSize / 2;
+
+      // Hit area with padding for easy grabbing
+      if (
+        scaledX >= left - 40 &&
+        scaledX <= right + 40 &&
+        scaledY >= top - 40 &&
+        scaledY <= bottom + 40
+      ) {
+        console.log("Hit logo area (scaled) → drag start");
+        setIsDragging("image");
+        return;
+      } else {
+        console.log("Missed logo (scaled)", { left, right, top, bottom });
+      }
     }
+
+    if (text) {
+      if (
+        scaledX >= textCoordinates.x - 80 &&
+        scaledX <= textCoordinates.x + 80 &&
+        scaledY >= textCoordinates.y - fontSize &&
+        scaledY <= textCoordinates.y + fontSize
+      ) {
+        console.log("Hit text area");
+        setIsDragging("text");
+        return;
+      }
+    }
+
+    console.log("No hit - click outside elements");
   };
 
   const handleMouseMove = (e) => {
     if (!isDragging) return;
+
+    console.log("Mouse moving while dragging:", isDragging); // keep for now, remove later
+
     const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
 
-    const logoSize = canvas.width * imageSize;
-    const boundedX = Math.max(
-      logoSize / 2,
-      Math.min(canvas.width - logoSize / 2, x),
-    );
-    const boundedY = Math.max(
-      logoSize / 2,
-      Math.min(canvas.height - logoSize / 2, y),
-    );
+    // Scale factor: how many real pixels per preview pixel
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
 
-    if (isDragging === "image") {
+    // Scaled mouse position in REAL image coordinates
+    let scaledX = (e.clientX - rect.left) * scaleX;
+    let scaledY = (e.clientY - rect.top) * scaleY;
+
+    // Clamp to real canvas bounds (0 to full width/height)
+    scaledX = Math.max(0, Math.min(canvas.width, scaledX));
+    scaledY = Math.max(0, Math.min(canvas.height, scaledY));
+
+    if (isDragging === "image" && uploadedImage) {
+      const logoSize = canvas.width * imageSize;
+      const minVisible = 20; // minimum pixels of logo that stay visible
+
+      // Allow center to move until only minVisible px of logo remains on canvas
+      const minX = logoSize / 2 - (logoSize - minVisible);
+      const maxX = canvas.width - (logoSize / 2 - (logoSize - minVisible));
+      const boundedX = Math.max(minX, Math.min(maxX, scaledX));
+
+      const minY = logoSize / 2 - (logoSize - minVisible);
+      const maxY = canvas.height - (logoSize / 2 - (logoSize - minVisible));
+      const boundedY = Math.max(minY, Math.min(maxY, scaledY));
+
       setImageCoordinates({ x: boundedX, y: boundedY });
-    } else if (isDragging === "text") {
+    } else if (isDragging === "text" && text) {
+      // Text: looser bounds, can get closer to edges
+      const textWidthEstimate = Math.min(
+        text.length * (fontSize * 0.6),
+        canvas.width * 0.8,
+      );
+      const boundedX = Math.max(
+        textWidthEstimate / 2,
+        Math.min(canvas.width - textWidthEstimate / 2, scaledX),
+      );
+      const boundedY = Math.max(
+        fontSize,
+        Math.min(canvas.height - fontSize / 2, scaledY),
+      );
       setTextCoordinates({ x: boundedX, y: boundedY });
     }
   };
@@ -261,16 +308,23 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     setUploadedFile(null);
     setText("");
     setInstruction("");
-    setPosition("top-left");
-    setImageCoordinates({ x: 100, y: 100 });
-    setTextCoordinates({ x: 100, y: 160 });
+    setPosition("center"); // default to center for text
     setFontSize(24);
-    setTextColor("#000000");
+    setTextColor("#FFFFFF"); // back to white (since stroke is black)
     setImageSize(0.1);
-    // toast.info("Customizations reset", {
-    //   position: "top-right",
-    //   autoClose: 3,
-    // });
+
+    // Reset coords to center if canvas is ready, else fallback
+    if (canvasRef.current && canvasRef.current.width > 1) {
+      const { width, height } = canvasRef.current;
+      setImageCoordinates({ x: width / 2, y: height / 2 });
+      setTextCoordinates({ x: width / 2, y: height / 2 + 40 }); // text a bit below center
+    } else {
+      // Fallback if canvas not loaded yet
+      setImageCoordinates({ x: 0, y: 0 });
+      setTextCoordinates({ x: 0, y: 60 });
+    }
+
+    // toast.info("Customizations reset"); // uncomment if you want
   };
 
   const adjustImageSize = (delta) => {
@@ -301,6 +355,9 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
     const formData = new FormData();
     formData.append("product_id", product.id);
     if (uploadedFile) formData.append("image", uploadedFile);
+    if (uploadedFile && imageSize !== undefined) {
+      formData.append("image_size", imageSize.toString());
+    }
     if (text) formData.append("text", text);
     if (instruction) formData.append("instruction", instruction);
     formData.append("position", position);
@@ -342,8 +399,9 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
         quantity: 1,
         customized: true,
         text,
-        position,
-        coordinates: imageCoordinates,
+        position, // still useful for text placement hint
+        coordinates: imageCoordinates, // logo coords
+        imageSize: imageSize.toString(), // logo size
       });
 
       setUploadedImage(null);
@@ -487,7 +545,7 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Instructions
+                  Additional Instructions for Production Team
                   <span className="text-xs text-gray-500 ml-1">(optional)</span>
                 </label>
                 <textarea
@@ -528,36 +586,43 @@ const ImageUploadComponent = ({ product, auth, onBack }) => {
               {uploadedImage && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Image Size
+                    Logo Size
                     <span className="text-xs text-gray-500 ml-1">
-                      (adjust size of uploaded image)
+                      (drag slider or use +/-)
                     </span>
                   </label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3 mt-1">
                     <button
                       onClick={() => adjustImageSize(-0.01)}
-                      className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md"
-                      disabled={isSubmitting || imageSize <= 0.1}
+                      className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium"
+                      disabled={isSubmitting || imageSize <= 0.05}
                     >
                       -
                     </button>
+
                     <input
                       type="range"
-                      min="0.2"
-                      max="1.0"
-                      step="0.1"
+                      min="0.05" // now allows very small logos
+                      max="0.8" // max 80% to avoid covering whole product
+                      step="0.01" // fine control (1% steps)
                       value={imageSize}
                       onChange={(e) => setImageSize(parseFloat(e.target.value))}
-                      className="w-full"
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                       disabled={isSubmitting}
                     />
+
                     <button
                       onClick={() => adjustImageSize(0.01)}
-                      className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md"
-                      disabled={isSubmitting || imageSize >= 0.5}
+                      className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium"
+                      disabled={isSubmitting || imageSize >= 0.8}
                     >
                       +
                     </button>
+
+                    {/* Show current size as percentage – very helpful feedback */}
+                    <span className="text-sm font-medium text-gray-700 min-w-[50px] text-right">
+                      {(imageSize * 100).toFixed(0)}%
+                    </span>
                   </div>
                 </div>
               )}

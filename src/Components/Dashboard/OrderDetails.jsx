@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
@@ -8,6 +8,7 @@ import {
   CreditCard,
   Package,
   ShoppingBag,
+  X,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -21,6 +22,11 @@ const OrderDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null); // For modal preview
+  const [compositeImage, setCompositeImage] = useState(null);
+  const previewCanvasRef = useRef(null);
+
+  const baseUrl = "https://api.sablle.ng/storage/";
 
   // Fetch single order details
   const fetchOrderDetails = async () => {
@@ -43,16 +49,15 @@ const OrderDetails = () => {
             Authorization: `Bearer ${auth.token}`,
             Accept: "application/json",
           },
-        }
+        },
       );
 
       if (response.status === 401) throw new Error("Unauthorized.");
       if (!response.ok) throw new Error(`Failed: ${response.statusText}`);
 
       const data = await response.json();
-      let orderData = data.order; // Use data.order as per response structure
+      let orderData = data.order;
 
-      // Handle if response is array (fallback) or single object
       if (Array.isArray(orderData)) {
         orderData =
           orderData.find((o) => o.order_reference === reference) || null;
@@ -60,9 +65,8 @@ const OrderDetails = () => {
 
       if (!orderData) throw new Error("Order not found.");
 
-      // Format for display
       const formattedOrder = {
-        numericId: orderData.id, // Numeric ID for update endpoint
+        numericId: orderData.id,
         id: orderData.order_reference,
         subtotal: `₦${parseFloat(orderData.subtotal).toLocaleString()}`,
         deliveryFee: `₦${parseFloat(orderData.delivery_fee).toLocaleString()}`,
@@ -83,7 +87,7 @@ const OrderDetails = () => {
           email: orderData.user?.email || "N/A",
         },
         coupon: orderData.coupon_code || "None",
-        items: orderData.items || [], // Ensure array
+        items: orderData.items || [],
       };
 
       setOrder(formattedOrder);
@@ -95,6 +99,93 @@ const OrderDetails = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!selectedImage?.item?.customization || !previewCanvasRef.current) {
+      setCompositeImage(selectedImage?.src || null);
+      return;
+    }
+
+    const canvas = previewCanvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const item = selectedImage.item;
+    const cust = item.customization;
+
+    // Use proxied product src (same as thumbnail)
+    const proxiedProductSrc = `https://api.allorigins.win/raw?url=${encodeURIComponent(selectedImage.src)}`;
+
+    const productImg = new Image();
+    productImg.crossOrigin = "anonymous"; // keep for safety
+    productImg.src = proxiedProductSrc;
+
+    productImg.onload = () => {
+      console.log("Product loaded OK via proxy");
+      canvas.width = productImg.width;
+      canvas.height = productImg.height;
+      ctx.drawImage(productImg, 0, 0);
+
+      // Logo with proxy + encode
+      if (cust.image_path) {
+        const proxiedLogoSrc = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${baseUrl}${cust.image_path}`)}`;
+
+        const logoImg = new Image();
+        logoImg.crossOrigin = "anonymous";
+        logoImg.src = `/storage/${cust.image_path}`;
+
+        logoImg.onload = () => {
+          console.log("Logo loaded OK via proxy");
+          const sizeRatio = parseFloat(cust.image_size || 0.1);
+          const logoSize = productImg.width * sizeRatio;
+
+          ctx.drawImage(
+            logoImg,
+            cust.coordinates.x - logoSize / 2,
+            cust.coordinates.y - logoSize / 2,
+            logoSize,
+            logoSize,
+          );
+
+          // Text drawing (same as before)
+          if (cust.text) {
+            const fontSize = 32;
+            ctx.font = `${fontSize}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            ctx.strokeStyle = "#000000";
+            ctx.lineWidth = 4;
+            ctx.strokeText(
+              cust.text,
+              cust.coordinates.x,
+              cust.coordinates.y + logoSize / 2 + fontSize,
+            );
+
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillText(
+              cust.text,
+              cust.coordinates.x,
+              cust.coordinates.y + logoSize / 2 + fontSize,
+            );
+          }
+
+          setCompositeImage(canvas.toDataURL("image/png"));
+        };
+
+        logoImg.onerror = (err) => {
+          console.error("Logo proxy failed:", proxiedLogoSrc, err);
+          // Fallback: continue without logo
+          setCompositeImage(canvas.toDataURL("image/png"));
+        };
+      } else {
+        setCompositeImage(canvas.toDataURL("image/png"));
+      }
+    };
+
+    productImg.onerror = (err) => {
+      console.error("Product proxy failed:", proxiedProductSrc, err);
+      setCompositeImage(selectedImage.src); // fallback to plain
+    };
+  }, [selectedImage]);
 
   // Update order status
   const updateOrderStatus = async (newStatus) => {
@@ -114,7 +205,7 @@ const OrderDetails = () => {
             Authorization: `Bearer ${auth.token}`,
           },
           body: formData,
-        }
+        },
       );
 
       if (!response.ok) {
@@ -127,7 +218,6 @@ const OrderDetails = () => {
         autoClose: 3000,
       });
 
-      // Refetch to update UI
       await fetchOrderDetails();
     } catch (err) {
       toast.error(`Update failed: ${err.message}`, { autoClose: 5000 });
@@ -142,7 +232,6 @@ const OrderDetails = () => {
     }
   }, [reference, auth.token, navigate]);
 
-  // Status badge style
   const getStatusStyle = (status) => {
     const lowerStatus = status.toLowerCase();
     if (lowerStatus === "paid") {
@@ -153,14 +242,11 @@ const OrderDetails = () => {
     return "bg-gray-200 text-gray-600";
   };
 
-  // Format price helper (like in OrderSuccess)
   const formatPrice = (amount) =>
     `₦${parseFloat(amount || 0).toLocaleString()}`;
 
-  // Safe items getter
   const safeItems = order?.items || [];
 
-  // Accepted statuses
   const acceptedStatuses = [
     "Order Placed",
     "Processing",
@@ -191,7 +277,7 @@ const OrderDetails = () => {
     <div className="min-h-screen bg-[#FAF7F5] p-6">
       <ToastContainer position="top-right" autoClose={3000} />
 
-      {/* Header with Back Button */}
+      {/* Header */}
       <div className="flex justify-between items-center mb-6 max-w-4xl mx-auto">
         <button
           onClick={() => navigate("/dashboard/orders")}
@@ -254,7 +340,7 @@ const OrderDetails = () => {
               </div>
             </div>
 
-            {/* Status and Payment */}
+            {/* Status & Payment */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-200">
               <div>
                 <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
@@ -264,7 +350,7 @@ const OrderDetails = () => {
                 <div className="flex items-center gap-2">
                   <span
                     className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
-                      order.status
+                      order.status,
                     )}`}
                   >
                     {order.orderStatus}
@@ -307,19 +393,39 @@ const OrderDetails = () => {
                       key={item.id || index}
                       className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
                     >
-                      <div className="flex items-center gap-3 flex-1">
-                        {/* Placeholder for image - use first image if available */}
-                        {item.product?.images?.length > 0 ? (
-                          <img
-                            src={item.product.images[0]}
-                            alt={item.product.name}
-                            className="w-12 h-12 object-cover rounded"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
-                            <span className="text-xs text-gray-500">Img</span>
-                          </div>
-                        )}
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="relative w-16 h-16 flex-shrink-0">
+                          {item.product?.images?.length > 0 ? (
+                            <img
+                              src={`/storage/${item.product.images[0].path}`} // use .path from your API
+                              alt={item.product.name}
+                              className="w-full h-full object-cover rounded border border-gray-200 cursor-pointer hover:opacity-90 transition"
+                              onClick={() =>
+                                setSelectedImage({
+                                  src: `/storage/${item.product.images[0].path}`,
+                                  alt: item.product.name,
+                                  item, // pass full item so we can access customization in modal
+                                })
+                              }
+                              onError={(e) => {
+                                e.target.src = "/placeholder.jpg"; // fallback
+                                e.target.onerror = null;
+                              }}
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                              No Img
+                            </div>
+                          )}
+
+                          {/* Red Customized badge - show if customization exists */}
+                          {item.customization_id || item.customization ? (
+                            <span className="absolute -top-1 -right-1 bg-[#5F1327] text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium shadow-sm">
+                              Customized
+                            </span>
+                          ) : null}
+                        </div>
+
                         <div className="flex-1">
                           <p className="font-medium text-sm text-[#141718]">
                             {item.product?.name || `Item ${item.product_id}`}
@@ -401,6 +507,92 @@ const OrderDetails = () => {
           </div>
         )}
       </div>
+
+      {/* Image Preview Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setSelectedImage(null);
+            setCompositeImage(null); // reset
+          }}
+        >
+          <div
+            className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden relative shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-4 right-4 bg-gray-900/80 text-white p-2 rounded-full hover:bg-gray-800 z-10 transition"
+              onClick={() => {
+                setSelectedImage(null);
+                setCompositeImage(null);
+              }}
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="p-6">
+              {selectedImage.item?.customization ? (
+                <div className="relative">
+                  {/* Hidden canvas for generating composite */}
+                  <canvas
+                    ref={previewCanvasRef}
+                    className="hidden"
+                    width={800} // reasonable default, will resize on load
+                    height={800}
+                  />
+
+                  {/* Show composite if ready, else loading */}
+                  {compositeImage ? (
+                    <img
+                      src={`https://api.allorigins.win/raw?url=${encodeURIComponent(selectedImage.src)}`}
+                      alt={selectedImage.alt}
+                      className="max-w-full max-h-[75vh] mx-auto object-contain rounded-lg shadow-lg"
+                    />
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5F1327] mx-auto mb-4"></div>
+                      <p className="text-gray-600">Generating preview...</p>
+                    </div>
+                  )}
+
+                  {/* Small info below */}
+                  <div className="mt-4 text-center text-sm text-gray-600">
+                    <p>
+                      <strong>Text:</strong> "
+                      {selectedImage.item.customization.text || "None"}"
+                      {selectedImage.item.customization.instruction && (
+                        <>
+                          {" "}
+                          | <strong>Instruction:</strong> "
+                          {selectedImage.item.customization.instruction}"
+                        </>
+                      )}
+                    </p>
+                    <p className="mt-1">
+                      Position: {selectedImage.item.customization.position} |
+                      Size:{" "}
+                      {(
+                        parseFloat(
+                          selectedImage.item.customization.image_size || 0,
+                        ) * 100
+                      ).toFixed(0)}
+                      %
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                // Non-customized: just show product image
+                <img
+                  src={selectedImage.src}
+                  alt={selectedImage.alt}
+                  className="max-w-full max-h-[75vh] mx-auto object-contain rounded-lg shadow-lg"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

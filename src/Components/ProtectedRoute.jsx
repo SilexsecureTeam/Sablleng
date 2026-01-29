@@ -7,9 +7,13 @@ const ProtectedRoute = ({ children }) => {
   const location = useLocation();
 
   if (isLoading) return null;
+
+  // Not authenticated → send to login, save where they came from
   if (!auth.isAuthenticated) {
-    return <Navigate to="/admin/signin" replace />;
+    return <Navigate to="/admin/signin" replace state={{ from: location }} />;
   }
+
+  // OTP check for admins
   if (
     auth.role === "admin" &&
     localStorage.getItem("otp_verified") !== "true" &&
@@ -17,6 +21,8 @@ const ProtectedRoute = ({ children }) => {
   ) {
     return <Navigate to="/admin/otp" replace />;
   }
+
+  // Token check fallback
   if (!auth.token && location.pathname !== "/admin/otp") {
     return <Navigate to="/admin/otp" replace />;
   }
