@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
@@ -23,12 +23,14 @@ const OrderDetails = () => {
   const [error, setError] = useState(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null); // For modal preview
-  const [compositeImage, setCompositeImage] = useState(null);
-  const previewCanvasRef = useRef(null);
+  const [productDimensions, setProductDimensions] = useState({
+    width: 1,
+    height: 1,
+  }); // For accurate %
 
   const baseUrl = "https://api.sablle.ng/storage/";
 
-  // Fetch single order details
+  // Fetch single order details (unchanged)
   const fetchOrderDetails = async () => {
     if (!auth.token) {
       toast.error("Please verify OTP to continue.", { autoClose: 3000 });
@@ -100,94 +102,7 @@ const OrderDetails = () => {
     }
   };
 
-  useEffect(() => {
-    if (!selectedImage?.item?.customization || !previewCanvasRef.current) {
-      setCompositeImage(selectedImage?.src || null);
-      return;
-    }
-
-    const canvas = previewCanvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const item = selectedImage.item;
-    const cust = item.customization;
-
-    // Use proxied product src (same as thumbnail)
-    const proxiedProductSrc = `https://api.allorigins.win/raw?url=${encodeURIComponent(selectedImage.src)}`;
-
-    const productImg = new Image();
-    productImg.crossOrigin = "anonymous"; // keep for safety
-    productImg.src = proxiedProductSrc;
-
-    productImg.onload = () => {
-      console.log("Product loaded OK via proxy");
-      canvas.width = productImg.width;
-      canvas.height = productImg.height;
-      ctx.drawImage(productImg, 0, 0);
-
-      // Logo with proxy + encode
-      if (cust.image_path) {
-        const proxiedLogoSrc = `https://api.allorigins.win/raw?url=${encodeURIComponent(`${baseUrl}${cust.image_path}`)}`;
-
-        const logoImg = new Image();
-        logoImg.crossOrigin = "anonymous";
-        logoImg.src = proxiedLogoSrc;
-
-        logoImg.onload = () => {
-          console.log("Logo loaded OK via proxy");
-          const sizeRatio = parseFloat(cust.image_size || 0.1);
-          const logoSize = productImg.width * sizeRatio;
-
-          ctx.drawImage(
-            logoImg,
-            cust.coordinates.x - logoSize / 2,
-            cust.coordinates.y - logoSize / 2,
-            logoSize,
-            logoSize,
-          );
-
-          // Text drawing (same as before)
-          if (cust.text) {
-            const fontSize = 32;
-            ctx.font = `${fontSize}px Arial`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-
-            ctx.strokeStyle = "#000000";
-            ctx.lineWidth = 4;
-            ctx.strokeText(
-              cust.text,
-              cust.coordinates.x,
-              cust.coordinates.y + logoSize / 2 + fontSize,
-            );
-
-            ctx.fillStyle = "#FFFFFF";
-            ctx.fillText(
-              cust.text,
-              cust.coordinates.x,
-              cust.coordinates.y + logoSize / 2 + fontSize,
-            );
-          }
-
-          setCompositeImage(canvas.toDataURL("image/png"));
-        };
-
-        logoImg.onerror = (err) => {
-          console.error("Logo proxy failed:", proxiedLogoSrc, err);
-          // Fallback: continue without logo
-          setCompositeImage(canvas.toDataURL("image/png"));
-        };
-      } else {
-        setCompositeImage(canvas.toDataURL("image/png"));
-      }
-    };
-
-    productImg.onerror = (err) => {
-      console.error("Product proxy failed:", proxiedProductSrc, err);
-      setCompositeImage(selectedImage.src); // fallback to plain
-    };
-  }, [selectedImage]);
-
-  // Update order status
+  // Update order status (unchanged)
   const updateOrderStatus = async (newStatus) => {
     if (!order?.numericId || !auth.token) return;
 
@@ -240,6 +155,30 @@ const OrderDetails = () => {
       return "bg-[#DAD3BC] text-[#414245]";
     }
     return "bg-gray-200 text-gray-600";
+  };
+
+  const getTextPresetStyle = (position) => {
+    const presets = {
+      "top-left": { left: "12%", top: "12%", transform: "translate(0, 0)" },
+      "top-right": {
+        left: "88%",
+        top: "12%",
+        transform: "translate(-100%, 0)",
+      },
+      "bottom-left": {
+        left: "12%",
+        top: "88%",
+        transform: "translate(0, -100%)",
+      },
+      "bottom-right": {
+        left: "88%",
+        top: "88%",
+        transform: "translate(-100%, -100%)",
+      },
+      center: { left: "50%", top: "50%", transform: "translate(-50%, -50%)" },
+    };
+
+    return presets[position] || presets.center;
   };
 
   const formatPrice = (amount) =>
@@ -397,18 +336,18 @@ const OrderDetails = () => {
                         <div className="relative w-16 h-16 flex-shrink-0">
                           {item.product?.images?.length > 0 ? (
                             <img
-                              src={`${baseUrl}${item.product.images[0].path}`} // use .path from your API
+                              src={`${baseUrl}${item.product.images[0].path}`}
                               alt={item.product.name}
                               className="w-full h-full object-cover rounded border border-gray-200 cursor-pointer hover:opacity-90 transition"
                               onClick={() =>
                                 setSelectedImage({
                                   src: `${baseUrl}${item.product.images[0].path}`,
                                   alt: item.product.name,
-                                  item, // pass full item so we can access customization in modal
+                                  item,
                                 })
                               }
                               onError={(e) => {
-                                e.target.src = "/placeholder.jpg"; // fallback
+                                e.target.src = "/placeholder.jpg";
                                 e.target.onerror = null;
                               }}
                             />
@@ -418,7 +357,6 @@ const OrderDetails = () => {
                             </div>
                           )}
 
-                          {/* Red Customized badge - show if customization exists */}
                           {item.customization_id || item.customization ? (
                             <span className="absolute -top-1 -right-1 bg-[#5F1327] text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium shadow-sm">
                               Customized
@@ -512,51 +450,79 @@ const OrderDetails = () => {
       {selectedImage && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-          onClick={() => {
-            setSelectedImage(null);
-            setCompositeImage(null); // reset
-          }}
+          onClick={() => setSelectedImage(null)}
         >
           <div
-            className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden relative shadow-2xl"
+            className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-auto relative shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               className="absolute top-4 right-4 bg-gray-900/80 text-white p-2 rounded-full hover:bg-gray-800 z-10 transition"
-              onClick={() => {
-                setSelectedImage(null);
-                setCompositeImage(null);
-              }}
+              onClick={() => setSelectedImage(null)}
             >
               <X className="w-6 h-6" />
             </button>
 
             <div className="p-6">
               {selectedImage.item?.customization ? (
-                <div className="relative">
-                  {/* Hidden canvas for generating composite */}
-                  <canvas
-                    ref={previewCanvasRef}
-                    className="hidden"
-                    width={800} // reasonable default, will resize on load
-                    height={800}
-                  />
-
-                  {/* Show composite if ready, else loading */}
-                  {compositeImage ? (
+                <div className="flex flex-col items-center">
+                  <div className="relative inline-block max-w-full max-h-[70vh]">
+                    {/* Base product image */}
                     <img
-                      src={compositeImage}
-                      alt={`${selectedImage.item.product.name} - Customized Preview`}
-                      className="max-w-full max-h-[70vh] mx-auto object-contain rounded-lg shadow-lg border border-gray-200"
+                      src={selectedImage.src}
+                      alt={`${selectedImage.alt} - Customized Preview`}
+                      className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg border border-gray-200"
+                      onLoad={(e) => {
+                        setProductDimensions({
+                          width: e.target.naturalWidth,
+                          height: e.target.naturalHeight,
+                        });
+                      }}
+                      onError={(e) => {
+                        e.target.src = "/placeholder.jpg";
+                      }}
                     />
-                  ) : (
-                    <div className="text-center py-12">
-                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5F1327] mx-auto mb-4"></div>
-                      <p className="text-gray-600">Generating preview...</p>
-                    </div>
-                  )}
 
-                  {/* Small info below */}
+                    {/* Logo overlay */}
+                    {selectedImage.item.customization.image_path && (
+                      <img
+                        src={`${baseUrl}${selectedImage.item.customization.image_path}`}
+                        alt="Custom logo"
+                        className="absolute object-contain pointer-events-none"
+                        style={{
+                          left: `${(selectedImage.item.customization.coordinates?.x / productDimensions.width) * 100 || 50}%`,
+                          top: `${(selectedImage.item.customization.coordinates?.y / productDimensions.height) * 100 || 50}%`,
+                          width: `${(parseFloat(selectedImage.item.customization.image_size || 0.1) * 100).toFixed(1)}%`,
+                          transform: "translate(-50%, -50%)",
+                          zIndex: 10,
+                        }}
+                        onError={(e) => (e.target.style.display = "none")}
+                      />
+                    )}
+
+                    {/* Text overlay */}
+                    {selectedImage.item.customization.text && (
+                      <div
+                        className="absolute text-center pointer-events-none whitespace-pre-wrap font-bold"
+                        style={{
+                          ...getTextPresetStyle(
+                            selectedImage.item.customization.position,
+                          ),
+                          fontSize: "clamp(16px, 5vw, 32px)",
+                          color: "#FFFFFF",
+                          WebkitTextStroke: "3px black",
+                          textShadow: "0 0 5px rgba(0,0,0,0.7)",
+                          zIndex: 15,
+                          maxWidth: "80%",
+                          lineHeight: "1.2",
+                        }}
+                      >
+                        {selectedImage.item.customization.text}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info below */}
                   <div className="mt-4 text-center text-sm text-gray-600">
                     <p>
                       <strong>Text:</strong> "
@@ -582,7 +548,6 @@ const OrderDetails = () => {
                   </div>
                 </div>
               ) : (
-                // Non-customized: just show product image
                 <img
                   src={selectedImage.src}
                   alt={selectedImage.alt}

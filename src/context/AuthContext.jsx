@@ -16,16 +16,16 @@ export const AuthProvider = ({ children }) => {
     console.log("🔐 AuthProvider: Initializing...");
 
     try {
-      const token = localStorage.getItem("authToken");
-      const storedUser = localStorage.getItem("user");
-      const role = localStorage.getItem("role");
-      const otpVerified = localStorage.getItem("otp_verified");
+      const token = sessionStorage.getItem("authToken");
+      const storedUser = sessionStorage.getItem("user");
+      const role = sessionStorage.getItem("role");
+      // const otpVerified = sessionStorage.getItem("otp_verified");
 
       console.log("📦 AuthProvider: Found in localStorage:", {
         hasToken: !!token,
         hasUser: !!storedUser,
         role: role || "none",
-        otpVerified: !!otpVerified,
+        // otpVerified: !!otpVerified,
       });
 
       if (storedUser && role) {
@@ -46,28 +46,29 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("❌ AuthProvider: Error restoring auth:", error);
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("user");
-      localStorage.removeItem("role");
-      localStorage.removeItem("otp_verified");
+      sessionStorage.removeItem("authToken");
+      sessionStorage.removeItem("user");
+      sessionStorage.removeItem("role");
+      // sessionStorage.removeItem("otp_verified");
     } finally {
       setIsLoading(false);
       console.log("🎯 AuthProvider: Initialization complete");
     }
   }, []);
 
-  const login = (token, user) => {
+  const login = (token, user, role) => {
     try {
-      if (token) localStorage.setItem("authToken", token);
-      localStorage.setItem("user", JSON.stringify(user));
+      if (token) sessionStorage.setItem("authToken", token);
+      sessionStorage.setItem("user", JSON.stringify(user));
+      sessionStorage.setItem("role", role || user.role || "user");
 
       setAuth({
         isAuthenticated: true,
         token,
         user,
+        role: role || user.role || "user",
       });
 
-      console.log("LOGIN SUCCESS → Name:", user.name, "| Role:", user.role);
       return true;
     } catch (err) {
       console.error("Login failed:", err);
@@ -79,14 +80,13 @@ export const AuthProvider = ({ children }) => {
     console.log("👋 AuthProvider: Logout called");
 
     try {
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("user");
-      localStorage.removeItem("role");
-      localStorage.removeItem("otp_verified");
-      localStorage.removeItem("cart_session_id");
-      localStorage.removeItem("cart_items");
-      localStorage.removeItem("cart_total");
-
+      sessionStorage.removeItem("authToken");
+      sessionStorage.removeItem("user");
+      sessionStorage.removeItem("role");
+      // sessionStorage.removeItem("otp_verified");
+      // sessionStorage.removeItem("cart_session_id");
+      // sessionStorage.removeItem("cart_items");
+      // sessionStorage.removeItem("cart_total");
       setAuth({
         isAuthenticated: false,
         token: null,
