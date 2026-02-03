@@ -54,38 +54,38 @@ const DashboardHome = () => {
     },
   ];
 
-  const requests = [
-    {
-      id: 1,
-      company: "Acme Corp",
-      item: "Leather Portfolio",
-      preview: "Pending",
-      previewColor: "text-amber-600",
-      status: "Pending Design",
-      statusColor: "text-purple-600",
-      bulletColor: "fill-amber-600 text-amber-600",
-    },
-    {
-      id: 2,
-      company: "Acme Corp",
-      item: "Leather Portfolio",
-      preview: "Uploaded",
-      previewColor: "text-cyan-600",
-      status: "Awaiting Approval",
-      statusColor: "text-amber-600",
-      bulletColor: "fill-cyan-600 text-cyan-600",
-    },
-    {
-      id: 3,
-      company: "Acme Corp",
-      item: "Leather Portfolio",
-      preview: "Pending",
-      previewColor: "text-amber-600",
-      status: "Pending Design",
-      statusColor: "text-purple-600",
-      bulletColor: "fill-amber-600 text-amber-600",
-    },
-  ];
+  // const requests = [
+  //   {
+  //     id: 1,
+  //     company: "Acme Corp",
+  //     item: "Leather Portfolio",
+  //     preview: "Pending",
+  //     previewColor: "text-amber-600",
+  //     status: "Pending Design",
+  //     statusColor: "text-purple-600",
+  //     bulletColor: "fill-amber-600 text-amber-600",
+  //   },
+  //   {
+  //     id: 2,
+  //     company: "Acme Corp",
+  //     item: "Leather Portfolio",
+  //     preview: "Uploaded",
+  //     previewColor: "text-cyan-600",
+  //     status: "Awaiting Approval",
+  //     statusColor: "text-amber-600",
+  //     bulletColor: "fill-cyan-600 text-cyan-600",
+  //   },
+  //   {
+  //     id: 3,
+  //     company: "Acme Corp",
+  //     item: "Leather Portfolio",
+  //     preview: "Pending",
+  //     previewColor: "text-amber-600",
+  //     status: "Pending Design",
+  //     statusColor: "text-purple-600",
+  //     bulletColor: "fill-amber-600 text-amber-600",
+  //   },
+  // ];
 
   // Fetch orders (unchanged)
   useEffect(() => {
@@ -180,8 +180,8 @@ const DashboardHome = () => {
             const extraColor = metric.extra?.includes("↑")
               ? "text-green-600"
               : metric.extra?.includes("↓")
-              ? "text-red-600"
-              : "text-[#23272E]";
+                ? "text-red-600"
+                : "text-[#23272E]";
 
             return (
               <div key={idx} className="bg-white rounded-lg p-5 shadow-sm">
@@ -298,7 +298,7 @@ const DashboardHome = () => {
                       <td className="py-3 px-4">
                         <span
                           className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            order.status
+                            order.status,
                           )}`}
                         >
                           {order.status}
@@ -309,7 +309,7 @@ const DashboardHome = () => {
                         <button
                           onClick={() =>
                             navigate(
-                              `/dashboard/orders/${order.orderId}/details`
+                              `/dashboard/orders/${order.orderId}/details`,
                             )
                           }
                           className="text-sm text-[#0B36B5] hover:text-blue-800 font-medium"
@@ -326,7 +326,7 @@ const DashboardHome = () => {
         </div>
 
         {/* Customization Requests - unchanged */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
+        {/* <div className="bg-white rounded-lg p-6 shadow-sm">
           <h2 className="text-base font-semibold text-[#414245] mb-4">
             Customization Requests
           </h2>
@@ -381,7 +381,7 @@ const DashboardHome = () => {
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
