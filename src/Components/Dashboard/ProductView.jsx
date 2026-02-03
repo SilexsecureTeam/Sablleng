@@ -234,7 +234,7 @@ const ProductView = () => {
                 <div className="flex justify-between py-2 border-b border-gray-100">
                   <dt className="text-sm text-gray-600">Sale Price</dt>
                   <dd className="text-sm font-bold text-green-600">
-                    ₦{parseFloat(product.sale_price_inc_tax).toLocaleString()}
+                    ₦{parseFloat(product.sales_price_inc_tax).toLocaleString()}
                   </dd>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-100">

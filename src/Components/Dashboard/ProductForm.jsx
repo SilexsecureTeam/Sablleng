@@ -17,6 +17,8 @@ const ProductForm = ({ onSave, onCancel }) => {
     brand: "",
     supplier: "",
     couponCode: "",
+      current_stock: "",     
+  total_stock: "",
   });
   const [sizes, setSizes] = useState([""]);
   const [images, setImages] = useState({
@@ -71,7 +73,7 @@ const ProductForm = ({ onSave, onCancel }) => {
           const text = await response.text();
           console.error(
             "[Categories] Expected JSON, got:",
-            text.substring(0, 300)
+            text.substring(0, 300),
           );
           throw new Error("Server returned invalid data (not JSON)");
         }
@@ -242,6 +244,18 @@ const ProductForm = ({ onSave, onCancel }) => {
     if (!formData.price || parseFloat(formData.price) <= 0)
       newErrors.price = "Valid price is required";
 
+        // ← new
+  if (!formData.current_stock || parseInt(formData.current_stock) < 0)
+    newErrors.current_stock = "Current stock is required and cannot be negative";
+  if (!formData.total_stock || parseInt(formData.total_stock) < 0)
+    newErrors.total_stock = "Total stock is required and cannot be negative";
+
+  // Optional: warn if current > total
+  if (formData.current_stock && formData.total_stock &&
+      parseInt(formData.current_stock) > parseInt(formData.total_stock)) {
+    newErrors.current_stock = "Current stock cannot exceed total stock";
+  }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -265,9 +279,11 @@ const ProductForm = ({ onSave, onCancel }) => {
     formDataToSend.append("name", formData.productName);
     formDataToSend.append("product_code", formData.skuNumber);
     formDataToSend.append("category_id", formData.category);
-    formDataToSend.append("sale_price_inc_tax", formData.price);
+    formDataToSend.append("sales_price_inc_tax", formData.price);
     formDataToSend.append("customize", formData.allowCustomization ? 1 : 0);
     formDataToSend.append("description", formData.description);
+    formDataToSend.append("current_stock", formData.current_stock);
+formDataToSend.append("total_stock", formData.total_stock);
 
     // Sizes
     sizes.forEach((size, i) => {
@@ -296,6 +312,30 @@ const ProductForm = ({ onSave, onCancel }) => {
 
     formDataToSend.append("coupon_code", formData.couponCode);
 
+      // 1. Log all non-file fields (easiest way)
+    for (const [key, value] of formDataToSend.entries()) {
+      if (!(value instanceof File)) {  // skip files for now
+        console.log(`${key}:`, value);
+      }
+    }
+
+    // 2. Log the files separately (name + size + type)
+    for (const [key, value] of formDataToSend.entries()) {
+      if (value instanceof File) {
+        console.log(`File field ${key}:`, {
+          name: value.name,
+          size: value.size,
+          type: value.type,
+          lastModified: new Date(value.lastModified).toISOString()
+        });
+      }
+    }
+
+    // 3. Optional: log the entire FormData keys (just names)
+    console.log("All FormData keys:", [...formDataToSend.keys()]);
+
+    console.log("=== END DEBUG ===")
+
     try {
       const response = await fetch("https://api.sablle.ng/api/products", {
         method: "POST",
@@ -315,7 +355,7 @@ const ProductForm = ({ onSave, onCancel }) => {
         console.error("[Product Save] JSON Parse Failed:", parseError);
         console.error(
           "[Product Save] Raw HTML:",
-          responseText.substring(0, 500)
+          responseText.substring(0, 500),
         );
         throw new Error("Server returned invalid data (not JSON)");
       }
@@ -335,7 +375,7 @@ const ProductForm = ({ onSave, onCancel }) => {
               name: "productName",
               product_code: "skuNumber",
               category_id: "category",
-              sale_price_inc_tax: "price",
+              sales_price_inc_tax: "price",
               brand_id: "brand",
               supplier_id: "supplier",
               coupon_code: "couponCode",
@@ -357,7 +397,7 @@ const ProductForm = ({ onSave, onCancel }) => {
 
       toast.success("Product created successfully!");
       const selectedCategory = categories.find(
-        (cat) => cat.value === parseInt(formData.category)
+        (cat) => cat.value === parseInt(formData.category),
       );
 
       onSave({
@@ -368,7 +408,7 @@ const ProductForm = ({ onSave, onCancel }) => {
           data.product.category?.name || selectedCategory?.label || "N/A",
         type: data.product.customize ? "Customizable" : "Non-custom",
         price: `₦${parseFloat(
-          data.product.sale_price_inc_tax || formData.price
+          data.product.sales_price_inc_tax || formData.price,
         ).toLocaleString()}`,
       });
 
@@ -400,7 +440,7 @@ const ProductForm = ({ onSave, onCancel }) => {
         toast.error(
           isHtmlError
             ? "Server error or unauthorized. Check login status."
-            : `Error: ${error.message}`
+            : `Error: ${error.message}`,
         );
         setErrors((prev) => ({ ...prev, api: error.message }));
       }
@@ -528,7 +568,7 @@ const ProductForm = ({ onSave, onCancel }) => {
                   <Select
                     options={categories}
                     value={categories.find(
-                      (cat) => cat.value === formData.category
+                      (cat) => cat.value === formData.category,
                     )}
                     onChange={handleCategoryChange}
                     placeholder="Select Product Category"
@@ -694,6 +734,46 @@ const ProductForm = ({ onSave, onCancel }) => {
                   </p>
                 )}
               </div>
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+      Current Stock *
+    </label>
+    <input
+      type="number"
+      name="current_stock"
+      value={formData.current_stock}
+      onChange={handleInputChange}
+      placeholder="e.g. 50"
+      min="0"
+      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
+      disabled={isSubmitting}
+    />
+    {errors.current_stock && (
+      <p className="text-red-600 text-sm mt-1">{errors.current_stock}</p>
+    )}
+  </div>
+
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+      Total Stock *
+    </label>
+    <input
+      type="number"
+      name="total_stock"
+      value={formData.total_stock}
+      onChange={handleInputChange}
+      placeholder="e.g. 100"
+      min="0"
+      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5F1327] focus:border-transparent"
+      disabled={isSubmitting}
+    />
+    {errors.total_stock && (
+      <p className="text-red-600 text-sm mt-1">{errors.total_stock}</p>
+    )}
+  </div>
+</div>
 
               <div className="space-y-3">
                 <h2 className="text-base font-medium text-gray-900">

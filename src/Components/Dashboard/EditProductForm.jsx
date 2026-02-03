@@ -130,7 +130,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
           productName: data.name || "",
           category: data.category_id || "",
           skuNumber: data.product_code || "",
-          price: data.sale_price_inc_tax || "",
+          price: data.sales_price_inc_tax || "",
           allowCustomization: data.customize || false,
           description: data.description || "",
           colors: Array.isArray(data.colours)
@@ -333,7 +333,7 @@ const EditProductForm = ({ product, index, onSave, onCancel }) => {
       formDataToSend.append("name", formData.productName);
       formDataToSend.append("product_code", formData.skuNumber);
       formDataToSend.append("category_id", formData.category);
-      formDataToSend.append("sale_price_inc_tax", formData.price);
+      formDataToSend.append("sales_price_inc_tax", formData.price);
       formDataToSend.append("customize", formData.allowCustomization ? 1 : 0);
       formDataToSend.append("description", formData.description);
 
@@ -393,7 +393,7 @@ await Promise.all(
 // Now filter out the promises and keep only Files
 const finalFiles = imagesToKeepAndSend.filter(item => item instanceof File);
 
-// Send them in order (primary first, then thumbnails)
+// Send them in order (primary first, then thumbnails) 
 if (finalFiles.length > 0) {
   finalFiles.forEach((file, index) => {
     formDataToSend.append(`images[${index}]`, file);
@@ -436,7 +436,7 @@ if (finalFiles.length > 0) {
               name: "productName",
               product_code: "skuNumber",
               category_id: "category",
-              sale_price_inc_tax: "price",
+              sales_price_inc_tax: "price",
               brand_id: "brand",
               supplier_id: "supplier",
               coupon_code: "couponCode",
@@ -465,8 +465,8 @@ if (finalFiles.length > 0) {
         product: data.data?.name || formData.productName,
         category: data.data?.category?.name || selectedCategory?.label || "N/A",
         type: data.data?.customize ? "Customizable" : "Non-custom",
-        price: data.data?.sale_price_inc_tax
-          ? `₦${parseFloat(data.data.sale_price_inc_tax).toLocaleString()}`
+        price: data.data?.sales_price_inc_tax
+          ? `₦${parseFloat(data.data.sales_price_inc_tax).toLocaleString()}`
           : `₦${parseFloat(formData.price).toLocaleString()}`,
       };
 

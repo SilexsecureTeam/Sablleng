@@ -52,8 +52,8 @@ const ProductList = () => {
         product: item.name || "Unknown Product",
         category: item.category?.name || "N/A",
         type: item.customize ? "Customizable" : "Non-custom",
-        price: item.sale_price_inc_tax
-          ? `₦${parseFloat(item.sale_price_inc_tax).toLocaleString()}`
+        price: item.sales_price_inc_tax
+          ? `₦${parseFloat(item.sales_price_inc_tax).toLocaleString()}`
           : "N/A",
       }));
 

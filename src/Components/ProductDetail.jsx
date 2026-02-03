@@ -66,11 +66,11 @@ const ProductDetail = () => {
       const formattedProduct = {
         id: data.id,
         name: data.name || "",
-        rawPrice: data.sale_price_inc_tax
-          ? parseFloat(data.sale_price_inc_tax)
+        rawPrice: data.sales_price_inc_tax
+          ? parseFloat(data.sales_price_inc_tax)
           : 0,
-        price: data.sale_price_inc_tax
-          ? `₦${parseFloat(data.sale_price_inc_tax).toLocaleString()}`
+        price: data.sales_price_inc_tax
+          ? `₦${parseFloat(data.sales_price_inc_tax).toLocaleString()}`
           : "Price Unavailable",
         category: data.category?.name || "Uncategorized",
         categoryId: data.category?.id,

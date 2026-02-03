@@ -5,7 +5,7 @@ import Ahero from "../Components/Ahero";
 import Story from "../Components/Story";
 import Value from "../Components/Value";
 import Trust from "../Components/Trust";
-import Team from "../Components/Team";
+// import Team from "../Components/Team";
 import Footer from "../Components/Footer";
 
 const AboutPage = () => {
@@ -17,7 +17,7 @@ const AboutPage = () => {
       <Story />
       <Value />
       <Trust />
-      <Team />
+      {/* <Team /> */}
       <Footer />
     </div>
   );
